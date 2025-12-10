@@ -17,14 +17,22 @@ public class Employee {
     @Column(nullable = false)
     private String lastName;
     @Column(nullable = false, unique = true)
+    private String userName;
+    @Column(nullable = false, unique = true)
     private String email;
+    @Column(unique = true)
+    private String phoneNumber;
     @Column(nullable = false)
     private String password;
     @Column(nullable = false)
     private double salary;
+    //    @Column(unique = true)?
+    private String profilePic;
     @Column(nullable = false)
     @org.hibernate.annotations.CreationTimestamp
     private LocalDateTime joiningDate;
+    
+    private boolean isEnabled = false;
     @ManyToOne
     @JoinColumn(name = "department_id")
     private Department department;
@@ -104,5 +112,37 @@ public class Employee {
 
     public void setRole(Role role) {
         this.role = role;
+    }
+
+    public String getUserName() {
+        return userName;
+    }
+
+    public void setUserName(String userName) {
+        this.userName = userName;
+    }
+
+    public String getPhoneNumber() {
+        return phoneNumber;
+    }
+
+    public void setPhoneNumber(String phoneNumber) {
+        this.phoneNumber = phoneNumber;
+    }
+
+    public String getProfilePic() {
+        return profilePic;
+    }
+
+    public void setProfilePic(String profilePic) {
+        this.profilePic = profilePic;
+    }
+
+    public boolean isEnabled() {
+        return isEnabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        isEnabled = enabled;
     }
 }

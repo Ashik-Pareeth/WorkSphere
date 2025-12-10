@@ -3,6 +3,7 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.EmployeeService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -28,7 +29,7 @@ public class EmployeeController {
     @PostMapping
     public void createEmployee(@RequestBody Employee employee) {
 
-        employeeRepository.save(employee);
+        employeeService.saveEmployee(employee);
     }
 
     @GetMapping

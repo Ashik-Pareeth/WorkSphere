@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 function AddEmployee() {
-  //const [userName,setUserName] = useState('');
+  const [userName, setUserName] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
@@ -12,6 +12,7 @@ function AddEmployee() {
   function saveEmployee(e) {
     e.preventDefault();
     const employee = {
+      userName: userName,
       firstName: firstName,
       lastName: lastName,
       email: email,
@@ -89,6 +90,15 @@ function AddEmployee() {
           />
         </div>
         <div>
+          Enter UserName:
+          <input
+            type="text"
+            name="userName"
+            value={userName}
+            onChange={(e) => setUserName(e.target.value)}
+          />
+        </div>
+        <div>
           Enter Email:
           <input
             type="email"
@@ -103,7 +113,9 @@ function AddEmployee() {
             {' '}
             <option value="">--Select--</option>
             {roleRows.map((row) => (
-              <option value={row.roleId}>{row.roleName}</option>
+              <option key={row.roleId} value={row.roleId}>
+                {row.roleName}
+              </option>
             ))}
           </select>
         </div>
@@ -116,7 +128,9 @@ function AddEmployee() {
             {' '}
             <option value="">--Select--</option>
             {depRows.map((row) => (
-              <option value={row.departmentId}>{row.departmentName}</option>
+              <option key={row.departmentId} value={row.departmentId}>
+                {row.departmentName}
+              </option>
             ))}
           </select>
         </div>
@@ -142,6 +156,7 @@ function AddEmployee() {
         <thead>
           <tr>
             <th>Slno</th>
+            <th>User Name</th>
             <th>Name</th>
             <th>email</th>
             <th>Role</th>
@@ -154,6 +169,7 @@ function AddEmployee() {
           {employeeRows.map((empRows) => (
             <tr key={empRows.employeeId}>
               <td>{empRows.employeeId}</td>
+              <td>{empRows.userName}</td>
               <td>
                 {empRows.firstName} {empRows.lastName}
               </td>
