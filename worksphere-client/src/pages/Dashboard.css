@@ -1,0 +1,45 @@
+/* src/pages/Dashboard.css */
+
+.dashboard-container {
+  padding: 20px;
+  background-color: #f4f6f8;
+  min-height: 100vh;
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+}
+
+.dashboard-header {
+  margin-bottom: 25px;
+  padding-bottom: 15px;
+  border-bottom: 2px solid #e0e0e0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.dashboard-header h1 {
+  color: #2c3e50;
+  margin: 0;
+  font-size: 1.8rem;
+}
+
+.dashboard-main {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 2 parts Tracker, 1 part History */
+  gap: 25px;
+}
+
+/* Panels (The cards that hold the widgets) */
+.panel {
+  background-color: white;
+  padding: 25px;
+  border-radius: 12px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+  border: 1px solid #eef0f2;
+}
+
+/* Responsive: Stack them on mobile */
+@media (max-width: 768px) {
+  .dashboard-main {
+    grid-template-columns: 1fr;
+  }
+}

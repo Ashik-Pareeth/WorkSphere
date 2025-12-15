@@ -24,6 +24,7 @@ function App() {
           <Route path="/departments" element={<DepartmentForm />} />
           <Route path="/roles" element={<Role />} />
           <Route path="/register" element={<AddEmployee />} />
+          <Route path="/" />
         </Routes>
       </div>
     </BrowserRouter>
@@ -31,15 +32,3 @@ function App() {
 }
 
 export default App;
-
-//
-//
-//     <card>
-//       <h1>WorkSphere</h1>
-//       <p>Welcome to the Employee Portal</p>
-//       <hr></hr>
-//       <DepartmentForm />
-
-//       <Role />
-//     </card>
-//
