@@ -28,8 +28,7 @@ export default function Login() {
       .then((data) => {
         localStorage.setItem('token', data.token);
         localStorage.setItem('employeeId', data.employeeId);
-        // navigate('/dashboard');
-        navigate('/app');
+        navigate('/dashboard');
       });
 
     setPassword('');
@@ -38,7 +37,7 @@ export default function Login() {
     <div>
       <form onSubmit={LoginValidation}>
         <div>
-          Enter User:
+          Enter User Name:
           <input
             type="text"
             name="userName"
@@ -47,6 +46,7 @@ export default function Login() {
           />
         </div>
         <div>
+          Password:
           <input
             type="password"
             name="password"

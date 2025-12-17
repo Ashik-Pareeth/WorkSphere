@@ -27,14 +27,17 @@ public class SecurityConfig {
                         request -> {
                             CorsConfiguration config = new CorsConfiguration();
                             config.setAllowedOrigins(List.of("http://localhost:5173"));
-                            config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE"));
+                            config.setAllowedMethods(List.of("*"));
                             config.setAllowedHeaders(List.of("*"));
                             return config;
                         })).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(
-                        auth -> auth.requestMatchers("/login", "/auth")
+                        auth -> auth.requestMatchers(
+                                        "/login", "/auth/**", "/public/**")
                                 //login and auth open for everyone,the rest is locked
-                                .permitAll().anyRequest().authenticated())
+                                .permitAll()
+                                .requestMatchers("/work-session/**").authenticated()
+                                .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
 

@@ -6,7 +6,7 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const handleLogout = () => {
     localStorage.clear();
-    navigate('/auth/login');
+    navigate('/auth/Login');
   };
   return (
     <div className="dashboard-container">
