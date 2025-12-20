@@ -1,4 +1,3 @@
-import WorkTracker from '../features/attendance/WorkTracker';
 import AttendanceWidget from '../features/attendance/AttendanceWidget';
 import { useNavigate } from 'react-router-dom';
 import './Dashboard.css';
@@ -27,9 +26,6 @@ const Dashboard = () => {
         </button>
       </header>
       <main className="dashboard-main">
-        <div className="panel">
-          <WorkTracker />
-        </div>
         <div className="panel">
           <AttendanceWidget />
         </div>

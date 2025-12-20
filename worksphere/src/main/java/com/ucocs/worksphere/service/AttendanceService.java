@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.Date;
+import java.util.List;
 import java.util.Optional;
 
 @Service
@@ -58,6 +59,12 @@ public class AttendanceService {
             attendanceRepository.save(attendance);
         }
 
+    }
+
+    public List<Attendance> getEmployeeAttendanceHistory(Long employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+        return attendanceRepository.findByEmployee(employee);
     }
 }
 
