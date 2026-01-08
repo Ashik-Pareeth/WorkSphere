@@ -1,0 +1,24 @@
+HELP.md
+
+# ===============================
+# Maven
+# ===============================
+target/
+.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+# ===============================
+# IDEs
+# ===============================
+.idea/
+.classpath
+.project
+.settings
+.springBeans
+.sts4-cache
+
+# ===============================
+# VS Code
+# ===============================
+.vscode/
