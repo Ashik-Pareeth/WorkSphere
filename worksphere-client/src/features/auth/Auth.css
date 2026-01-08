@@ -1,0 +1,35 @@
+/* src/features/auth/Auth.css */
+
+.auth-container {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  /* Use the system variables for the gradient colors */
+  background: linear-gradient(
+    135deg,
+    var(--bg-color) 0%,
+    var(--border-color) 100%
+  );
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 400px;
+  /* Use the system variable for white */
+  background: var(--card-bg);
+  padding: 2.5rem;
+  /* Enforce consistency with the rest of the app */
+  border-radius: var(--radius);
+  /* Auth cards usually pop more, so we keep this specific deeper shadow, 
+     or you could add a --shadow-lg variable to main.css later */
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+.auth-card-title {
+  margin-top: 0;
+  text-align: center;
+  /* Use the system primary color */
+  color: var(--primary-color);
+}
