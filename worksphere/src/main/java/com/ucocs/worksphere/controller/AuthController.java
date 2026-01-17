@@ -31,6 +31,6 @@ public class AuthController {
                         (userName, loginRequest.getPassword()));
         String token = jwtUtil.generateToken(userName);
         Employee employee = employeeRepository.findByUserName(userName).orElseThrow();
-        return new LoginResponse(token, employee.getEmployeeId(), employee.isEnabled());
+        return new LoginResponse(token, employee.getId(), employee.getEmployeeStatus());
     }
 }

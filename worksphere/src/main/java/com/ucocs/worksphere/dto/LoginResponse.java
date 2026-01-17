@@ -1,14 +1,18 @@
 package com.ucocs.worksphere.dto;
 
+import com.ucocs.worksphere.enums.EmployeeStatus;
+
+import java.util.UUID;
+
 public class LoginResponse {
     private String token;
-    private Long employeeId;
-    private boolean isEnabled;
+    private UUID employeeId;
+    private EmployeeStatus employeeStatus;
 
-    public LoginResponse(String token, Long employeeId, boolean isEnabled) {
+    public LoginResponse(String token, UUID employeeId, EmployeeStatus employeeStatus) {
         this.token = token;
         this.employeeId = employeeId;
-        this.isEnabled = isEnabled;
+        this.employeeStatus = employeeStatus;
     }
 
     public String getToken() {
@@ -19,19 +23,19 @@ public class LoginResponse {
         this.token = token;
     }
 
-    public Long getEmployeeId() {
+    public UUID getEmployeeId() {
         return employeeId;
     }
 
-    public void setEmployeeId(Long employeeId) {
+    public void setEmployeeId(UUID employeeId) {
         this.employeeId = employeeId;
     }
 
-    public boolean isEnabled() {
-        return isEnabled;
+    public EmployeeStatus getEmployeeStatus() {
+        return employeeStatus;
     }
 
-    public void setEnabled(boolean enabled) {
-        isEnabled = enabled;
+    public void setEmployeeStatus(EmployeeStatus employeeStatus) {
+        this.employeeStatus = employeeStatus;
     }
 }

@@ -20,12 +20,18 @@ export default function Login() {
     try {
       const response = await axiosInstance.post('/login', loginForm);
       console.log('login successful');
+      console.log('SERVER RESPONSE:', response.data); // <--- Add this!
       localStorage.setItem('token', response.data.token);
       localStorage.setItem('employeeId', response.data.employeeId);
-      if (response.data.enabled === true) {
+      //should i use .data here?
+      if (response.data.employeeStatus === 'ACTIVE') {
         navigate('/dashboard');
-      } else {
+      } else if (response.data.employeeStatus === 'PENDING') {
         navigate('/onboarding');
+      } else {
+        console.log(
+          'your account is ' + response.data.employeeStatus.toLowerCase()
+        );
       }
     } catch (err) {
       console.log(err);

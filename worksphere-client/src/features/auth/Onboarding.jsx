@@ -19,7 +19,7 @@ const Onboarding = () => {
       password: password,
     };
     try {
-      await axiosInstance.post(`/employees/activate/${employeeId}`, signUpForm);
+      await axiosInstance.post(`/employees/activate`, signUpForm);
       setStep(2);
     } catch (err) {
       console.log(err);
@@ -31,7 +31,7 @@ const Onboarding = () => {
     const formData = new FormData();
     formData.append('profilePic', profileImage);
     try {
-      await axiosInstance.post(`employees/photo/${employeeId}`, formData);
+      await axiosInstance.post(`employees/photo`, formData);
       navigate('/dashboard');
     } catch (err) {
       console.log(err);

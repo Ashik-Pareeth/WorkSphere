@@ -7,6 +7,7 @@ import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.AttendanceService;
 import org.springframework.web.bind.annotation.*;
 
+import java.security.Principal;
 import java.util.List;
 
 @CrossOrigin("http://localhost:5173")
@@ -20,20 +21,21 @@ public class AttendanceController {
         this.attendanceService = attendanceService;
     }
 
-    @PostMapping("/clock-in/{id}")
-    public void clockInController(@PathVariable Long id) {
+    @PostMapping("/clock-in")
+    public void clockInController(Principal principal) {
 
-        attendanceService.clockIn(id);
+        attendanceService.clockIn(principal.getName());
     }
 
-    @PostMapping("/clock-out/{id}")
-    public void clockOutController(@PathVariable Long id) {
+    @PostMapping("/clock-out")
+    public void clockOutController(Principal principal) {
 
-        attendanceService.clockOut(id);
+        attendanceService.clockOut(principal.getName());
     }
 
-    @GetMapping("/{id}")
-    public List<Attendance> viewAttendanceLogOfEmployee(@PathVariable Long id) {
-        return attendanceService.getEmployeeAttendanceHistory(id);
+    @GetMapping
+    public List<Attendance> viewAttendanceLogOfEmployee(Principal principal) {
+        return attendanceService.getEmployeeAttendanceHistory(principal.getName());
     }
 }
+

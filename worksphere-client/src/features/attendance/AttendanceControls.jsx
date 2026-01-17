@@ -7,12 +7,12 @@ const AttendanceControl = () => {
 
   const fetchHistory = useCallback(async () => {
     try {
-      const response = await axiosInstance.get(`/attendance/${employeeId}`);
+      const response = await axiosInstance.get(`/attendance`);
       setHistory(response.data);
     } catch (err) {
       console.log(err.response?.data || err.message);
     }
-  }, [employeeId]);
+  }, []);
 
   // const fetchHistory = useCallback(
   //   async (signal) => {
@@ -53,7 +53,7 @@ const AttendanceControl = () => {
 
   const punchClockIn = async () => {
     try {
-      await axiosInstance.post(`attendance/clock-in/${employeeId}`);
+      await axiosInstance.post(`attendance/clock-in`);
       console.log('Clock-in successfull');
       fetchHistory();
     } catch (err) {
@@ -87,7 +87,7 @@ const AttendanceControl = () => {
 
   const punchClockOut = async () => {
     try {
-      await axiosInstance.post(`/attendance/clock-out/${employeeId}`);
+      await axiosInstance.post(`/attendance/clock-out`);
       console.log('Clock-out successful');
       fetchHistory();
     } catch (err) {
