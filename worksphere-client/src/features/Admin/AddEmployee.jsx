@@ -45,14 +45,6 @@ function AddEmployee() {
     } catch (err) {
       console.log(err);
     }
-    // fetch('http://localhost:8080/employees', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(employee),
-    // }).then(() => {
-    //   console.log('Successful');
   };
 
   const [roleRows, setRolesRows] = useState([]);
@@ -86,45 +78,19 @@ function AddEmployee() {
       }
     };
 
-    // fetch('http://localhost:8080/roles', {
-    //   method: 'GET',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => setRolesRows(data));
-
-    // fetch('http://localhost:8080/departments', {
-    //   method: 'GET',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => setDepRows(data));
-
-    // fetch('http://localhost:8080/employees', {
-    //   method: 'get',
-    //   headers: { 'Content-Type': 'application/json' },
-    // })
-    //   .then((res) => res.json())
-    //   .then((data) => setEmployeeRows(data));
-
     fetchDepartment();
     fetchEmployees();
     fetchRoles();
   }, []);
 
   console.log(employeeRows);
+
   return (
     <div className="container">
-      {/* Page Header */}
       <div className="page-header">
         <h2 className="page-header-main">Add Employee</h2>
       </div>
 
-      {/* Form Card */}
       <div className="card">
         <form onSubmit={saveEmployee}>
           <div className="form-grid">
@@ -228,7 +194,7 @@ function AddEmployee() {
         <table className="data-table">
           <thead>
             <tr>
-              <th>ID</th>
+              <th>Sl no</th>
               <th>User Name</th>
               <th>Name</th>
               <th>Email</th>
@@ -236,18 +202,19 @@ function AddEmployee() {
               <th>Department</th>
               <th>Salary</th>
               <th>Joining Date</th>
+              <th>Current Status</th>
             </tr>
           </thead>
           <tbody>
-            {employeeRows.map((emp) => (
+            {employeeRows.map((emp, index) => (
               <tr key={emp.id}>
-                <td>{emp.id}</td>
+                <td>{index + 1}</td>
                 <td>{emp.userName}</td>
                 <td>
                   {emp.firstName} {emp.lastName}
                 </td>
                 <td>{emp.email}</td>
-                <td>{emp.role}</td>
+                <td>{emp.jobPosition}</td>
                 <td>{emp.department}</td>
                 <td>{emp.salary}</td>
                 <td>
@@ -258,6 +225,7 @@ function AddEmployee() {
                       })
                     : '--'}
                 </td>
+                <td>{emp.status}</td>
               </tr>
             ))}
           </tbody>

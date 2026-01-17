@@ -24,10 +24,10 @@ public class AttendanceService {
     }
 
 
-    public void clockIn(Long employeeId) {
+    public void clockIn(String username) {
         LocalDate today = LocalDate.now();
 
-        Employee employee = employeeRepository.findById(employeeId)
+        Employee employee = employeeRepository.findByUserName(username)
                 .orElseThrow(() -> new RuntimeException("Employee Not Found"));
 
 
@@ -44,10 +44,10 @@ public class AttendanceService {
 
     }
 
-    public void clockOut(Long employeeId) {
+    public void clockOut(String username) {
         LocalDate today = LocalDate.now();
 
-        Employee employee = employeeRepository.findById(employeeId)
+        Employee employee = employeeRepository.findByUserName(username)
                 .orElseThrow(() -> new RuntimeException("Employee Not Found"));
         Attendance attendance = attendanceRepository.findByEmployeeAndDate(employee, today);
         if (attendance == null) {
@@ -61,8 +61,8 @@ public class AttendanceService {
 
     }
 
-    public List<Attendance> getEmployeeAttendanceHistory(Long employeeId) {
-        Employee employee = employeeRepository.findById(employeeId)
+    public List<Attendance> getEmployeeAttendanceHistory(String username) {
+        Employee employee = employeeRepository.findByUserName(username)
                 .orElseThrow(() -> new RuntimeException("Employee not found"));
         return attendanceRepository.findByEmployee(employee);
     }

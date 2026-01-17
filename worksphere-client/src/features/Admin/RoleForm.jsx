@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-function Role() {
+function JobPosition() {
   const [name, setName] = useState('');
   const saveRole = async (e) => {
     e.preventDefault();
@@ -110,4 +110,4 @@ function Role() {
   );
 }
 
-export default Role;
+export default JobPosition;

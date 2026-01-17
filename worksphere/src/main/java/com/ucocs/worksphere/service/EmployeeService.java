@@ -2,6 +2,7 @@ package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.dto.EmployeeSummary;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -15,6 +16,7 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import java.util.UUID;
 
 @Service
 public class EmployeeService {
@@ -34,17 +36,17 @@ public class EmployeeService {
         employeeRepository.save(employee);
     }
 
-    public void activateEmployee(Long id, String newPassword, String phoneNumber) {
-        Employee employee = employeeRepository.findById(id)
+    public void activateEmployee(String userName, String newPassword, String phoneNumber) {
+        Employee employee = employeeRepository.findByUserName(userName)
                 .orElseThrow(() -> new RuntimeException("No employee Found"));
         employee.setPassword(passwordEncoder.encode(newPassword));
         employee.setPhoneNumber(phoneNumber);
-        employee.setEnabled(true);
+        employee.setEmployeeStatus(EmployeeStatus.ACTIVE);
         employeeRepository.save(employee);
     }
 
-    public void uploadProfilePic(Long id, MultipartFile image) {
-        Employee employee = employeeRepository.findById(id)
+    public void uploadProfilePic(String userName, MultipartFile image) {
+        Employee employee = employeeRepository.findByUserName(userName)
                 .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
         if (image.isEmpty()) {
             throw new IllegalArgumentException("The file is empty");
@@ -84,3 +86,4 @@ public class EmployeeService {
         }
     }
 }
+

@@ -1,13 +1,16 @@
 package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.entity.Role;
+import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
+import jakarta.validation.constraints.NotNull;
+import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Optional;
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
@@ -18,13 +21,21 @@ public class CustomUserDetailsService implements UserDetailsService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        Employee employee = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new UsernameNotFoundException("No User found with username:" + username));
+    public @NonNull UserDetails loadUserByUsername(@NonNull String userName) throws UsernameNotFoundException {
+        Employee employee = employeeRepository.findByUserName(userName)
+                .orElseThrow(() -> new UsernameNotFoundException("No User found with username:" + userName));
+
+        String[] role = employee.getRoles().stream().map(Role::getRoleName).toArray(String[]::new);
+
+        boolean isAccountAllowed = employee.getEmployeeStatus() != EmployeeStatus.RESIGNED &&
+                employee.getEmployeeStatus() != EmployeeStatus.SUSPENDED &&
+                employee.getEmployeeStatus() != EmployeeStatus.TERMINATED;
+
         return org.springframework.security.core.userdetails.User
                 .withUsername(employee.getUserName())
                 .password(employee.getPassword())
-                .roles(employee.getRole().getRoleName())
+                .roles(role)
+                .disabled(!isAccountAllowed)
                 .build();
 
     }

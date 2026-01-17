@@ -1,62 +1,54 @@
 package com.ucocs.worksphere.entity;
 
+import com.ucocs.worksphere.enums.EmployeeStatus;
 import jakarta.persistence.*;
 
 import java.time.LocalDateTime;
+import java.util.Set;
 
 @Entity
 @Table(name = "employees")
-public class Employee {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
+public class Employee extends BaseEntity {
 
-    private Long employeeId;
     @Column(nullable = false)
     private String firstName;
+
     @Column(nullable = false)
     private String lastName;
+
     @Column(nullable = false, unique = true)
     private String userName;
+
     @Column(nullable = false, unique = true)
     private String email;
+
     @Column(unique = true)
     private String phoneNumber;
+
     @Column(nullable = false)
     private String password;
+
     @Column(nullable = false)
     private double salary;
-    //    @Column(unique = true)?
+
     private String profilePic;
-    @Column(nullable = false)
-    @org.hibernate.annotations.CreationTimestamp
-    private LocalDateTime joiningDate;
-    
-    private boolean isEnabled = false;
-    @ManyToOne
+
+
+    @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
 
-    @ManyToOne
-    @JoinColumn(name = "role_id")
-    private Role role;
+    @Enumerated(EnumType.STRING)
+    private EmployeeStatus employeeStatus = EmployeeStatus.PENDING;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    private JobPosition jobPosition;
 
-    public Long getEmployeeId() {
-        return employeeId;
-    }
+    @ManyToMany(fetch = FetchType.EAGER)
+    private Set<Role> roles;
 
-    public double getSalary() {
-        return salary;
-    }
-
-    public void setSalary(double salary) {
-        this.salary = salary;
-    }
-
-    public void setEmployeeId(Long employeeId) {
-        this.employeeId = employeeId;
-    }
+    @Column(nullable = true)
+    private LocalDateTime joiningDate;
 
     public String getFirstName() {
         return firstName;
@@ -74,52 +66,20 @@ public class Employee {
         this.lastName = lastName;
     }
 
-    public String getEmail() {
-        return email;
-    }
-
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public String getPassword() {
-        return password;
-    }
-
-    public void setPassword(String password) {
-        this.password = password;
-    }
-
-    public LocalDateTime getJoiningDate() {
-        return joiningDate;
-    }
-
-    public void setJoiningDate(LocalDateTime joiningDate) {
-        this.joiningDate = joiningDate;
-    }
-
-    public Department getDepartment() {
-        return department;
-    }
-
-    public void setDepartment(Department department) {
-        this.department = department;
-    }
-
-    public Role getRole() {
-        return role;
-    }
-
-    public void setRole(Role role) {
-        this.role = role;
-    }
-
     public String getUserName() {
         return userName;
     }
 
     public void setUserName(String userName) {
         this.userName = userName;
+    }
+
+    public String getEmail() {
+        return email;
+    }
+
+    public void setEmail(String email) {
+        this.email = email;
     }
 
     public String getPhoneNumber() {
@@ -130,6 +90,22 @@ public class Employee {
         this.phoneNumber = phoneNumber;
     }
 
+    public String getPassword() {
+        return password;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    public double getSalary() {
+        return salary;
+    }
+
+    public void setSalary(double salary) {
+        this.salary = salary;
+    }
+
     public String getProfilePic() {
         return profilePic;
     }
@@ -138,11 +114,43 @@ public class Employee {
         this.profilePic = profilePic;
     }
 
-    public boolean isEnabled() {
-        return isEnabled;
+    public Department getDepartment() {
+        return department;
     }
 
-    public void setEnabled(boolean enabled) {
-        isEnabled = enabled;
+    public void setDepartment(Department department) {
+        this.department = department;
+    }
+
+    public EmployeeStatus getEmployeeStatus() {
+        return employeeStatus;
+    }
+
+    public void setEmployeeStatus(EmployeeStatus employeeStatus) {
+        this.employeeStatus = employeeStatus;
+    }
+
+    public JobPosition getJobPosition() {
+        return jobPosition;
+    }
+
+    public void setJobPosition(JobPosition jobPosition) {
+        this.jobPosition = jobPosition;
+    }
+
+    public Set<Role> getRoles() {
+        return roles;
+    }
+
+    public void setRoles(Set<Role> roles) {
+        this.roles = roles;
+    }
+
+    public LocalDateTime getJoiningDate() {
+        return joiningDate;
+    }
+
+    public void setJoiningDate(LocalDateTime joiningDate) {
+        this.joiningDate = joiningDate;
     }
 }

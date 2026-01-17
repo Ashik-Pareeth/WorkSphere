@@ -21,7 +21,7 @@ function App() {
             element={isAuthenticated ? <Dashboard /> : <Navigate to={'/'} />}
           />
           <Route path="/departments" element={<DepartmentForm />} />
-          <Route path="/roles" element={<Role />} />
+          <Route path="/jobPosition" element={<Role />} />
           <Route path="/register" element={<AddEmployee />} />
           <Route path="/onBoarding" element={<Onboarding />} />
         </Routes>
