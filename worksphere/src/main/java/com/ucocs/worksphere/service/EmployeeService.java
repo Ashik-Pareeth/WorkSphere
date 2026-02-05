@@ -3,6 +3,7 @@ package com.ucocs.worksphere.service;
 import com.ucocs.worksphere.dto.EmployeeSummary;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.enums.EmployeeStatus;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -38,7 +39,7 @@ public class EmployeeService {
 
     public void activateEmployee(String userName, String newPassword, String phoneNumber) {
         Employee employee = employeeRepository.findByUserName(userName)
-                .orElseThrow(() -> new RuntimeException("No employee Found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with name " + userName));
         employee.setPassword(passwordEncoder.encode(newPassword));
         employee.setPhoneNumber(phoneNumber);
         employee.setEmployeeStatus(EmployeeStatus.ACTIVE);
@@ -47,7 +48,7 @@ public class EmployeeService {
 
     public void uploadProfilePic(String userName, MultipartFile image) {
         Employee employee = employeeRepository.findByUserName(userName)
-                .orElseThrow(() -> new UsernameNotFoundException("User Not Found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User Not Found with name " + userName));
         if (image.isEmpty()) {
             throw new IllegalArgumentException("The file is empty");
         }
