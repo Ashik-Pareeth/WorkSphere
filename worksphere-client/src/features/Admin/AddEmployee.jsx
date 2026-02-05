@@ -2,36 +2,44 @@ import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 
 function AddEmployee() {
-  const [userName, setUserName] = useState('');
+  const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [email, setEmail] = useState('');
-  const [salary, setSalary] = useState('');
+  const [salary, setSalary] = useState(0);
   const [password, setPassword] = useState('');
 
   const [roleId, setRoleId] = useState('');
-  const [departmentId, setDepertmentId] = useState('');
+  const [departmentId, setDepartmentId] = useState('');
   const [jobPositionId, setJobPositionId] = useState('');
 
-  const [employeeRows, setEmployeeRows] = useState([]);
-  const [roleRows, setRolesRows] = useState([]);
-  const [depRows, setDepRows] = useState([]);
-  const [positionRows, setPositionRows] = useState([]);
+  const [employees, setEmployees] = useState([]);
+  const [roles, setRoles] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
+
+  const [loading, setLoading] = useState(false);
 
   const fetchAllData = useCallback(async () => {
     try {
-      const [emps, roles, deps, positions] = await Promise.all([
+      setLoading(true);
+
+      const [empRes, roleRes, depRes, posRes] = await Promise.all([
         axiosInstance.get('/employees'),
         axiosInstance.get('/roles'),
         axiosInstance.get('/departments'),
-        axiosInstance.get('/job-positions'),
+        axiosInstance.get('/jobPositions'),
       ]);
-      setEmployeeRows(emps.data);
-      setRolesRows(roles.data);
-      setDepRows(deps.data);
-      setPositionRows(positions.data);
-    } catch (err) {
-      console.log(err);
+      console.log(empRes.data, roleRes.data, depRes.data, posRes.data);
+
+      setEmployees(empRes.data);
+      setRoles(roleRes.data);
+      setDepartments(depRes.data);
+      setPositions(posRes.data);
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setLoading(false);
     }
   }, []);
 
@@ -39,43 +47,53 @@ function AddEmployee() {
     fetchAllData();
   }, [fetchAllData]);
 
+  const resetForm = () => {
+    setUsername('');
+    setFirstName('');
+    setLastName('');
+    setEmail('');
+    setSalary(0);
+    setPassword('');
+
+    setRoleId('');
+    setDepartmentId('');
+    setJobPositionId('');
+  };
+
   const saveEmployee = async (e) => {
     e.preventDefault();
-    const employee = {
-      userName,
+
+    const payload = {
+      username,
       firstName,
       lastName,
       email,
-      salary,
       password,
-      roles: [{ roleId: roleId }],
-      department: { departmentId: departmentId },
-      jobPosition: { jobPositionId: jobPositionId },
+      salary,
+      roleId,
+      departmentId,
+      jobPositionId,
     };
 
     try {
-      await axiosInstance.post('/employees', employee);
-      // Reset Form
-      setFirstName('');
-      setLastName('');
-      setUserName('');
-      setEmail('');
-      setPassword('');
-      setSalary('');
-      setRoleId('');
-      setDepertmentId('');
-      setJobPositionId('');
+      console.log('Sending payload:', payload);
 
+      await axiosInstance.post('/employees', payload);
+
+      resetForm();
       fetchAllData();
-    } catch (err) {
-      console.log(err);
+
+      alert('Employee added successfully');
+    } catch (error) {
+      console.error(error);
+      alert('Failed to add employee');
     }
   };
 
   return (
     <div className="container">
       <div className="page-header">
-        <h2 className="page-header-main">Add Employee</h2>
+        <h2>Add Employee</h2>
       </div>
 
       <div className="card">
@@ -86,60 +104,75 @@ function AddEmployee() {
               <input
                 type="text"
                 value={firstName}
+                required
                 onChange={(e) => setFirstName(e.target.value)}
               />
             </div>
+
             <div className="form-group">
               <label>Last Name</label>
               <input
                 type="text"
                 value={lastName}
+                required
                 onChange={(e) => setLastName(e.target.value)}
               />
             </div>
+
             <div className="form-group">
-              <label>User Name</label>
+              <label>Username</label>
               <input
                 type="text"
-                value={userName}
-                onChange={(e) => setUserName(e.target.value)}
+                value={username}
+                required
+                onChange={(e) => setUsername(e.target.value)}
               />
             </div>
+
             <div className="form-group">
               <label>Email</label>
               <input
                 type="email"
                 value={email}
+                required
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+
             <div className="form-group">
               <label>Password</label>
               <input
                 type="password"
                 value={password}
+                required
                 onChange={(e) => setPassword(e.target.value)}
-              />
-            </div>
-            <div className="form-group">
-              <label>Salary</label>
-              <input
-                type="number"
-                value={salary}
-                onChange={(e) => setSalary(e.target.value)}
               />
             </div>
 
             <div className="form-group">
-              <label>System Role (Permission)</label>
+              <label>Salary</label>
+              <input
+                type="number"
+                min="0"
+                value={salary}
+                required
+                onChange={(e) => setSalary(Number(e.target.value))}
+              />
+            </div>
+
+            <div className="form-group">
+              <label>System Role</label>
+
               <select
                 value={roleId}
+                required
                 onChange={(e) => setRoleId(e.target.value)}
               >
                 <option value="">-- Select Role --</option>
-                {roleRows.map((row) => (
-                  <option key={row.roleId} value={row.roleId}>
-                    {row.roleName}
+
+                {roles.map((role) => (
+                  <option key={role.id} value={role.id}>
+                    {role.roleName}
                   </option>
                 ))}
               </select>
@@ -147,29 +180,35 @@ function AddEmployee() {
 
             <div className="form-group">
               <label>Department</label>
+
               <select
                 value={departmentId}
-                onChange={(e) => setDepertmentId(e.target.value)}
+                required
+                onChange={(e) => setDepartmentId(Number(e.target.value))}
               >
                 <option value="">-- Select Department --</option>
-                {depRows.map((row) => (
-                  <option key={row.departmentId} value={row.departmentId}>
-                    {row.departmentName}
+
+                {departments.map((dep) => (
+                  <option key={dep.departmentId} value={dep.departmentId}>
+                    {dep.departmentName}
                   </option>
                 ))}
               </select>
             </div>
 
             <div className="form-group">
-              <label>Job Position (Title)</label>
+              <label>Job Position</label>
+
               <select
                 value={jobPositionId}
+                required
                 onChange={(e) => setJobPositionId(e.target.value)}
               >
                 <option value="">-- Select Position --</option>
-                {positionRows.map((row) => (
-                  <option key={row.jobPositionId} value={row.jobPositionId}>
-                    {row.jobTitle}
+
+                {positions.map((pos) => (
+                  <option key={pos.id} value={pos.id}>
+                    {pos.positionName}
                   </option>
                 ))}
               </select>
@@ -177,8 +216,12 @@ function AddEmployee() {
           </div>
 
           <div style={{ marginTop: '1.5rem' }}>
-            <button className="btn btn-primary" type="submit">
-              Add Employee
+            <button
+              className="btn btn-primary"
+              type="submit"
+              disabled={loading}
+            >
+              {loading ? 'Saving...' : 'Add Employee'}
             </button>
           </div>
         </form>
@@ -186,26 +229,47 @@ function AddEmployee() {
 
       <div className="card">
         <h3 style={{ marginBottom: '1rem' }}>Employee List</h3>
+
         <table className="data-table">
           <thead>
             <tr>
               <th>Name</th>
-              <th>Role</th>
+              <th>Username</th>
               <th>Department</th>
               <th>Job Title</th>
+              <th>Status</th>
             </tr>
           </thead>
+
           <tbody>
-            {employeeRows.map((emp) => (
-              <tr key={emp.id}>
-                <td>
-                  {emp.firstName} {emp.lastName}
-                </td>
-                <td>{emp.roleName}</td>
-                <td>{emp.department}</td>
-                <td>{emp.jobPosition}</td>
+            {loading && (
+              <tr>
+                <td colSpan="5">Loading...</td>
               </tr>
-            ))}
+            )}
+
+            {!loading && employees.length === 0 && (
+              <tr>
+                <td colSpan="5">No Employees Found</td>
+              </tr>
+            )}
+
+            {!loading &&
+              employees.map((emp) => (
+                <tr key={emp.id}>
+                  <td>
+                    {emp.firstName} {emp.lastName}
+                  </td>
+
+                  <td>{emp.username}</td>
+
+                  <td>{emp.departmentName ?? 'Not Assigned'}</td>
+
+                  <td>{emp.jobTitle ?? 'Not Assigned'}</td>
+
+                  <td>{emp.employeeStatus}</td>
+                </tr>
+              ))}
           </tbody>
         </table>
       </div>

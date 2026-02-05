@@ -1,7 +1,7 @@
 package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.dto.ActivateAccountRequest;
-import com.ucocs.worksphere.dto.EmployeeSummary;
+import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
@@ -11,7 +11,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
-import java.util.UUID;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/employees")
@@ -52,7 +51,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    public List<EmployeeSummary> getAllEmployee() {
+    public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }
 

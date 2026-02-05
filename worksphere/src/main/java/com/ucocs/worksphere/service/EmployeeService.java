@@ -1,11 +1,10 @@
 package com.ucocs.worksphere.service;
 
-import com.ucocs.worksphere.dto.EmployeeSummary;
+import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
@@ -17,7 +16,6 @@ import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.UUID;
 
 @Service
 public class EmployeeService {
@@ -71,10 +69,10 @@ public class EmployeeService {
         employeeRepository.save(employee);
     }
 
-    public List<EmployeeSummary> getAllEmployees() {
+    public List<EmployeeResponseDTO> getAllEmployees() {
         return employeeRepository.findAll()
                 .stream()
-                .map(EmployeeSummary::getEmployeeSummary)
+                .map(EmployeeResponseDTO::fromEntity)
                 .toList();
     }
 

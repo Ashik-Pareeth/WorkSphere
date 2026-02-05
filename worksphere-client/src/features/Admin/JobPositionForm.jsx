@@ -7,7 +7,7 @@ function JobPositionForm() {
 
   const fetchPositions = async () => {
     try {
-      const response = await axiosInstance.get('/job-positions');
+      const response = await axiosInstance.get('/jobPositions');
       setRows(response.data);
     } catch (err) {
       console.log(err);
@@ -21,9 +21,9 @@ function JobPositionForm() {
   // Save new position
   const savePosition = async (e) => {
     e.preventDefault();
-    const position = { jobTitle: title }; // Assuming entity field is jobTitle
+    const position = { positionName: title };
     try {
-      await axiosInstance.post('/job-positions', position);
+      await axiosInstance.post('/jobPositions', position);
       setTitle('');
       fetchPositions();
     } catch (err) {
@@ -68,10 +68,10 @@ function JobPositionForm() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.jobPositionId}>
-                <td>{row.jobPositionId}</td>
-                <td>{row.jobTitle}</td>
+            {rows.map((row, index) => (
+              <tr key={row.id}>
+                <td>{index + 1}</td>
+                <td>{row.positionName}</td>
               </tr>
             ))}
           </tbody>

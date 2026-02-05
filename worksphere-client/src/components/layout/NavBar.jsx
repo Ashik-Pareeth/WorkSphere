@@ -6,6 +6,7 @@ export default function NavBar() {
     <nav className="navbar">
       <Link to={'/'}>Home</Link>
       <Link to={'/departments'}>Add Department</Link>
+      <Link to={'/roles'}>Add Roles</Link>
       <Link to={'/jobPosition'}>Add Job Position</Link>
       <Link to={'/register'}>Add new Employee</Link>
     </nav>

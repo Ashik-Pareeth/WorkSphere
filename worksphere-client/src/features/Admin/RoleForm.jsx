@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 
-// FIX: Renamed from 'JobPosition' to 'RoleForm' to match the filename and purpose
 function RoleForm() {
   const [name, setName] = useState('');
   const [rows, setRows] = useState([]);
@@ -21,6 +20,7 @@ function RoleForm() {
   const fetchRows = async () => {
     try {
       const response = await axiosInstance.get('/roles');
+      console.log(response.data);
       setRows(response.data);
     } catch (err) {
       console.log('failed to fetch roles:', err);
@@ -66,9 +66,9 @@ function RoleForm() {
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={row.roleId}>
-                <td>{row.roleId}</td>
+            {rows.map((row, index) => (
+              <tr key={row.id}>
+                <td>{index + 1}</td>
                 <td>{row.roleName}</td>
               </tr>
             ))}

@@ -6,6 +6,7 @@ import NavBar from './components/layout/NavBar';
 import RoleForm from './features/admin/RoleForm';
 import Login from './features/auth/login';
 import Dashboard from './pages/Dashboard';
+import JobPositionForm from './features/admin/JobPositionForm';
 import Onboarding from './features/auth/Onboarding';
 
 function App() {
@@ -15,13 +16,18 @@ function App() {
       <NavBar />
       <div className="container">
         <Routes>
-          <Route path="/" element={<Login />} />
+          <Route
+            path="/"
+            element={isAuthenticated ? <Navigate to="/dashboard" /> : <Login />}
+          />
+
           <Route
             path="/dashboard"
             element={isAuthenticated ? <Dashboard /> : <Navigate to={'/'} />}
           />
           <Route path="/departments" element={<DepartmentForm />} />
           <Route path="/register" element={<AddEmployee />} />
+          <Route path="/jobPosition" element={<JobPositionForm />} />
           <Route path="/roles" element={<RoleForm />} />
           <Route path="/onBoarding" element={<Onboarding />} />
         </Routes>
