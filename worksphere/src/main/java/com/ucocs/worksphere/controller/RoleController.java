@@ -2,27 +2,27 @@ package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.repository.RoleRepository;
+import com.ucocs.worksphere.service.RoleService;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/roles")
 @RestController
 public class RoleController {
-    private final RoleRepository roleRepository;
+    private final RoleService roleService;
 
-    public RoleController(RoleRepository roleRepository) {
-        this.roleRepository = roleRepository;
+    public RoleController(RoleService roleService) {
+        this.roleService = roleService;
     }
 
     @PostMapping
-    public void createRole(@RequestBody Role role) {
-        roleRepository.save(role);
+    public void saveRole(@RequestBody Role role) {
+        roleService.createRole(role);
     }
 
     @GetMapping
     public List<Role> getAllRoles() {
-        return roleRepository.findAll();
+        return roleService.findAll();
     }
 }

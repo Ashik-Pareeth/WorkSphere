@@ -44,7 +44,7 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/photo/{id}")
+    @PostMapping("/photo")
     public ResponseEntity<?> uploadProfilePic(
             Principal principal, @RequestParam("profilePic") MultipartFile multipartFile) {
         employeeService.uploadProfilePic(principal.getName(), multipartFile);
