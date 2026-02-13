@@ -29,3 +29,19 @@ export const updateTaskStatus = async (taskId, newStatus) => {
   );
   return response.data;
 };
+export const getTaskComments = async (taskId) => {
+  const response = await axiosInstance.get(`/tasks/${taskId}/comments`);
+  return response.data;
+};
+
+export const addTaskComment = async (taskId, content) => {
+  // We send the content as a plain string based on your Spring Boot controller
+  const response = await axiosInstance.post(
+    `/tasks/${taskId}/comments`,
+    content,
+    {
+      headers: { 'Content-Type': 'text/plain' },
+    }
+  );
+  return response.data;
+};

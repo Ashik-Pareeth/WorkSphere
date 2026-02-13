@@ -2,12 +2,14 @@ import { useState, useEffect } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { getMyTasks, updateTaskStatus } from '../../api/taskApi';
 import CreateTaskModal from './CreateTaskModal';
+import TaskDetailsModal from './TaskDetailsModal';
 import './TaskBoard.css';
 
 const TaskBoard = () => {
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   const [filterPriority, setFilterPriority] = useState('ALL');
 
@@ -137,6 +139,7 @@ const TaskBoard = () => {
                             {...provided.draggableProps}
                             {...provided.dragHandleProps}
                             className={`task-card priority-${task.priority}`}
+                            onClick={() => setSelectedTask(task)}
                             style={{
                               ...provided.draggableProps.style,
                               opacity: snapshot.isDragging ? 0.8 : 1,
@@ -216,6 +219,12 @@ const TaskBoard = () => {
         <CreateTaskModal
           onClose={() => setIsModalOpen(false)}
           onTaskCreated={loadTasks}
+        />
+      )}
+      {selectedTask && (
+        <TaskDetailsModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
         />
       )}
     </div>
