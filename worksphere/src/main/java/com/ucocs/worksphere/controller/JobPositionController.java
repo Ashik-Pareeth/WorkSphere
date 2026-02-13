@@ -3,6 +3,7 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.entity.JobPosition;
 import com.ucocs.worksphere.service.JobPositionService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,12 +18,14 @@ public class JobPositionController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<?> createJobPosition(@RequestBody JobPosition jobPosition) {
         jobPositionService.createJobPosition(jobPosition);
         return ResponseEntity.noContent().build();
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<JobPosition> getAllJobPositions() {
         return jobPositionService.findAllJobPosition();
     }

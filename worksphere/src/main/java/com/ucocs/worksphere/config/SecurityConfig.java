@@ -4,6 +4,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -13,6 +14,7 @@ import org.springframework.web.cors.CorsConfiguration;
 
 import java.util.List;
 
+@EnableMethodSecurity
 @Configuration
 public class SecurityConfig {
     @Bean
@@ -32,12 +34,9 @@ public class SecurityConfig {
                             return config;
                         })).csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(
-                        auth -> auth.requestMatchers(
-                                        "/login", "/auth/**", "/public/**")
-                                //login and auth open for everyone,the rest is locked
-                                .permitAll()
+                        auth -> auth.requestMatchers("/login", "/auth/**", "/public/**","/error").permitAll()
                                 .requestMatchers("/work-session/**").authenticated()
-                                .anyRequest().authenticated())
+                                .anyRequest().authenticated() )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
         return http.build();
 

@@ -1,13 +1,19 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.CreateEmployeeRequest; // Import your new DTO
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.enums.EmployeeStatus;
-import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import com.ucocs.worksphere.repository.DepartmentRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
+import com.ucocs.worksphere.repository.JobPositionRepository;
+import com.ucocs.worksphere.repository.RoleRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -15,63 +21,67 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.UUID;
 
 @Service
 public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
-    private final com.ucocs.worksphere.repository.DepartmentRepository departmentRepository;
-    private final com.ucocs.worksphere.repository.JobPositionRepository jobPositionRepository;
-    private final com.ucocs.worksphere.repository.RoleRepository roleRepository;
+    // Add these repositories:
+    private final DepartmentRepository departmentRepository;
+    private final JobPositionRepository jobPositionRepository;
+    private final RoleRepository roleRepository;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
             EmployeeRepository employeeRepository,
-            com.ucocs.worksphere.repository.DepartmentRepository departmentRepository,
-            com.ucocs.worksphere.repository.JobPositionRepository jobPositionRepository,
-            com.ucocs.worksphere.repository.RoleRepository roleRepository) {
-        this.employeeRepository = employeeRepository;
+            DepartmentRepository departmentRepository,
+            JobPositionRepository jobPositionRepository,
+            RoleRepository roleRepository) {
         this.passwordEncoder = passwordEncoder;
+        this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
         this.jobPositionRepository = jobPositionRepository;
         this.roleRepository = roleRepository;
     }
 
-    public void saveEmployee(com.ucocs.worksphere.dto.EmployeeRequestDTO request) {
+    // UPDATE THIS METHOD to take the DTO instead of the Entity
+    public void saveEmployee(CreateEmployeeRequest request) {
         Employee employee = new Employee();
+
+        // 1. Map simple fields
         employee.setFirstName(request.firstName());
         employee.setLastName(request.lastName());
-        employee.setUserName(request.username());
+        employee.setUserName(request.username()); // Maps 'username' to 'userName'
         employee.setEmail(request.email());
         employee.setSalary(request.salary());
-        employee.setJoiningDate(LocalDateTime.now());
 
-        String encoded = passwordEncoder.encode(request.password());
-        employee.setPassword(encoded);
+        // 2. Encode Password
+        employee.setPassword(passwordEncoder.encode(request.password()));
 
+        // 3. Fetch and Set Department
         if (request.departmentId() != null) {
-            com.ucocs.worksphere.entity.Department department = departmentRepository.findById(request.departmentId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
-            employee.setDepartment(department);
+            employee.setDepartment(departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
         }
 
+        // 4. Fetch and Set JobPosition
         if (request.jobPositionId() != null) {
-            com.ucocs.worksphere.entity.JobPosition jobPosition = jobPositionRepository
-                    .findById(request.jobPositionId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Job Position not found"));
-            employee.setJobPosition(jobPosition);
+            employee.setJobPosition(jobPositionRepository.findById(request.jobPositionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Job Position not found")));
         }
 
-        if (request.roleId() != null) {
-            com.ucocs.worksphere.entity.Role role = roleRepository.findById(request.roleId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
-            employee.setRoles(java.util.Set.of(role));
+        // 5. Fetch and Set Roles
+        if (request.roles() != null && !request.roles().isEmpty()) {
+            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(request.roles()));
+            employee.setRoles(roleEntities);
         }
 
         employeeRepository.save(employee);
     }
-
     public void activateEmployee(String userName, String newPassword, String phoneNumber) {
         Employee employee = employeeRepository.findByUserName(userName)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with name " + userName));
@@ -106,12 +116,14 @@ public class EmployeeService {
         employeeRepository.save(employee);
     }
 
+    @Transactional(readOnly = true)
     public List<EmployeeResponseDTO> getAllEmployees() {
         return employeeRepository.findAll()
                 .stream()
                 .map(EmployeeResponseDTO::fromEntity)
                 .toList();
     }
+
 
     public double calculateBonus(double salary) {
         if (salary > 50000) {
@@ -121,3 +133,4 @@ public class EmployeeService {
         }
     }
 }
+
