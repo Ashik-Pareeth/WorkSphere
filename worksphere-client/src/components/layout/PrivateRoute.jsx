@@ -1,11 +1,32 @@
-import { Navigate, Outlet } from 'react-router-dom';
+import { Navigate, Outlet, useLocation } from 'react-router-dom';
+
+const isTokenValid = () => {
+  const token = localStorage.getItem('token');
+  if (!token) return false;
+
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    const isExpired = payload.exp * 1000 < Date.now();
+
+    if (isExpired) {
+      localStorage.removeItem('token'); // optional cleanup
+      return false;
+    }
+
+    return true;
+  } catch {
+    return false;
+  }
+};
 
 const PrivateRoute = () => {
-  // This runs EVERY time you try to access a protected route
-  const isAuthenticated = !!localStorage.getItem('token');
+  const location = useLocation();
 
-  // If logged in, show the page (Outlet). If not, redirect to Login.
-  return isAuthenticated ? <Outlet /> : <Navigate to="/" />;
+  return isTokenValid() ? (
+    <Outlet />
+  ) : (
+    <Navigate to="/" replace state={{ from: location }} />
+  );
 };
 
 export default PrivateRoute;
