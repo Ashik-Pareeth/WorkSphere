@@ -9,6 +9,7 @@ export default function NavBar() {
       <Link to={'/roles'}>Add Roles</Link>
       <Link to={'/jobPosition'}>Add Job Position</Link>
       <Link to={'/register'}>Add new Employee</Link>
+      <Link to={'/tasks'}>Task Board</Link>
     </nav>
   );
 }

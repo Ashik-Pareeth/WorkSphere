@@ -21,17 +21,54 @@ import java.util.List;
 public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
     private final EmployeeRepository employeeRepository;
+    private final com.ucocs.worksphere.repository.DepartmentRepository departmentRepository;
+    private final com.ucocs.worksphere.repository.JobPositionRepository jobPositionRepository;
+    private final com.ucocs.worksphere.repository.RoleRepository roleRepository;
 
     public EmployeeService(
-            PasswordEncoder passwordEncoder, EmployeeRepository employeeRepository) {
+            PasswordEncoder passwordEncoder,
+            EmployeeRepository employeeRepository,
+            com.ucocs.worksphere.repository.DepartmentRepository departmentRepository,
+            com.ucocs.worksphere.repository.JobPositionRepository jobPositionRepository,
+            com.ucocs.worksphere.repository.RoleRepository roleRepository) {
         this.employeeRepository = employeeRepository;
         this.passwordEncoder = passwordEncoder;
+        this.departmentRepository = departmentRepository;
+        this.jobPositionRepository = jobPositionRepository;
+        this.roleRepository = roleRepository;
     }
 
-    public void saveEmployee(Employee employee) {
+    public void saveEmployee(com.ucocs.worksphere.dto.EmployeeRequestDTO request) {
+        Employee employee = new Employee();
+        employee.setFirstName(request.firstName());
+        employee.setLastName(request.lastName());
+        employee.setUserName(request.username());
+        employee.setEmail(request.email());
+        employee.setSalary(request.salary());
+        employee.setJoiningDate(LocalDateTime.now());
 
-        String encoded = passwordEncoder.encode(employee.getPassword());
+        String encoded = passwordEncoder.encode(request.password());
         employee.setPassword(encoded);
+
+        if (request.departmentId() != null) {
+            com.ucocs.worksphere.entity.Department department = departmentRepository.findById(request.departmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found"));
+            employee.setDepartment(department);
+        }
+
+        if (request.jobPositionId() != null) {
+            com.ucocs.worksphere.entity.JobPosition jobPosition = jobPositionRepository
+                    .findById(request.jobPositionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Job Position not found"));
+            employee.setJobPosition(jobPosition);
+        }
+
+        if (request.roleId() != null) {
+            com.ucocs.worksphere.entity.Role role = roleRepository.findById(request.roleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
+            employee.setRoles(java.util.Set.of(role));
+        }
+
         employeeRepository.save(employee);
     }
 
@@ -76,7 +113,6 @@ public class EmployeeService {
                 .toList();
     }
 
-
     public double calculateBonus(double salary) {
         if (salary > 50000) {
             return salary * .10;
@@ -85,4 +121,3 @@ public class EmployeeService {
         }
     }
 }
-

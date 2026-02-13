@@ -1,0 +1,201 @@
+/* Container for the whole page */
+.task-board-container {
+  padding: 2rem;
+  height: calc(100vh - 64px); /* Full height minus navbar */
+  background-color: #f9fafb;
+}
+
+/* Header */
+.header-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+/* Kanban Board Layout */
+.task-board {
+  display: flex;
+  gap: 1.5rem;
+  overflow-x: auto;
+  padding-bottom: 1rem;
+  height: calc(100% - 80px); /* Remaining height */
+}
+
+/* Columns */
+.task-column {
+  min-width: 300px;
+  background-color: #f3f4f6;
+  border-radius: 0.75rem;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.column-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.column-title {
+  font-weight: 600;
+  color: #374151;
+  text-transform: uppercase;
+  font-size: 0.875rem;
+  letter-spacing: 0.05em;
+}
+
+.task-count {
+  background-color: #e5e7eb;
+  padding: 0.25rem 0.75rem;
+  border-radius: 9999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #4b5563;
+}
+
+/* Task Cards */
+.task-card {
+  background: white;
+  padding: 1rem;
+  border-radius: 0.5rem;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+  cursor: pointer;
+  transition:
+    transform 0.2s,
+    box-shadow 0.2s;
+  border-left: 4px solid transparent;
+}
+
+.task-card:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.task-card.priority-HIGH,
+.task-card.priority-URGENT {
+  border-left-color: #ef4444;
+}
+.task-card.priority-MEDIUM {
+  border-left-color: #f59e0b;
+}
+.task-card.priority-LOW {
+  border-left-color: #10b981;
+}
+
+.task-code {
+  font-size: 0.75rem;
+  color: #9ca3af;
+  margin-bottom: 0.25rem;
+}
+.task-title {
+  font-weight: 500;
+  color: #1f2937;
+  margin-bottom: 0.5rem;
+  font-size: 0.95rem;
+}
+.task-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.75rem;
+  color: #6b7280;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #f3f4f6;
+}
+
+/* Subtle Status Dropdown */
+.task-status-select {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 1rem;
+  cursor: pointer;
+  padding: 0.25rem 0.5rem;
+  opacity: 0.4;
+  transition: opacity 0.2s ease;
+  font-weight: bold;
+}
+
+.task-card:hover .task-status-select {
+  opacity: 0.7;
+}
+
+.task-status-select:hover,
+.task-status-select:focus {
+  opacity: 1;
+  outline: none;
+  color: #6b7280;
+}
+
+.task-status-select option {
+  background: white;
+  color: #1f2937;
+  padding: 0.5rem;
+}
+
+/* --- MODAL STYLES (CRITICAL FOR VISIBILITY) --- */
+.modal-overlay {
+  position: fixed; /* Stay in place */
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black dimming */
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999; /* Sit on top of everything */
+}
+
+.modal-content {
+  background: white;
+  padding: 2rem;
+  border-radius: 8px;
+  width: 500px;
+  max-width: 90%;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+  position: relative; /* Ensure it respects z-index context */
+}
+
+.form-group {
+  margin-bottom: 1rem;
+}
+.form-group label {
+  display: block;
+  margin-bottom: 0.5rem;
+  font-weight: 500;
+}
+.form-group input,
+.form-group select,
+.form-group textarea {
+  width: 100%;
+  padding: 0.5rem;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+}
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 1rem;
+  margin-top: 1.5rem;
+}
+.btn-cancel,
+.btn-submit {
+  padding: 0.5rem 1rem;
+  border-radius: 4px;
+  cursor: pointer;
+  border: none;
+}
+.btn-cancel {
+  background: #e5e7eb;
+  color: #374151;
+}
+.btn-submit {
+  background: #2563eb;
+  color: white;
+}

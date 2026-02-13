@@ -29,14 +29,14 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public void createEmployee(@RequestBody Employee employee) {
+    public void createEmployee(@RequestBody com.ucocs.worksphere.dto.EmployeeRequestDTO employeeRequest) {
 
-        employeeService.saveEmployee(employee);
+        employeeService.saveEmployee(employeeRequest);
     }
 
     @PostMapping("/activate")
     public ResponseEntity<?> activateAccount(Principal principal,
-                                             @Valid @RequestBody ActivateAccountRequest accountRequest) {
+            @Valid @RequestBody ActivateAccountRequest accountRequest) {
         String password = accountRequest.password();
         String phoneNumber = accountRequest.phoneNumber();
         employeeService.activateEmployee(principal.getName(), password, phoneNumber);
@@ -54,6 +54,5 @@ public class EmployeeController {
     public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }
-
 
 }
