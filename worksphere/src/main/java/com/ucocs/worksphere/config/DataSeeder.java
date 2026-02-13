@@ -5,7 +5,6 @@ import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.RoleRepository;
-import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -26,7 +25,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    public void run(String @NonNull ... args) throws Exception {
+    public void run(String... args) throws Exception {
         // Check if the table is empty
         if (employeeRepository.count() == 0) {
 

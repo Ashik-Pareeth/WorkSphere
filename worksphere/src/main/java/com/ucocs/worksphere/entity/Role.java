@@ -11,7 +11,11 @@ public class Role extends BaseEntity {
 
 
     public void setRoleName(String roleName) {
-        this.roleName = roleName;
+        if(roleName != null) {
+            this.roleName = roleName.trim().toUpperCase();
+        }else {
+            this.roleName = null;
+        }
     }
 
 

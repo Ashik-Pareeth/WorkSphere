@@ -5,6 +5,7 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.repository.AttendanceRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.AttendanceService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
@@ -22,18 +23,21 @@ public class AttendanceController {
     }
 
     @PostMapping("/clock-in")
+    @PreAuthorize("isAuthenticated()")
     public void clockInController(Principal principal) {
 
         attendanceService.clockIn(principal.getName());
     }
 
     @PostMapping("/clock-out")
+    @PreAuthorize("isAuthenticated()")
     public void clockOutController(Principal principal) {
 
         attendanceService.clockOut(principal.getName());
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Attendance> viewAttendanceLogOfEmployee(Principal principal) {
         return attendanceService.getEmployeeAttendanceHistory(principal.getName());
     }

@@ -1,11 +1,13 @@
 package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.dto.ActivateAccountRequest;
+import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -29,14 +31,16 @@ public class EmployeeController {
     }
 
     @PostMapping
-    public void createEmployee(@RequestBody com.ucocs.worksphere.dto.EmployeeRequestDTO employeeRequest) {
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    public void createEmployee(@RequestBody CreateEmployeeRequest request) {
 
-        employeeService.saveEmployee(employeeRequest);
+        employeeService.saveEmployee(request);
     }
 
     @PostMapping("/activate")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> activateAccount(Principal principal,
-            @Valid @RequestBody ActivateAccountRequest accountRequest) {
+                                             @Valid @RequestBody ActivateAccountRequest accountRequest) {
         String password = accountRequest.password();
         String phoneNumber = accountRequest.phoneNumber();
         employeeService.activateEmployee(principal.getName(), password, phoneNumber);
@@ -44,6 +48,7 @@ public class EmployeeController {
     }
 
     @PostMapping("/photo")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> uploadProfilePic(
             Principal principal, @RequestParam("profilePic") MultipartFile multipartFile) {
         employeeService.uploadProfilePic(principal.getName(), multipartFile);
@@ -51,8 +56,10 @@ public class EmployeeController {
     }
 
     @GetMapping
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')")
     public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }
+
 
 }

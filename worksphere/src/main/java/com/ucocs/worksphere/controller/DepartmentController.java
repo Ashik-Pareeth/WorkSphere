@@ -2,6 +2,7 @@ package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.entity.Department;
 import com.ucocs.worksphere.repository.DepartmentRepository;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -17,11 +18,13 @@ public class DepartmentController {
     }
 
     @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
     public void createDepartment(@RequestBody Department department) {
         departmentRepository.save(department);
     }
 
     @GetMapping
+    @PreAuthorize("isAuthenticated()")
     public List<Department> getAllDepartment() {
         return departmentRepository.findAll();
     }
