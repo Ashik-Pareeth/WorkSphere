@@ -5,6 +5,7 @@ import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.RoleRepository;
+import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
@@ -18,14 +19,15 @@ public class DataSeeder implements CommandLineRunner {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataSeeder(EmployeeRepository employeeRepository, RoleRepository roleRepository, PasswordEncoder passwordEncoder) {
+    public DataSeeder(EmployeeRepository employeeRepository, RoleRepository roleRepository,
+                      PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String @NonNull ... args) throws Exception {
         // Check if the table is empty
         if (employeeRepository.count() == 0) {
 
@@ -34,7 +36,6 @@ public class DataSeeder implements CommandLineRunner {
                     .orElseGet(() -> {
                         Role newRole = new Role();
                         newRole.setRoleName("ADMIN");
-                        // FIX: Manually set createdBy to satisfy the DB constraint
                         newRole.setCreatedBy("SYSTEM");
                         return roleRepository.save(newRole);
                     });
@@ -46,7 +47,7 @@ public class DataSeeder implements CommandLineRunner {
             admin.setEmail("admin@worksphere.com");
             admin.setPhoneNumber("0000000000");
             admin.setSalary(0.0);
-            admin.setCreatedBy("SYSTEM"); // You were already doing it here
+            admin.setCreatedBy("SYSTEM");
             admin.setEmployeeStatus(EmployeeStatus.ACTIVE);
             admin.setPassword(passwordEncoder.encode("admin123"));
 

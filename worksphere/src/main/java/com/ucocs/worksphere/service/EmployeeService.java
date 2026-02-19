@@ -63,8 +63,8 @@ public class EmployeeService {
         employee.setPassword(passwordEncoder.encode(request.password()));
 
         // 3. Fetch and Set Department
-        if (request.departmentId() != null) {
-            employee.setDepartment(departmentRepository.findById(request.departmentId())
+        if (request.Id() != null) {
+            employee.setDepartment(departmentRepository.findById(request.Id())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
         }
 
@@ -132,5 +132,60 @@ public class EmployeeService {
             return salary * .05;
         }
     }
+
+    public void updateEmployee(UUID id, CreateEmployeeRequest request) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        // 1. Update Basic Fields
+        employee.setFirstName(request.firstName());
+        employee.setLastName(request.lastName());
+        employee.setUserName(request.username());
+        employee.setEmail(request.email());
+        employee.setSalary(request.salary());
+
+        // 2. Update Password only if provided (not empty)
+        if (request.password() != null && !request.password().isEmpty()) {
+            employee.setPassword(passwordEncoder.encode(request.password()));
+        }
+
+        // 3. Update Department (Note: DTO field 'Id' maps to Department per your save logic)
+        if (request.Id() != null) {
+            employee.setDepartment(departmentRepository.findById(request.Id())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
+        }
+
+        // 4. Update Job Position
+        if (request.jobPositionId() != null) {
+            employee.setJobPosition(jobPositionRepository.findById(request.jobPositionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Job Position not found")));
+        }
+
+        // 5. Update Roles
+        if (request.roles() != null && !request.roles().isEmpty()) {
+            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(request.roles()));
+            employee.setRoles(roleEntities);
+        }
+
+        employeeRepository.save(employee);
+    }
+
+    // ✅ ADD THIS: Delete Logic
+    public void deleteEmployee(UUID id) {
+        if (!employeeRepository.existsById(id)) {
+            throw new ResourceNotFoundException("Employee not found with id: " + id);
+        }
+        employeeRepository.deleteById(id);
+    }
+
+    // In worksphere/service/EmployeeService.java
+
+    public EmployeeResponseDTO getEmployeeById(UUID id) {
+        Employee employee = employeeRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+        return EmployeeResponseDTO.fromEntity(employee);
+    }
 }
+
+
 

@@ -1,90 +1,102 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import './Auth.css';
 import axiosInstance from '../../api/axiosInstance';
+import AlertMessage from '../../components/common/AlertMessage';
+import { jwtDecode } from 'jwt-decode';
 
 export default function Login() {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
+  const [error, setError] = useState(null);
+
   const navigate = useNavigate();
 
   async function LoginValidation(e) {
     e.preventDefault();
-    localStorage.removeItem('token');
-    localStorage.removeItem('employeeId');
-    const loginForm = {
-      userName: userName,
-      password: password,
-    };
+    setError(null);
+
+    localStorage.clear(); // cleaner
 
     try {
-      const response = await axiosInstance.post('/login', loginForm);
-      console.log('login successful');
-      console.log('SERVER RESPONSE:', response.data); // <--- Add this!
-      localStorage.setItem('token', response.data.token);
-      localStorage.setItem('employeeId', response.data.employeeId);
-      //should i use .data here?
-      if (response.data.employeeStatus === 'ACTIVE') {
-        navigate('/dashboard');
-      } else if (response.data.employeeStatus === 'PENDING') {
-        navigate('/onboarding');
-      } else {
-        console.log(
-          'your account is ' + response.data.employeeStatus.toLowerCase()
-        );
+      const response = await axiosInstance.post('/login', {
+        userName,
+        password,
+      });
+
+      const token = response.data.token;
+
+      // ✅ Decode token
+      const decoded = jwtDecode(token);
+      console.log('Decoded Token:', decoded);
+
+      // ✅ Extract roles (supports all common formats)
+      let roles = [];
+
+      if (decoded.roles) {
+        roles = decoded.roles;
+      } else if (decoded.authorities) {
+        roles = decoded.authorities;
+      } else if (decoded.role) {
+        roles = [decoded.role];
       }
+
+      // ✅ Save to localStorage
+      localStorage.setItem('token', token);
+      localStorage.setItem('employeeId', response.data.employeeId);
+      localStorage.setItem('roles', JSON.stringify(roles));
+
+      // Optional → primary role shortcut
+      localStorage.setItem('role', roles[0]);
+
+      navigate('/');
     } catch (err) {
-      console.log(err);
+      console.error('Login failed', err);
+      setError(err);
+      setPassword('');
     }
-    // fetch('http://localhost:8080/login', {
-    //   method: 'POST',
-    //   headers: {
-    //     'Content-Type': 'application/json',
-    //   },
-    //   body: JSON.stringify(loginForm),
-    // })
-    //   .then((response) => {
-    //     if (!response.ok) {
-    //       throw new Error('Login unsuccessfull');
-    //     }
-    //     return response.json();
-    //   })
-    //   .then((data) => {
-    //     localStorage.setItem('token', data.token);
-    //     localStorage.setItem('employeeId', data.employeeId);
-    //     navigate('/dashboard');
-    //   });
-
-    setPassword('');
   }
-  return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2 className="auth-card-title">Welcome back</h2>
-        <p>Please sign in to continue</p>
 
-        <form onSubmit={LoginValidation}>
-          <div className="form-group">
-            <label>User Name</label>
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-slate-100 px-4">
+      <div className="w-full max-w-md bg-white shadow-lg rounded-2xl p-8 space-y-6">
+        <div className="text-center">
+          <h2 className="text-2xl font-bold text-slate-800">Welcome back</h2>
+          <p className="text-sm text-slate-500">Please sign in to continue</p>
+        </div>
+
+        <AlertMessage error={error} onClose={() => setError(null)} />
+
+        <form onSubmit={LoginValidation} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">
+              User Name
+            </label>
             <input
               type="text"
-              name="userName"
               value={userName}
               onChange={(e) => setUserName(e.target.value)}
+              required
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <div className="form-group">
-            <label>Password</label>
+          <div>
+            <label className="block text-sm font-medium text-slate-600 mb-1">
+              Password
+            </label>
             <input
               type="password"
-              name="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
+              required
+              className="w-full border border-slate-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
             />
           </div>
 
-          <button className="btn  btn-primary" type="submit">
+          <button
+            type="submit"
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 rounded-lg transition duration-200"
+          >
             Login
           </button>
         </form>

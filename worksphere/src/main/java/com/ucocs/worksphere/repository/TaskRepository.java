@@ -11,25 +11,37 @@ import java.util.UUID;
 
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
+    // 1. Search by Code (e.g., "TSK-102")
     Optional<Task> findByTaskCode(String taskCode);
 
-    // 1. YOUR FIX (For "My Tasks")
-    // Fetches the Task + The Person doing it + The Manager who assigned it
+    // 2. Fetch My Tasks (Optimized with JOIN FETCH)
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.assignedTo.id = :employeeId")
     List<Task> findByAssignedTo_Id(@Param("employeeId") UUID employeeId);
 
-    // 2. SAME FIX (For "Tasks I Assigned")
+    // 3. Fetch Tasks I Assigned (Optimized with JOIN FETCH)
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.assigner.id = :managerId")
     List<Task> findByAssigner_Id(@Param("managerId") UUID managerId);
 
-    // ... keep the rest of your file (findByProject, findOverdueTasks, etc.) ...
+    // 4. Fetch Tasks by Project
     List<Task> findByProject_Id(UUID projectId);
 
+    // 5. Fetch Overdue Tasks (For Scheduler)
     @Query("SELECT t FROM Task t WHERE t.dueDate < CURRENT_TIMESTAMP AND t.status != 'COMPLETED' AND t.status != 'CANCELLED'")
     List<Task> findOverdueTasks();
 
+    // 6. Generate Next Task Code
     Optional<Task> findTopByOrderByCreatedAtDesc();
 
+    // 7. Get Single Task with Details
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.id = :taskId")
     Optional<Task> findByIdWithRelations(@Param("taskId") UUID taskId);
+
+    // --- ARCHITECTURE ADDITION ---
+    // 8. Department View (For Manager Dashboard)
+    // We apply your same optimization here so the Manager dashboard is fast.
+    @Query("SELECT t FROM Task t " +
+            "LEFT JOIN FETCH t.assignedTo " +
+            "LEFT JOIN FETCH t.assigner " +
+            "WHERE t.assignedTo.department.id = :deptId")
+    List<Task> findAllByDepartmentId(@Param("deptId") UUID deptId);
 }

@@ -10,7 +10,7 @@ public record CreateEmployeeRequest(
         String email,
         String password,
         double salary,
-        Long departmentId,       // Catches the ID
+        UUID Id,       // Catches the ID
         UUID jobPositionId,      // Catches the UUID
         Set<UUID> roles          // Catches the list of role UUIDs
 ) {}

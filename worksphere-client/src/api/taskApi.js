@@ -1,17 +1,21 @@
 import axiosInstance from './axiosInstance';
-const API_URL = 'http://localhost:8080/tasks';
 
-// Get tasks assigned to the logged-in user
+// --- READ OPERATIONS ---
+
+// Get tasks assigned TO the logged-in user
 export const getMyTasks = async () => {
   const response = await axiosInstance.get('/tasks/my-tasks');
   return response.data;
 };
 
-// Get tasks created by the logged-in manager
-export const getAssignedByMe = async () => {
-  const response = await axiosInstance.get('/tasks/assigned-by-me');
+// Manager: Get tasks for the whole department
+export const getTeamTasks = async () => {
+  // FIX: Updated endpoint to match TaskController
+  const response = await axiosInstance.get('/tasks/team-tasks');
   return response.data;
 };
+
+// --- WRITE OPERATIONS ---
 
 // Create a new task
 export const createTask = async (taskData) => {
@@ -19,29 +23,76 @@ export const createTask = async (taskData) => {
   return response.data;
 };
 
-export const updateTaskStatus = async (taskId, newStatus) => {
-  const token = localStorage.getItem('token');
-  // Note: We use PATCH for partial updates
+// Update status (Start, Submit, Approve, Reject)
+export const updateTaskStatus = async (
+  taskId,
+  status,
+  comment = '',
+  actualHours = null
+) => {
+  const payload = {
+    status: status,
+    comment: comment,
+    actualHours: actualHours,
+  };
+
   const response = await axiosInstance.patch(
-    `${API_URL}/${taskId}/status?status=${newStatus}`,
-    {},
-    { headers: { Authorization: `Bearer ${token}` } }
+    `/tasks/${taskId}/status`,
+    payload
   );
   return response.data;
 };
+
+// --- COMMENTS ---
+
 export const getTaskComments = async (taskId) => {
   const response = await axiosInstance.get(`/tasks/${taskId}/comments`);
   return response.data;
 };
 
 export const addTaskComment = async (taskId, content) => {
-  // We send the content as a plain string based on your Spring Boot controller
-  const response = await axiosInstance.post(
-    `/tasks/${taskId}/comments`,
+  // FIX: Backend expects JSON { "content": "..." }, not plain text
+  const response = await axiosInstance.post(`/tasks/${taskId}/comments`, {
     content,
+  });
+  return response.data;
+};
+
+// --- EVIDENCE (FILES) ---
+
+export const uploadTaskEvidence = async (taskId, file) => {
+  const formData = new FormData();
+  formData.append('file', file);
+
+  const response = await axiosInstance.post(
+    `/tasks/${taskId}/evidence`,
+    formData,
     {
-      headers: { 'Content-Type': 'text/plain' },
+      headers: { 'Content-Type': 'multipart/form-data' },
     }
   );
+  return response.data;
+};
+
+// FIX: Added missing function called by TaskDetailsModal
+export const getTaskEvidence = async (taskId) => {
+  const response = await axiosInstance.get(`/tasks/${taskId}/evidence`);
+  return response.data;
+};
+
+// --- MANAGER ACTIONS ---
+
+export const rateTask = async (taskId, rating) => {
+  const response = await axiosInstance.post(`/tasks/${taskId}/rate`, {
+    rating,
+  });
+  return response.data;
+};
+
+export const flagTask = async (taskId, reason) => {
+  // Auditor flag is simple text or JSON depending on impl, sticking to simple body
+  const response = await axiosInstance.post(`/tasks/${taskId}/flag`, reason, {
+    headers: { 'Content-Type': 'text/plain' },
+  });
   return response.data;
 };

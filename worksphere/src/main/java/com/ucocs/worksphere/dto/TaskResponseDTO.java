@@ -14,22 +14,20 @@ public record TaskResponseDTO(
         TaskPriority priority,
         LocalDateTime dueDate,
         String taskCode,
-        String assignerName, // Just the name, not the whole object
-        String assignedToName
+        String assignerName,
+        String assignedToName,
+
+        // --- NEW FIELDS ---
+        boolean requiresEvidence,
+        Double completionScore,
+        Integer managerRating,
+        boolean isOverdue,
+        boolean isFlagged,      // For Auditor
+        String flagReason       // Reason for flagging
 ) {
     public static TaskResponseDTO fromEntity(Task task) {
-        // Safe check for Assigner
-        String assignerName = "Unknown";
-        if (task.getAssigner() != null) {
-            assignerName = task.getAssigner().getUserName();
-            // If you used 'firstName', change 'getUserName()' to 'getFirstName()'
-        }
-
-        // Safe check for AssignedTo
-        String assignedToName = "Unassigned";
-        if (task.getAssignedTo() != null) {
-            assignedToName = task.getAssignedTo().getUserName();
-        }
+        String assignerName = (task.getAssigner() != null) ? task.getAssigner().getUserName() : "Unknown";
+        String assignedToName = (task.getAssignedTo() != null) ? task.getAssignedTo().getUserName() : "Unassigned";
 
         return new TaskResponseDTO(
                 task.getId(),
@@ -40,7 +38,14 @@ public record TaskResponseDTO(
                 task.getDueDate(),
                 task.getTaskCode(),
                 assignerName,
-                assignedToName
+                assignedToName,
+                // Map new fields
+                task.isRequiresEvidence(),
+                task.getCompletionScore(),
+                task.getManagerRating(),
+                task.isOverdue(),
+                task.isFlagged(),
+                task.getFlagReason()
         );
     }
 }

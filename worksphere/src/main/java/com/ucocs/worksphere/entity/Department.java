@@ -1,39 +1,59 @@
 package com.ucocs.worksphere.entity;
 
-import jakarta.persistence.*;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.Table;
+import java.util.ArrayList;
+import java.util.List;
 
 @Entity
 @Table(name = "departments")
-public class Department {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(nullable = false)
-    private Long departmentId;
-    @Column(unique = true)
-    private String departmentName;
-    private String departmentDescription;
+public class Department extends BaseEntity {
 
-    public void setDepartmentId(Long departmentId) {
-        this.departmentId = departmentId;
+    @Column(nullable = false, unique = true)
+    private String name;
+
+    @Column(columnDefinition = "TEXT")
+    private String description;
+
+    @OneToMany(mappedBy = "department")
+    @JsonIgnore
+    private List<Employee> employees = new ArrayList<>();
+
+    // --- Constructors ---
+    public Department() {}
+
+    public Department(String name, String description) {
+        this.name = name;
+        this.description = description;
     }
 
-    public void setDepartmentName(String departmentName) {
-        this.departmentName = departmentName;
+    // --- Getters and Setters ---
+    // Note: ID, CreatedAt, UpdatedAt are handled by BaseEntity
+
+    public String getName() {
+        return name;
     }
 
-    public void setDepartmentDescription(String departmentDescription) {
-        this.departmentDescription = departmentDescription;
+    public void setName(String name) {
+        this.name = name;
     }
 
-    public Long getDepartmentId() {
-        return departmentId;
+    public String getDescription() {
+        return description;
     }
 
-    public String getDepartmentName() {
-        return departmentName;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getDepartmentDescription() {
-        return departmentDescription;
+    public List<Employee> getEmployees() {
+        return employees;
+    }
+
+    public void setEmployees(List<Employee> employees) {
+        this.employees = employees;
     }
 }

@@ -4,7 +4,7 @@ import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import NavBar from './components/layout/NavBar';
 import PrivateRoute from './components/layout/PrivateRoute';
 
-import Login from './features/auth/login';
+import Login from './features/auth/Login';
 import Onboarding from './features/auth/Onboarding';
 import Dashboard from './pages/Dashboard';
 import TaskBoard from './features/tasks/TaskBoard';
@@ -35,7 +35,7 @@ function App() {
     <BrowserRouter>
       <NavBar />
 
-      <div className="container">
+      <div className="app">
         <Routes>
           {/* PUBLIC ROUTES */}
           <Route

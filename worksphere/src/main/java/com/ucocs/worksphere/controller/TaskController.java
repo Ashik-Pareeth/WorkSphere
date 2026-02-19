@@ -1,19 +1,18 @@
 package com.ucocs.worksphere.controller;
 
-import com.ucocs.worksphere.dto.TaskCommentResponseDTO;
-import com.ucocs.worksphere.dto.TaskCreateRequest;
-import com.ucocs.worksphere.dto.TaskResponseDTO;
-import com.ucocs.worksphere.entity.Task;
+import com.ucocs.worksphere.dto.*;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TaskComment;
+import com.ucocs.worksphere.entity.TaskEvidence;
 import com.ucocs.worksphere.enums.TaskPriority;
-import com.ucocs.worksphere.enums.TaskStatus;
-import com.ucocs.worksphere.repository.EmployeeRepository; // Needed to resolve Manager
+import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +20,7 @@ import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/tasks")
-@CrossOrigin(origins = "http://localhost:5173") // or "*"
+@CrossOrigin(origins = "http://localhost:5173")
 public class TaskController {
 
     private final TaskService taskService;
@@ -32,12 +31,11 @@ public class TaskController {
         this.employeeRepository = employeeRepository;
     }
 
+    // --- 1. CREATE TASK ---
     @PostMapping
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
-    public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskCreateRequest request) { // Change return type
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Employee manager = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+    public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskCreateRequest request) {
+        Employee manager = getAuthenticatedEmployee();
 
         Task task = new Task();
         task.setTitle(request.title());
@@ -57,44 +55,40 @@ public class TaskController {
                 request.assignedToId()
         );
 
-        // CONVERT TO DTO BEFORE RETURNING
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(createdTask));
     }
 
+    // --- 2. UPDATE STATUS ---
+    @PatchMapping("/{taskId}/status")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TaskResponseDTO> updateTaskStatus(
+            @PathVariable UUID taskId,
+            @RequestBody TaskStatusUpdate updateDTO) {
+
+        Task updatedTask = taskService.updateTaskStatus(taskId, updateDTO);
+        return ResponseEntity.ok(TaskResponseDTO.fromEntity(updatedTask));
+    }
+
+    // --- 3. READ OPERATIONS ---
     @GetMapping("/my-tasks")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskResponseDTO>> getMyTasks() {
-
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Employee employee = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
+        Employee employee = getAuthenticatedEmployee();
         List<Task> tasks = taskService.getMyTasks(employee.getId());
-
-        // 3. CONVERT the list before returning
-        List<TaskResponseDTO> response = tasks.stream()
-                .map(TaskResponseDTO::fromEntity) // <--- usage of the helper method
-                .collect(Collectors.toList());
-
-        return ResponseEntity.ok(response);
+        return ResponseEntity.ok(convertToDTOs(tasks));
     }
-    @PatchMapping("/{taskId}/status")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'EMPLOYEE')") // Employees need to mark tasks as "In Progress"
-    public ResponseEntity<TaskResponseDTO> updateTaskStatus(
-            @PathVariable UUID taskId,
-            @RequestParam TaskStatus status) {
 
-        Task updatedTask = taskService.updateTaskStatus(taskId, status);
-        return ResponseEntity.ok(TaskResponseDTO.fromEntity(updatedTask));
+    // FIX: Renamed to match Frontend and Architecture (Department View)
+    @GetMapping("/team-tasks")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')")
+    public ResponseEntity<List<TaskResponseDTO>> getTeamTasks() {
+        Employee manager = getAuthenticatedEmployee();
+        // Assuming you updated TaskService to include getTeamTasks()
+        List<Task> tasks = taskService.getTeamTasks(manager.getId());
+        return ResponseEntity.ok(convertToDTOs(tasks));
     }
-    @GetMapping("/assigned-by-me")
-    public ResponseEntity<List<Task>> getTasksAssignedByMe() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Employee manager = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
 
-        return ResponseEntity.ok(taskService.getTasksByManager(manager.getId()));
-    }
+    // --- 4. COMMENTS ---
     @GetMapping("/{taskId}/comments")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskCommentResponseDTO>> getTaskComments(@PathVariable UUID taskId) {
@@ -109,14 +103,65 @@ public class TaskController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TaskCommentResponseDTO> addComment(
             @PathVariable UUID taskId,
-            @RequestBody String content) {
+            @RequestBody TaskCommentRequest request) { // FIX: Use DTO, not String
 
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
-        Employee employee = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-
-        TaskComment savedComment = taskService.addComment(taskId, employee.getId(), content);
-
+        Employee employee = getAuthenticatedEmployee();
+        TaskComment savedComment = taskService.addComment(taskId, employee.getId(), request.content());
         return ResponseEntity.ok(TaskCommentResponseDTO.fromEntity(savedComment));
+    }
+
+    // --- 5. EVIDENCE (FILES) ---
+
+    // FIX: Return the TaskEvidence object so UI can update immediately
+    @PostMapping(value = "/{taskId}/evidence", consumes = "multipart/form-data")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<TaskEvidence> uploadEvidence(
+            @PathVariable UUID taskId,
+            @RequestParam("file") MultipartFile file) {
+
+        TaskEvidence evidence = taskService.uploadEvidence(taskId, file);
+        return ResponseEntity.ok(evidence);
+    }
+
+    // FIX: Added missing endpoint
+    @GetMapping("/{taskId}/evidence")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<TaskEvidence>> getTaskEvidence(@PathVariable UUID taskId) {
+        return ResponseEntity.ok(taskService.getTaskEvidence(taskId));
+    }
+
+    // --- 6. RATING & FLAGGING ---
+    @PostMapping("/{taskId}/rate")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<TaskResponseDTO> rateTask(
+            @PathVariable UUID taskId,
+            @RequestBody TaskRatingRequest request) {
+
+        Task task = taskService.rateTask(taskId, request.rating());
+        return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
+    }
+
+    @PostMapping("/{taskId}/flag")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'ADMIN')")
+    public ResponseEntity<TaskResponseDTO> flagTask(
+            @PathVariable UUID taskId,
+            @RequestBody String reason) {
+
+        Task task = taskService.flagTask(taskId, reason);
+        return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
+    }
+
+    // --- HELPERS ---
+
+    private Employee getAuthenticatedEmployee() {
+        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        return employeeRepository.findByUserName(username)
+                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+    }
+
+    private List<TaskResponseDTO> convertToDTOs(List<Task> tasks) {
+        return tasks.stream()
+                .map(TaskResponseDTO::fromEntity)
+                .collect(Collectors.toList());
     }
 }
