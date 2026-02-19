@@ -13,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.security.Principal;
 import java.util.List;
+import java.util.UUID;
 
 @CrossOrigin(origins = "http://localhost:5173")
 @RequestMapping("/employees")
@@ -61,5 +62,31 @@ public class EmployeeController {
         return employeeService.getAllEmployees();
     }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    public ResponseEntity<Void> updateEmployee(
+            @PathVariable UUID id,
+            @RequestBody CreateEmployeeRequest request) {
+
+        employeeService.updateEmployee(id, request);
+        return ResponseEntity.noContent().build();
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    public ResponseEntity<Void> deleteEmployee(@PathVariable UUID id) {
+
+        employeeService.deleteEmployee(id);
+        return ResponseEntity.noContent().build();
+    }
+
+    // In worksphere/controller/EmployeeController.java
+
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')") // Adjust roles as needed
+    public ResponseEntity<EmployeeResponseDTO> getEmployeeById(@PathVariable UUID id) {
+        EmployeeResponseDTO employeeDTO = employeeService.getEmployeeById(id);
+        return ResponseEntity.ok(employeeDTO);
+    }
 
 }

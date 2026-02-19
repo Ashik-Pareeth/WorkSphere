@@ -1,201 +1,270 @@
-/* Container for the whole page */
+/* --- LAYOUT & CONTAINER --- */
 .task-board-container {
   padding: 2rem;
-  height: calc(100vh - 64px); /* Full height minus navbar */
-  background-color: #f9fafb;
+  max-width: 1800px; /* Allow it to stretch on wide screens */
+  margin: 0 auto;
+  /* Use min-height so it fills screen but can grow if needed */
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  font-family: 'Inter', system-ui, sans-serif; /* Ensure clean font */
 }
 
-/* Header */
+/* --- HEADER SECTION --- */
 .header-actions {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   margin-bottom: 2rem;
 }
 
-/* Kanban Board Layout */
-.task-board {
-  display: flex;
-  gap: 1.5rem;
-  overflow-x: auto;
-  padding-bottom: 1rem;
-  height: calc(100% - 80px); /* Remaining height */
+.header-title-group h2 {
+  font-size: 2rem;
+  font-weight: 800;
+  color: #1f2937;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.5rem 0;
 }
 
-/* Columns */
+.header-title-group p {
+  font-size: 0.95rem;
+  color: #6b7280;
+}
+
+.filters-bar {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  background: white;
+  padding: 8px;
+  border-radius: 12px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  border: 1px solid #e5e7eb;
+}
+
+/* --- THE KANBAN BOARD GRID --- */
+.task-board {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.5rem;
+  align-items: flex-start; /* Prevents columns from stretching weirdly */
+}
+
+/* --- COLUMNS --- */
 .task-column {
-  min-width: 300px;
-  background-color: #f3f4f6;
-  border-radius: 0.75rem;
+  background-color: #f3f4f6; /* Distinct column background */
+  border-radius: 16px;
   padding: 1rem;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  max-height: calc(100vh - 200px); /* Columns scroll internally */
 }
 
+/* Column Headers with Color Coding */
 .column-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 0.5rem;
+  margin-bottom: 1rem;
+  padding: 0 4px;
 }
 
 .column-title {
-  font-weight: 600;
-  color: #374151;
+  font-weight: 700;
+  font-size: 0.85rem;
   text-transform: uppercase;
-  font-size: 0.875rem;
   letter-spacing: 0.05em;
+  color: #4b5563;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
+
+/* Colored Dots for Headers */
+.column-title::before {
+  content: '';
+  display: block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+/* Specific Colors for each column */
+.task-column:nth-child(1) .column-title::before {
+  background: #9ca3af;
+} /* TODO: Gray */
+.task-column:nth-child(2) .column-title::before {
+  background: #3b82f6;
+} /* PROGRESS: Blue */
+.task-column:nth-child(3) .column-title::before {
+  background: #a855f7;
+} /* REVIEW: Purple */
+.task-column:nth-child(4) .column-title::before {
+  background: #10b981;
+} /* DONE: Green */
 
 .task-count {
-  background-color: #e5e7eb;
-  padding: 0.25rem 0.75rem;
-  border-radius: 9999px;
+  background: #e5e7eb;
+  color: #6b7280;
+  padding: 2px 8px;
+  border-radius: 12px;
   font-size: 0.75rem;
-  font-weight: 600;
-  color: #4b5563;
+  font-weight: 700;
 }
 
-/* Task Cards */
+/* --- TASK LIST AREA --- */
+.task-list {
+  flex: 1;
+  overflow-y: auto; /* Scroll inside the column */
+  padding: 2px; /* Prevent shadow clipping */
+  min-height: 150px;
+  /* Custom Scrollbar */
+  scrollbar-width: thin;
+  scrollbar-color: #d1d5db transparent;
+}
+.task-list::-webkit-scrollbar {
+  width: 6px;
+}
+.task-list::-webkit-scrollbar-thumb {
+  background-color: #d1d5db;
+  border-radius: 3px;
+}
+
+/* --- TASK CARDS (The Ugly Part Fixed) --- */
 .task-card {
   background: white;
-  padding: 1rem;
-  border-radius: 0.5rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
-  transition:
-    transform 0.2s,
-    box-shadow 0.2s;
-  border-left: 4px solid transparent;
+  border-radius: 12px;
+  padding: 1.25rem;
+  margin-bottom: 1rem;
+  box-shadow:
+    0 2px 4px rgba(0, 0, 0, 0.02),
+    0 1px 0 rgba(0, 0, 0, 0.05); /* Subtle depth */
+  border: 1px solid transparent;
+  cursor: grab;
+  transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: relative;
+  overflow: hidden;
 }
 
+/* Hover Effect: Lift up */
 .task-card:hover {
   transform: translateY(-2px);
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 12px 20px -5px rgba(0, 0, 0, 0.1);
+  border-color: #e5e7eb;
 }
 
-.task-card.priority-HIGH,
-.task-card.priority-URGENT {
-  border-left-color: #ef4444;
+/* Left Colored Border for Priority */
+.task-card::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
 }
-.task-card.priority-MEDIUM {
-  border-left-color: #f59e0b;
+.task-card.priority-HIGH::after {
+  background-color: #ef4444;
 }
-.task-card.priority-LOW {
-  border-left-color: #10b981;
+.task-card.priority-MEDIUM::after {
+  background-color: #f59e0b;
+}
+.task-card.priority-LOW::after {
+  background-color: #10b981;
 }
 
+/* Card Content Typography */
 .task-code {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
+  font-weight: 600;
   color: #9ca3af;
-  margin-bottom: 0.25rem;
+  margin-bottom: 4px;
 }
+
 .task-title {
-  font-weight: 500;
-  color: #1f2937;
-  margin-bottom: 0.5rem;
-  font-size: 0.95rem;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #111827;
+  margin: 0 0 12px 0;
+  line-height: 1.4;
 }
+
 .task-meta {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-top: 12px;
+  border-top: 1px solid #f3f4f6;
   font-size: 0.75rem;
   color: #6b7280;
-  margin-top: 0.75rem;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f3f4f6;
 }
 
-/* Subtle Status Dropdown */
-.task-status-select {
-  background: transparent;
-  border: none;
-  color: #9ca3af;
-  font-size: 1rem;
-  cursor: pointer;
-  padding: 0.25rem 0.5rem;
-  opacity: 0.4;
-  transition: opacity 0.2s ease;
-  font-weight: bold;
+/* Priority Badges (Little pills) */
+.priority-badge {
+  font-size: 0.65rem;
+  padding: 4px 8px;
+  border-radius: 6px;
+  text-transform: uppercase;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+}
+.priority-badge.high {
+  background: #fef2f2;
+  color: #b91c1c;
+}
+.priority-badge.medium {
+  background: #fffbeb;
+  color: #b45309;
+}
+.priority-badge.low {
+  background: #ecfdf5;
+  color: #047857;
 }
 
-.task-card:hover .task-status-select {
-  opacity: 0.7;
-}
-
-.task-status-select:hover,
-.task-status-select:focus {
-  opacity: 1;
-  outline: none;
-  color: #6b7280;
-}
-
-.task-status-select option {
-  background: white;
-  color: #1f2937;
-  padding: 0.5rem;
-}
-
-/* --- MODAL STYLES (CRITICAL FOR VISIBILITY) --- */
-.modal-overlay {
-  position: fixed; /* Stay in place */
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black dimming */
+/* --- BUTTONS & INPUTS --- */
+.toggle-group {
   display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 9999; /* Sit on top of everything */
-}
-
-.modal-content {
-  background: white;
-  padding: 2rem;
+  background: #f3f4f6;
+  padding: 4px;
   border-radius: 8px;
-  width: 500px;
-  max-width: 90%;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
-  position: relative; /* Ensure it respects z-index context */
+}
+.toggle-btn {
+  padding: 8px 16px;
+  border: none;
+  background: transparent;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #6b7280;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.toggle-btn.active {
+  background: white;
+  color: #2563eb;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
 }
 
-.form-group {
-  margin-bottom: 1rem;
-}
-.form-group label {
-  display: block;
-  margin-bottom: 0.5rem;
-  font-weight: 500;
-}
-.form-group input,
-.form-group select,
-.form-group textarea {
-  width: 100%;
-  padding: 0.5rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-}
-.modal-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 1rem;
-  margin-top: 1.5rem;
-}
-.btn-cancel,
-.btn-submit {
-  padding: 0.5rem 1rem;
-  border-radius: 4px;
-  cursor: pointer;
-  border: none;
-}
-.btn-cancel {
-  background: #e5e7eb;
+.custom-select {
+  border: 1px solid #e5e7eb;
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 0.9rem;
   color: #374151;
+  outline: none;
 }
-.btn-submit {
+.custom-select:focus {
+  border-color: #3b82f6;
+}
+
+.btn-primary {
   background: #2563eb;
   color: white;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+.btn-primary:hover {
+  background: #1d4ed8;
 }

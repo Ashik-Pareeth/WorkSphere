@@ -9,5 +9,5 @@ import java.util.UUID;
 public interface ProjectRepository extends JpaRepository<Project, UUID> {
     boolean existsByProjectCode(String projectCode);
     List<Project> findByStatus(ProjectStatus status);
-    List<Project> findByDepartment_DepartmentId(Long departmentId);
+    List<Project> findByDepartment_id(UUID departmentId);
 }

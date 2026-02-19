@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 
 @Entity
@@ -8,6 +9,7 @@ public class TaskEvidence extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
+    @JsonIgnore
     private Task task;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -15,10 +17,13 @@ public class TaskEvidence extends BaseEntity {
     private Employee uploadedBy;
 
     @Column(nullable = false)
-    private String fileUrl; // Path to file on disk
+    private String fileName; // <--- ADD THIS (Original name: "report.pdf")
 
     @Column(nullable = false)
-    private String fileType; // PDF, JPG, etc.
+    private String fileUrl;  // Path on disk: "uploads/evidence/123_report.pdf"
+
+    @Column(nullable = false)
+    private String fileType; // MIME type: "application/pdf"
 
     // --- Getters and Setters ---
     public Task getTask() { return task; }
@@ -26,6 +31,9 @@ public class TaskEvidence extends BaseEntity {
 
     public Employee getUploadedBy() { return uploadedBy; }
     public void setUploadedBy(Employee uploadedBy) { this.uploadedBy = uploadedBy; }
+
+    public String getFileName() { return fileName; }
+    public void setFileName(String fileName) { this.fileName = fileName; }
 
     public String getFileUrl() { return fileUrl; }
     public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }

@@ -1,31 +1,53 @@
 package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.entity.Department;
-import com.ucocs.worksphere.repository.DepartmentRepository;
+import com.ucocs.worksphere.service.DepartmentService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
-@CrossOrigin(origins = "http://localhost:5173")
-@RequestMapping("/departments")
 @RestController
+@RequestMapping("/departments")
+@CrossOrigin(origins = "http://localhost:5173")
 public class DepartmentController {
-    private final DepartmentRepository departmentRepository;
 
-    public DepartmentController(DepartmentRepository departmentRepository) {
-        this.departmentRepository = departmentRepository;
-    }
+    private final DepartmentService departmentService;
 
-    @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
-    public void createDepartment(@RequestBody Department department) {
-        departmentRepository.save(department);
+    public DepartmentController(DepartmentService departmentService) {
+        this.departmentService = departmentService;
     }
 
     @GetMapping
     @PreAuthorize("isAuthenticated()")
-    public List<Department> getAllDepartment() {
-        return departmentRepository.findAll();
+    public List<Department> getAllDepartments() {
+        return departmentService.getAllDepartments();
+    }
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Department> getDepartmentById(@PathVariable UUID id) {
+        return ResponseEntity.ok(departmentService.getDepartmentById(id));
+    }
+
+    @PostMapping
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Department> createDepartment(@RequestBody Department department) {
+        return ResponseEntity.ok(departmentService.createDepartment(department));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Department> updateDepartment(@PathVariable UUID id, @RequestBody Department department) {
+        return ResponseEntity.ok(departmentService.updateDepartment(id, department));
+    }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('ADMIN')")
+    public ResponseEntity<Void> deleteDepartment(@PathVariable UUID id) {
+        departmentService.deleteDepartment(id);
+        return ResponseEntity.noContent().build();
     }
 }

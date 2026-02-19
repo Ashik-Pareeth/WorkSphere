@@ -20,6 +20,6 @@ public record EmployeeRequestDTO(
         @NotNull(message = "Salary is required") @Positive(message = "Salary must be positive") Double salary,
 
         UUID roleId,
-        Long departmentId,
+        UUID Id,
         UUID jobPositionId) {
 }

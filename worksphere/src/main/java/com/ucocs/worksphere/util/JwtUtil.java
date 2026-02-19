@@ -11,6 +11,9 @@ import org.springframework.stereotype.Component;
 
 import java.security.Key;
 import java.util.Date;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 
@@ -24,13 +27,18 @@ public class JwtUtil {
         return Keys.hmacShaKeyFor(keyBytes);
     }
 
-    public String generateToken(String userName) {
-        //*tell me if there is an easier way*
-        Date expiry = new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10);
+    public String generateToken(String userName, List<String> roles) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("roles", roles); // Store as a JSON Array: ["ROLE_MANAGER", "ROLE_ADMIN"]
+        return createToken(claims, userName);
+    }
+
+    private String createToken(Map<String, Object> claims, String userName) {
         return Jwts.builder()
+                .setClaims(claims) // <--- Add the map here!
                 .setSubject(userName)
-                .setExpiration(expiry)
-                .setIssuedAt(new Date())
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
     }

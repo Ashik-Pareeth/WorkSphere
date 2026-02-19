@@ -60,6 +60,15 @@ public class Task extends BaseEntity {
     // Calculated score (0-100)
     private Double completionScore;
 
+    @Column(nullable = false)
+    private boolean isFlagged = false; // Set by Auditor if compliance fails
+
+    @Column(columnDefinition = "TEXT")
+    private String flagReason;         // Why was it flagged?
+
+    @Column(nullable = false)
+    private boolean isSystemOverridden = false;
+
     // --- Optimistic Locking ---
     @Version
     private Long version;
@@ -111,5 +120,30 @@ public class Task extends BaseEntity {
     public Double getCompletionScore() { return completionScore; }
     public void setCompletionScore(Double completionScore) { this.completionScore = completionScore; }
 
+    public boolean isFlagged() {
+        return isFlagged;
+    }
+
+    public void setFlagged(boolean flagged) {
+        isFlagged = flagged;
+    }
+
+    public String getFlagReason() {
+        return flagReason;
+    }
+
+    public void setFlagReason(String flagReason) {
+        this.flagReason = flagReason;
+    }
+
+    public boolean isSystemOverridden() {
+        return isSystemOverridden;
+    }
+
+    public void setSystemOverridden(boolean systemOverridden) {
+        isSystemOverridden = systemOverridden;
+    }
+
     public Long getVersion() { return version; }
 }
+
