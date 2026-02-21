@@ -41,6 +41,7 @@ function AddEmployee() {
         axiosInstance.get('/jobPositions'),
       ]);
       setEmployees(empRes.data);
+      console.log(empRes.data);
       setRoles(roleRes.data);
       setDepartments(depRes.data);
       setPositions(posRes.data);
@@ -357,6 +358,7 @@ function AddEmployee() {
               <tr>
                 <th className="px-4 py-3 border-b">Name</th>
                 <th className="px-4 py-3 border-b">Username</th>
+                <th className="px-4 py-3 border-b">Roles</th>
                 <th className="px-4 py-3 border-b">Department</th>
                 <th className="px-4 py-3 border-b">Job Title</th>
                 <th className="px-4 py-3 border-b">Status</th>
@@ -383,10 +385,22 @@ function AddEmployee() {
                       {emp.firstName} {emp.lastName}
                     </td>
                     <td className="px-4 py-3 text-gray-600">{emp.username}</td>
-
-                    {/* Safe Access for Relations */}
                     <td className="px-4 py-3 text-gray-600">
-                      {/* ✅ FIX: Use emp.departmentName directly */}
+                      {emp.roles && emp.roles.length > 0 ? (
+                        emp.roles.map((r) => (
+                          <span
+                            key={r.id}
+                            className="inline-block bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full mr-1"
+                          >
+                            {r.roleName}
+                          </span>
+                        ))
+                      ) : (
+                        <span className="text-red-400 italic">No Role</span>
+                      )}
+                    </td>
+
+                    <td className="px-4 py-3 text-gray-600">
                       {emp.departmentName || (
                         <span className="text-red-400 italic">
                           Not Assigned

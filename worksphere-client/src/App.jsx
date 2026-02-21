@@ -33,8 +33,6 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      <NavBar />
-
       <div className="app">
         <Routes>
           {/* PUBLIC ROUTES */}

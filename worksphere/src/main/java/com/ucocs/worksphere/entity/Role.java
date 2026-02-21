@@ -1,7 +1,9 @@
 package com.ucocs.worksphere.entity;
 
 import jakarta.persistence.*;
+import lombok.Getter;
 
+@Getter
 @Entity
 @Table(name = "roles")
 public class Role extends BaseEntity {
@@ -19,7 +21,4 @@ public class Role extends BaseEntity {
     }
 
 
-    public String getRoleName() {
-        return roleName;
-    }
 }

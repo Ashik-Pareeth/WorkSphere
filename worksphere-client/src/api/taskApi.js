@@ -96,3 +96,17 @@ export const flagTask = async (taskId, reason) => {
   });
   return response.data;
 };
+
+export const reviewTaskEvidence = async (evidenceId, status, feedback = '') => {
+  const response = await axiosInstance.patch(
+    `/tasks/evidence/${evidenceId}/review`,
+    null, // No body needed, we are passing data as query parameters
+    {
+      params: {
+        status: status,
+        feedback: feedback,
+      },
+    }
+  );
+  return response.data;
+};

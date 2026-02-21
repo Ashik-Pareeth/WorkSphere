@@ -1,6 +1,7 @@
 package com.ucocs.worksphere.repository;
 
 import com.ucocs.worksphere.entity.Task;
+import com.ucocs.worksphere.enums.TaskStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -44,4 +45,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
             "LEFT JOIN FETCH t.assigner " +
             "WHERE t.assignedTo.department.id = :deptId")
     List<Task> findAllByDepartmentId(@Param("deptId") UUID deptId);
+
+    long countByAssignedTo_IdAndStatus(UUID employeeId, TaskStatus status);
+
+    // 10. Fetch ALL Tasks with Relations (For Admin Global View)
+    @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner")
+    List<Task> findAllWithRelations();
 }

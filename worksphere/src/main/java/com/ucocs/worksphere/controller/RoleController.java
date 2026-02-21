@@ -19,7 +19,7 @@ public class RoleController {
         this.roleService = roleService;
     }
 
-    // ✅ CREATE
+    // CREATE
     @PostMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Role> saveRole(@RequestBody Role role) {
@@ -27,21 +27,21 @@ public class RoleController {
         return ResponseEntity.ok(savedRole);
     }
 
-    // ✅ GET ALL
+    // GET ALL
     @GetMapping
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleService.findAll());
     }
 
-    // ✅ GET BY ID (useful for edit forms / future)
+    // GET BY ID (useful for edit forms / future)
     @GetMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Role> getRoleById(@PathVariable UUID id) {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
-    // ✅ UPDATE
+    // UPDATE
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Role> updateRole(
@@ -52,7 +52,7 @@ public class RoleController {
         return ResponseEntity.ok(updatedRole);
     }
 
-    // ✅ DELETE
+    // DELETE
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('ADMIN')")
     public ResponseEntity<Void> deleteRole(@PathVariable UUID id) {

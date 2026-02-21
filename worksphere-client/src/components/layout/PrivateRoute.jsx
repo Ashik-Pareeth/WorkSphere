@@ -1,4 +1,5 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
+import NavBar from './NavBar';
 
 const isTokenValid = () => {
   const token = localStorage.getItem('token');
@@ -21,9 +22,15 @@ const isTokenValid = () => {
 
 const PrivateRoute = () => {
   const location = useLocation();
+  if (status === 'PENDING') {
+    return <Navigate to="/onBoarding" replace />;
+  }
 
   return isTokenValid() ? (
-    <Outlet />
+    <>
+      <NavBar />
+      <Outlet />
+    </>
   ) : (
     <Navigate to="/" replace state={{ from: location }} />
   );

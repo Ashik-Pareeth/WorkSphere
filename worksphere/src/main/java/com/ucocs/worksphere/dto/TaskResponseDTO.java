@@ -1,51 +1,45 @@
 package com.ucocs.worksphere.dto;
 
 import com.ucocs.worksphere.entity.Task;
-import com.ucocs.worksphere.enums.TaskPriority;
-import com.ucocs.worksphere.enums.TaskStatus;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
 public record TaskResponseDTO(
         UUID id,
+        String taskCode,
         String title,
         String description,
-        TaskStatus status,
-        TaskPriority priority,
+        String status,
+        String priority,
         LocalDateTime dueDate,
-        String taskCode,
-        String assignerName,
-        String assignedToName,
-
-        // --- NEW FIELDS ---
-        boolean requiresEvidence,
         Double completionScore,
         Integer managerRating,
+        boolean requiresEvidence,
         boolean isOverdue,
-        boolean isFlagged,      // For Auditor
-        String flagReason       // Reason for flagging
+        boolean isFlagged,
+        String flagReason,
+        String assignerName,
+        String assignedToName,
+        UUID assignedToId // <--- NEW: Add this!
 ) {
     public static TaskResponseDTO fromEntity(Task task) {
-        String assignerName = (task.getAssigner() != null) ? task.getAssigner().getUserName() : "Unknown";
-        String assignedToName = (task.getAssignedTo() != null) ? task.getAssignedTo().getUserName() : "Unassigned";
-
         return new TaskResponseDTO(
                 task.getId(),
+                task.getTaskCode(),
                 task.getTitle(),
                 task.getDescription(),
-                task.getStatus(),
-                task.getPriority(),
+                task.getStatus() != null ? task.getStatus().name() : null,
+                task.getPriority() != null ? task.getPriority().name() : null,
                 task.getDueDate(),
-                task.getTaskCode(),
-                assignerName,
-                assignedToName,
-                // Map new fields
-                task.isRequiresEvidence(),
                 task.getCompletionScore(),
                 task.getManagerRating(),
+                task.isRequiresEvidence(),
                 task.isOverdue(),
                 task.isFlagged(),
-                task.getFlagReason()
+                task.getFlagReason(),
+                task.getAssigner() != null ? task.getAssigner().getUserName() : null,
+                task.getAssignedTo() != null ? task.getAssignedTo().getUserName() : null,
+                task.getAssignedTo() != null ? task.getAssignedTo().getId() : null // <--- NEW: Pull the ID!
         );
     }
 }
