@@ -1,27 +1,22 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.TaskCreateRequest;
 import com.ucocs.worksphere.dto.TaskStatusUpdate;
 import com.ucocs.worksphere.entity.*;
+import com.ucocs.worksphere.enums.EvidenceStatus;
 import com.ucocs.worksphere.enums.TaskPriority;
 import com.ucocs.worksphere.enums.TaskStatus;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.*;
 import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.multipart.MultipartFile;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.Objects;
 import java.util.UUID;
 
 @Service
@@ -34,24 +29,6 @@ public class TaskService {
     private final TaskHistoryRepository taskHistoryRepository;
     private final TaskCommentRepository taskCommentRepository;
 
-    // --- STATE MACHINE CONFIGURATION ---
-
-    private static final Map<TaskStatus, Set<TaskStatus>> EMPLOYEE_TRANSITIONS = Map.of(
-            TaskStatus.TODO, Set.of(TaskStatus.IN_PROGRESS),
-            TaskStatus.IN_PROGRESS, Set.of(TaskStatus.IN_REVIEW),
-            TaskStatus.IN_REVIEW, Set.of(),
-            TaskStatus.COMPLETED, Set.of(),
-            TaskStatus.CANCELLED, Set.of()
-    );
-
-    private static final Map<TaskStatus, Set<TaskStatus>> MANAGER_TRANSITIONS = Map.of(
-            TaskStatus.TODO, Set.of(TaskStatus.IN_PROGRESS, TaskStatus.COMPLETED, TaskStatus.CANCELLED),
-            TaskStatus.IN_PROGRESS, Set.of(TaskStatus.IN_REVIEW, TaskStatus.COMPLETED, TaskStatus.TODO, TaskStatus.CANCELLED),
-            TaskStatus.IN_REVIEW, Set.of(TaskStatus.COMPLETED, TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED),
-            TaskStatus.COMPLETED, Set.of(TaskStatus.IN_PROGRESS, TaskStatus.CANCELLED),
-            TaskStatus.CANCELLED, Set.of(TaskStatus.TODO, TaskStatus.IN_PROGRESS)
-    );
-
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
                        TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
                        TaskCommentRepository taskCommentRepository) {
@@ -62,26 +39,38 @@ public class TaskService {
         this.taskCommentRepository = taskCommentRepository;
     }
 
-    public Task createTask(Task task, UUID managerId, UUID assignedToId) {
+    public Task createTask(TaskCreateRequest request, UUID managerId) {
         Employee manager = employeeRepository.findById(managerId)
                 .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
-        Employee assignee = employeeRepository.findById(assignedToId)
+        Employee assignee = employeeRepository.findById(request.assignedToId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
 
-        task.setAssigner(manager);
-        task.setAssignedTo(assignee);
-        task.setCreatedAt(LocalDateTime.now());
-        task.setUpdatedAt(LocalDateTime.now());
-        task.setStatus(TaskStatus.TODO);
-
+        // Generate Task Code First
         long count = taskRepository.count();
-        task.setTaskCode("TSK-" + (1000 + count + 1));
+        String generatedCode = "TSK-" + (1000 + count + 1);
 
-        task.setCompletionScore(0.0);
-        task.setOverdue(false);
-        task.setFlagged(false);
+        // Convert string priority from DTO to Enum safely
+        TaskPriority priorityEnum;
+        try {
+            priorityEnum = TaskPriority.valueOf(request.priority());
+        } catch (Exception e) {
+            priorityEnum = TaskPriority.MEDIUM;
+        }
 
-        Task savedTask = taskRepository.save(task);
+        // 1. Use the new strict Constructor
+        Task newTask = new Task(
+                generatedCode,
+                request.title(),
+                request.description(),
+                manager,
+                assignee,
+                request.dueDate(),
+                priorityEnum
+        );
+
+        newTask.setRequiresEvidence(request.requiresEvidence());
+
+        Task savedTask = taskRepository.save(newTask);
 
         logHistory(savedTask, manager, "Created Task", "ROLE_MANAGER", null, TaskStatus.TODO);
 
@@ -98,37 +87,56 @@ public class TaskService {
 
         if (oldStatus == newStatus) return task;
 
-        boolean isAdmin = hasRole(currentUser, "ROLE_ADMIN");
-        boolean isManager = hasRole(currentUser, "ROLE_MANAGER");
+        boolean isAdmin = hasRole(currentUser, "ADMIN");
+        boolean isManager = hasRole(currentUser, "MANAGER");
+        boolean hasOversight = isAdmin || isManager;
 
-        if (!isAdmin) {
-            Map<TaskStatus, Set<TaskStatus>> allowedTransitions = isManager ? MANAGER_TRANSITIONS : EMPLOYEE_TRANSITIONS;
-            if (!allowedTransitions.getOrDefault(oldStatus, Set.of()).contains(newStatus)) {
-                throw new IllegalStateException("Invalid status transition from " + oldStatus + " to " + newStatus);
-            }
-        } else {
-            task.setSystemOverridden(true);
+        // --- ROLE PROTECTIONS ---
+        if ((newStatus == TaskStatus.COMPLETED || newStatus == TaskStatus.CANCELLED) && !hasOversight) {
+            throw new AccessDeniedException("Only Managers and Admins can complete or cancel tasks.");
         }
 
-        // Evidence Gatekeeper
-        if (!isAdmin && !isManager && newStatus == TaskStatus.IN_REVIEW) {
-            if ((task.getPriority() == TaskPriority.HIGH || task.getPriority() == TaskPriority.URGENT)
-                    && task.isRequiresEvidence()) {
+        // --- WIP LIMIT ENFORCEMENT ---
+        if (newStatus == TaskStatus.IN_PROGRESS && !hasOversight) { // Managers can bypass WIP limits if needed
+            long currentWip = taskRepository.countByAssignedTo_IdAndStatus(task.getAssignedTo().getId(), TaskStatus.IN_PROGRESS);
+            if (currentWip >= 3) {
+                throw new IllegalStateException("WIP Limit Reached: You already have 3 tasks in progress. Finish one first.");
+            }
+        }
 
+        // --- EVIDENCE GATEKEEPERS ---
+        if (!hasOversight && newStatus == TaskStatus.IN_REVIEW) {
+            if (task.isRequiresEvidence()) {
                 boolean hasEvidence = taskEvidenceRepository.existsByTask_Id(taskId);
                 if (!hasEvidence) {
-                    throw new IllegalStateException("Evidence is mandatory for HIGH/URGENT tasks.");
+                    throw new IllegalStateException("Evidence is mandatory before submitting this task for review.");
                 }
             }
         }
 
-        task.setStatus(newStatus);
-        task.setUpdatedAt(LocalDateTime.now());
+        if (newStatus == TaskStatus.COMPLETED && task.isRequiresEvidence()) {
+            boolean hasAcceptedEvidence = taskEvidenceRepository.findAllByTaskId(taskId).stream()
+                    .anyMatch(e -> e.getStatus() == EvidenceStatus.ACCEPTED);
 
-        if (newStatus == TaskStatus.COMPLETED) {
-            handleCompletion(task);
-        } else if (oldStatus == TaskStatus.COMPLETED) {
-            handleReopening(task);
+            if (!hasAcceptedEvidence) {
+                throw new IllegalStateException("Cannot complete task: No accepted evidence found.");
+            }
+        }
+
+        // --- EXECUTE BUSINESS METHODS ---
+        switch (newStatus) {
+            case IN_PROGRESS -> task.startProgress();
+            case IN_REVIEW -> task.submitForReview();
+            case COMPLETED -> task.markAsCompleted();
+            case CANCELLED -> task.cancelTask();
+            case TODO -> {
+                // If a manager kicks it back all the way to TODO from a higher state
+                if (hasOversight) task.kickBackToInProgress(); // Adjust based on your business logic
+            }
+        }
+
+        if (isAdmin) {
+            task.overrideSystem();
         }
 
         Task savedTask = taskRepository.save(task);
@@ -136,46 +144,30 @@ public class TaskService {
         String roleSnapshot = isAdmin ? "ROLE_ADMIN" : (isManager ? "ROLE_MANAGER" : "ROLE_EMPLOYEE");
         logHistory(savedTask, currentUser, updateDTO.comment(), roleSnapshot, oldStatus, newStatus);
 
-        return savedTask;
-    }
-
-    private void handleCompletion(Task task) {
-        task.setCompletedAt(LocalDateTime.now());
-
-        double timeScore = 0.0;
-        if (task.getDueDate() == null || !task.getCompletedAt().isAfter(task.getDueDate())) {
-            timeScore = 50.0;
-            task.setOverdue(false);
-        } else {
-            task.setOverdue(true);
-        }
-
-        double qualityScore = (task.getManagerRating() != null) ? (task.getManagerRating() * 10.0) : 0.0;
-        task.setCompletionScore(timeScore + qualityScore);
-    }
-
-    private void handleReopening(Task task) {
-        task.setCompletedAt(null);
-        task.setCompletionScore(0.0);
-        task.setOverdue(false);
-        task.setManagerRating(null);
-    }
+        return taskRepository.findByIdWithRelations(taskId)
+                .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));    }
 
     public Task rateTask(UUID taskId, Integer rating) {
-        Task task = taskRepository.findById(taskId)
+        Task task = taskRepository.findByIdWithRelations(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         Employee currentUser = getCurrentUser();
-        if (!hasRole(currentUser, "ROLE_MANAGER") && !hasRole(currentUser, "ROLE_ADMIN")) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        assert auth != null;
+        System.out.println("Authorities: " + auth.getAuthorities());
+        System.out.println("Current user role from DB: " + currentUser.getRoles());
+        if (!hasRole(currentUser, "MANAGER") && !hasRole(currentUser, "ADMIN")) {
             throw new AccessDeniedException("Only Managers can rate tasks.");
         }
 
-        task.setManagerRating(rating);
-
-        if (task.getStatus() == TaskStatus.COMPLETED) {
-            double baseScore = task.isOverdue() ? 0.0 : 50.0;
-            task.setCompletionScore(baseScore + (rating * 10.0));
+        // Calculate score based on lateness
+        double score = task.isOverdue() ? 0.0 : 50.0;
+        if (rating != null) {
+            score += (rating * 10.0);
         }
+
+        // Use the new entity method
+        task.rateTask(rating, score);
 
         return taskRepository.save(task);
     }
@@ -189,8 +181,8 @@ public class TaskService {
             throw new AccessDeniedException("Only Auditors can flag tasks.");
         }
 
-        task.setFlagged(true);
-        task.setFlagReason(reason);
+        // Use the new entity method
+        task.flagForAudit(reason);
 
         logHistory(task, currentUser, "Flagged: " + reason, "ROLE_AUDITOR", task.getStatus(), task.getStatus());
 
@@ -203,10 +195,28 @@ public class TaskService {
         return taskRepository.findByAssignedTo_Id(employeeId);
     }
 
-    public List<Task> getTeamTasks(UUID managerId) {
-        Employee manager = employeeRepository.findById(managerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
-        return taskRepository.findAllByDepartmentId(manager.getDepartment().getId());
+    public List<Task> getTeamTasks(UUID employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
+
+        // Ask Spring Security for your roles directly from the authenticated token
+        boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getAuthorities().stream()
+                .anyMatch(a -> {
+                    String role = a.getAuthority();
+                    assert role != null;
+                    return role.equals("ROLE_ADMIN") || role.equals("ROLE_HR") || role.equals("ROLE_AUDITOR");
+                });
+
+        if (isGlobalViewer) {
+            return taskRepository.findAllWithRelations();
+        }
+
+        // If not a global viewer, they must be a Manager. Give them their department's tasks.
+        if (employee.getDepartment() == null) {
+            return List.of();
+        }
+
+        return taskRepository.findAllByDepartmentId(employee.getDepartment().getId());
     }
 
     public List<Task> getTasksByManager(UUID managerId) {
@@ -215,11 +225,6 @@ public class TaskService {
 
     public List<TaskComment> getTaskComments(UUID taskId) {
         return taskCommentRepository.findByTask_IdOrderByCreatedAtAsc(taskId);
-    }
-
-    // --- NEW: Missing method needed by Controller ---
-    public List<TaskEvidence> getTaskEvidence(UUID taskId) {
-        return taskEvidenceRepository.findAllByTaskId(taskId);
     }
 
     public TaskComment addComment(UUID taskId, UUID employeeId, String content) {
@@ -233,53 +238,6 @@ public class TaskService {
         comment.setCreatedAt(LocalDateTime.now());
 
         return taskCommentRepository.save(comment);
-    }
-
-    // --- EVIDENCE UPLOAD (Fixed) ---
-
-    public TaskEvidence uploadEvidence(UUID taskId, MultipartFile file) {
-        Task task = taskRepository.findById(taskId)
-                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
-
-        Employee currentUser = getCurrentUser();
-
-        if (file.isEmpty()) {
-            throw new IllegalArgumentException("File cannot be empty");
-        }
-
-        // 1. Storage Logic
-        String uploadDir = "uploads/evidence/";
-        Path uploadPath = Paths.get(uploadDir);
-        try {
-            if (!Files.exists(uploadPath)) {
-                Files.createDirectories(uploadPath);
-            }
-        } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory");
-        }
-
-        String timeStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        // Clean the filename to remove paths or dangerous chars
-        String originalFilename = Paths.get(file.getOriginalFilename()).getFileName().toString();
-        String uniqueFileName = timeStamp + "_" + originalFilename;
-
-        Path filePath = uploadPath.resolve(uniqueFileName);
-
-        try {
-            Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
-        } catch (IOException e) {
-            throw new RuntimeException("Failed to store evidence file");
-        }
-
-        // 2. Save Entity (Now correctly sets fileName)
-        TaskEvidence evidence = new TaskEvidence();
-        evidence.setTask(task);
-        evidence.setUploadedBy(currentUser);
-        evidence.setFileName(originalFilename); // <--- FIXED: Now stores the original name
-        evidence.setFileUrl(uploadDir + uniqueFileName); // <--- FIXED: Stores full relative path
-        evidence.setFileType(file.getContentType());
-
-        return taskEvidenceRepository.save(evidence);
     }
 
     // --- HELPERS ---
@@ -298,12 +256,15 @@ public class TaskService {
     }
 
     private Employee getCurrentUser() {
-        String username = SecurityContextHolder.getContext().getAuthentication().getName();
+        String username = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getName();
         return employeeRepository.findByUserName(username)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
     }
 
     private boolean hasRole(Employee employee, String roleName) {
+        employee.getRoles().forEach(r ->
+                System.out.println("DB ROLE = " + r.getRoleName())
+        );
         return employee.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals(roleName));
     }

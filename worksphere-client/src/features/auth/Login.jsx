@@ -40,15 +40,18 @@ export default function Login() {
         roles = [decoded.role];
       }
 
-      // ✅ Save to localStorage
       localStorage.setItem('token', token);
       localStorage.setItem('employeeId', response.data.employeeId);
       localStorage.setItem('roles', JSON.stringify(roles));
+      localStorage.setItem('status', response.data.employeeStatus);
 
-      // Optional → primary role shortcut
       localStorage.setItem('role', roles[0]);
 
-      navigate('/');
+      if (response.data.employeeStatus === 'PENDING') {
+        navigate('/onBoarding');
+      } else {
+        navigate('/dashboard');
+      }
     } catch (err) {
       console.error('Login failed', err);
       setError(err);

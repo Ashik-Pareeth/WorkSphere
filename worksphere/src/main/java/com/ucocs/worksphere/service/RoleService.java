@@ -16,12 +16,12 @@ public class RoleService {
         this.roleRepository = roleRepository;
     }
 
-    // ✅ CREATE
+    //  CREATE
     public Role createRole(Role role) {
         return roleRepository.save(role);
     }
 
-    // ✅ UPDATE
+    // UPDATE
     public Role updateRole(UUID id, Role role) {
 
         Role existing = roleRepository.findById(id)
@@ -32,7 +32,7 @@ public class RoleService {
         return roleRepository.save(existing);
     }
 
-    // ✅ DELETE
+    //  DELETE
     public void deleteRole(UUID id) {
 
         Role existing = roleRepository.findById(id)
@@ -41,12 +41,12 @@ public class RoleService {
         roleRepository.delete(existing);
     }
 
-    // ✅ GET ALL
+    //  GET ALL
     public List<Role> findAll() {
         return roleRepository.findAll();
     }
 
-    // ✅ GET BY ID  ← this was missing
+    //  GET BY ID  ← this was missing
     public Role findById(UUID id) {
         return roleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Role not found"));

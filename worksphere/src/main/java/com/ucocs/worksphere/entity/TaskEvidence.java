@@ -1,12 +1,20 @@
 package com.ucocs.worksphere.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.ucocs.worksphere.enums.EvidenceStatus;
 import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
 
+import java.time.LocalDateTime;
+
+@Setter
+@Getter
 @Entity
 @Table(name = "task_evidence")
 public class TaskEvidence extends BaseEntity {
 
+    // --- Getters and Setters ---
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "task_id", nullable = false)
     @JsonIgnore
@@ -14,6 +22,7 @@ public class TaskEvidence extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "uploaded_by", nullable = false)
+    @JsonIgnore
     private Employee uploadedBy;
 
     @Column(nullable = false)
@@ -25,19 +34,16 @@ public class TaskEvidence extends BaseEntity {
     @Column(nullable = false)
     private String fileType; // MIME type: "application/pdf"
 
-    // --- Getters and Setters ---
-    public Task getTask() { return task; }
-    public void setTask(Task task) { this.task = task; }
+    @Enumerated(EnumType.STRING)
+    private EvidenceStatus status = EvidenceStatus.PENDING;
 
-    public Employee getUploadedBy() { return uploadedBy; }
-    public void setUploadedBy(Employee uploadedBy) { this.uploadedBy = uploadedBy; }
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "reviewed_by_id")
+    @JsonIgnore
+    private Employee reviewedBy;
 
-    public String getFileName() { return fileName; }
-    public void setFileName(String fileName) { this.fileName = fileName; }
+    private String reviewFeedback; // Why it was rejected or accepted
 
-    public String getFileUrl() { return fileUrl; }
-    public void setFileUrl(String fileUrl) { this.fileUrl = fileUrl; }
+    private LocalDateTime reviewedAt;
 
-    public String getFileType() { return fileType; }
-    public void setFileType(String fileType) { this.fileType = fileType; }
 }

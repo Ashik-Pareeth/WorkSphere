@@ -5,8 +5,9 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TaskComment;
 import com.ucocs.worksphere.entity.TaskEvidence;
-import com.ucocs.worksphere.enums.TaskPriority;
+import com.ucocs.worksphere.enums.EvidenceStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
+import com.ucocs.worksphere.service.TaskEvidenceService;
 import com.ucocs.worksphere.service.TaskService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -24,11 +25,17 @@ import java.util.stream.Collectors;
 public class TaskController {
 
     private final TaskService taskService;
+    private final TaskEvidenceService taskEvidenceService;
     private final EmployeeRepository employeeRepository;
 
-    public TaskController(TaskService taskService, EmployeeRepository employeeRepository) {
+    public TaskController(
+            TaskService taskService,
+            EmployeeRepository employeeRepository,
+            TaskEvidenceService taskEvidenceService)
+    {
         this.taskService = taskService;
         this.employeeRepository = employeeRepository;
+        this.taskEvidenceService = taskEvidenceService;
     }
 
     // --- 1. CREATE TASK ---
@@ -37,23 +44,8 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskCreateRequest request) {
         Employee manager = getAuthenticatedEmployee();
 
-        Task task = new Task();
-        task.setTitle(request.title());
-        task.setDescription(request.description());
-        task.setDueDate(request.dueDate());
-        task.setRequiresEvidence(request.requiresEvidence());
-
-        try {
-            task.setPriority(TaskPriority.valueOf(request.priority()));
-        } catch (IllegalArgumentException e) {
-            task.setPriority(TaskPriority.MEDIUM);
-        }
-
-        Task createdTask = taskService.createTask(
-                task,
-                manager.getId(),
-                request.assignedToId()
-        );
+        // FIX: Just pass the request DTO straight to the service!
+        Task createdTask = taskService.createTask(request, manager.getId());
 
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(createdTask));
     }
@@ -78,12 +70,10 @@ public class TaskController {
         return ResponseEntity.ok(convertToDTOs(tasks));
     }
 
-    // FIX: Renamed to match Frontend and Architecture (Department View)
     @GetMapping("/team-tasks")
     @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')")
     public ResponseEntity<List<TaskResponseDTO>> getTeamTasks() {
         Employee manager = getAuthenticatedEmployee();
-        // Assuming you updated TaskService to include getTeamTasks()
         List<Task> tasks = taskService.getTeamTasks(manager.getId());
         return ResponseEntity.ok(convertToDTOs(tasks));
     }
@@ -103,7 +93,7 @@ public class TaskController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TaskCommentResponseDTO> addComment(
             @PathVariable UUID taskId,
-            @RequestBody TaskCommentRequest request) { // FIX: Use DTO, not String
+            @RequestBody TaskCommentRequest request) {
 
         Employee employee = getAuthenticatedEmployee();
         TaskComment savedComment = taskService.addComment(taskId, employee.getId(), request.content());
@@ -111,23 +101,31 @@ public class TaskController {
     }
 
     // --- 5. EVIDENCE (FILES) ---
-
-    // FIX: Return the TaskEvidence object so UI can update immediately
     @PostMapping(value = "/{taskId}/evidence", consumes = "multipart/form-data")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TaskEvidence> uploadEvidence(
             @PathVariable UUID taskId,
             @RequestParam("file") MultipartFile file) {
 
-        TaskEvidence evidence = taskService.uploadEvidence(taskId, file);
+        TaskEvidence evidence = taskEvidenceService.uploadEvidence(taskId, file);
         return ResponseEntity.ok(evidence);
     }
 
-    // FIX: Added missing endpoint
     @GetMapping("/{taskId}/evidence")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TaskEvidence>> getTaskEvidence(@PathVariable UUID taskId) {
-        return ResponseEntity.ok(taskService.getTaskEvidence(taskId));
+        return ResponseEntity.ok(taskEvidenceService.getTaskEvidence(taskId));
+    }
+
+    @PatchMapping("/evidence/{evidenceId}/review")
+    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    public ResponseEntity<TaskEvidence> reviewEvidence(
+            @PathVariable UUID evidenceId,
+            @RequestParam EvidenceStatus status,
+            @RequestParam(required = false) String feedback) {
+
+        TaskEvidence reviewedEvidence = taskEvidenceService.reviewEvidence(evidenceId, status, feedback);
+        return ResponseEntity.ok(reviewedEvidence);
     }
 
     // --- 6. RATING & FLAGGING ---
@@ -152,7 +150,6 @@ public class TaskController {
     }
 
     // --- HELPERS ---
-
     private Employee getAuthenticatedEmployee() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return employeeRepository.findByUserName(username)
