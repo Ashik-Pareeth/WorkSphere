@@ -1,14 +1,34 @@
-import ActiveTasksWidget from '../components/dashboard/ActiveTasksWidget'; // Adjust path if needed!
+import { useState, useEffect } from 'react';
+import { getMyTasks } from '../api/taskApi';
+import ActiveTasksWidget from '../components/dashboard/ActiveTasksWidget';
+import TaskStatsWidget from '../components/dashboard/TaskStatsWidget';
+import ActionItemsWidget from '../components/dashboard/ActionItemsWidget';
+import AttendanceTracker from '../components/dashboard/AttendanceTracker';
 
 const Dashboard = () => {
-  // Extract user info from local storage for a personalized greeting
-  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
-  const firstName = currentUser.name ? currentUser.name.split(' ')[0] : 'there';
+  // We store ALL tasks here now
+  const [allTasks, setAllTasks] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  // Check role to conditionally show manager panels later
-  const storedRoles = JSON.parse(localStorage.getItem('roles') || '[]');
-  const isManagerOrAdmin =
-    storedRoles.includes('ROLE_MANAGER') || storedRoles.includes('ROLE_ADMIN');
+  // We will pull the real name from the AuthContext or backend later
+  const firstName = 'there';
+
+  useEffect(() => {
+    const fetchDashboardData = async () => {
+      try {
+        setLoading(true);
+        // ONE API call to rule them all
+        const tasks = await getMyTasks();
+        setAllTasks(tasks);
+      } catch (error) {
+        console.error('Failed to load dashboard data:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+  }, []);
 
   return (
     <div className="flex flex-col h-screen bg-gray-50 text-gray-900 font-sans w-full overflow-y-auto">
@@ -20,26 +40,29 @@ const Dashboard = () => {
         <p className="text-sm text-gray-500 mt-1">
           Here is what's happening in your workspace today.
         </p>
+        <div>
+          <AttendanceTracker />
+        </div>
       </header>
 
       {/* --- DASHBOARD GRID --- */}
       <main className="flex-1 p-8 w-full max-w-7xl mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-125">
-          {/* PANEL 1: MY ACTIVE TASKS (Imported Component) */}
-          <div className="lg:col-span-1 h-full">
-            <ActiveTasksWidget />
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full min-h-125">
+          {/* LEFT COLUMN: ACTIVE TASKS */}
+          <div className="lg:col-span-1 h-150">
+            <ActiveTasksWidget tasks={allTasks} loading={loading} />
           </div>
 
-          {/* PANEL 2 & 3: EMPTY PLACEHOLDERS */}
-          <div className="lg:col-span-2 h-full flex flex-col gap-6">
-            {/* Top Empty Slot (Maybe Stats Row?) */}
-            <div className="flex-1 bg-white rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 font-medium">
-              + Add Stats Widget
+          {/* RIGHT COLUMN */}
+          <div className="lg:col-span-2 h-150 flex flex-col gap-6">
+            {/* TOP RIGHT: QUICK STATS */}
+            <div className="h-30">
+              <TaskStatsWidget tasks={allTasks} />
             </div>
 
-            {/* Bottom Empty Slot (Maybe Manager Approvals?) */}
-            <div className="flex-2 bg-white rounded-xl border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 font-medium">
-              + Add Workflow Widget
+            {/* BOTTOM RIGHT: ACTION ITEMS WIDGET */}
+            <div className="flex-1 min-h-0">
+              <ActionItemsWidget tasks={allTasks} />
             </div>
           </div>
         </div>

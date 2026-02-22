@@ -1,6 +1,9 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
+// --- IMPORT THE PROVIDER ---
+import { AuthProvider } from './context/AuthContext'; // Adjust path if needed!
+
 import NavBar from './components/layout/NavBar';
 import PrivateRoute from './components/layout/PrivateRoute';
 
@@ -12,6 +15,7 @@ import DepartmentForm from './features/admin/DepartmentForm';
 import AddEmployee from './features/Admin/AddEmployee';
 import RoleForm from './features/admin/RoleForm';
 import JobPositionForm from './features/admin/JobPositionForm';
+import Profile from './pages/Profile';
 
 // Helper to prevent logged-in users from seeing login again
 const isTokenValid = () => {
@@ -33,33 +37,38 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      <div className="app">
-        <Routes>
-          {/* PUBLIC ROUTES */}
-          <Route
-            path="/"
-            element={
-              <PublicRoute>
-                <Login />
-              </PublicRoute>
-            }
-          />
+      {/* --- WRAP THE APP IN THE AUTH PROVIDER --- */}
+      <AuthProvider>
+        <div className="app">
+          <Routes>
+            {/* PUBLIC ROUTES */}
+            <Route
+              path="/"
+              element={
+                <PublicRoute>
+                  <Login />
+                </PublicRoute>
+              }
+            />
 
-          <Route path="/onBoarding" element={<Onboarding />} />
+            {/* PROTECTED ROUTES */}
+            <Route element={<PrivateRoute />}>
+              {/* Moved Onboarding inside so it is protected from logged-out users */}
+              <Route path="/onBoarding" element={<Onboarding />} />
 
-          {/*  PROTECTED ROUTES */}
-          <Route element={<PrivateRoute />}>
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/tasks" element={<TaskBoard />} />
-            <Route path="/departments" element={<DepartmentForm />} />
-            <Route path="/register" element={<AddEmployee />} />
-            <Route path="/jobPosition" element={<JobPositionForm />} />
-            <Route path="/roles" element={<RoleForm />} />
-          </Route>
+              <Route path="/dashboard" element={<Dashboard />} />
+              <Route path="/profile" element={<Profile />} />
+              <Route path="/tasks" element={<TaskBoard />} />
+              <Route path="/departments" element={<DepartmentForm />} />
+              <Route path="/register" element={<AddEmployee />} />
+              <Route path="/jobPosition" element={<JobPositionForm />} />
+              <Route path="/roles" element={<RoleForm />} />
+            </Route>
 
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </div>
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </div>
+      </AuthProvider>
     </BrowserRouter>
   );
 }

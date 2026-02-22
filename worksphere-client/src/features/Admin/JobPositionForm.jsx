@@ -1,22 +1,35 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 
 function JobPositionForm() {
   const [title, setTitle] = useState('');
   const [rows, setRows] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const fetchPositions = async () => {
+  // 1. Memoize fetchPositions using useCallback
+  // We add an optional 'active' parameter to handle cleanup
+  const fetchPositions = useCallback(async (active = true) => {
     try {
       const response = await axiosInstance.get('/jobPositions');
-      setRows(response.data);
+      if (active) {
+        setRows(response.data);
+      }
     } catch (err) {
-      console.log(err);
+      console.error('Fetch error:', err);
+    } finally {
+      if (active) setLoading(false);
     }
-  };
-
-  useEffect(() => {
-    fetchPositions();
   }, []);
+
+  // 2. Use a local variable in useEffect to prevent cascading state updates
+  useEffect(() => {
+    let active = true;
+    fetchPositions(active);
+
+    return () => {
+      active = false; // Prevents state updates if component unmounts
+    };
+  }, [fetchPositions]);
 
   const savePosition = async (e) => {
     e.preventDefault();
@@ -25,9 +38,10 @@ function JobPositionForm() {
     try {
       await axiosInstance.post('/jobPositions', position);
       setTitle('');
+      // Trigger refresh after save
       fetchPositions();
     } catch (err) {
-      console.log(err);
+      console.error('Save error:', err);
     }
   };
 
@@ -48,7 +62,6 @@ function JobPositionForm() {
               <label className="block text-sm font-medium mb-1">
                 Job Title
               </label>
-
               <input
                 type="text"
                 className={inputStyle}
@@ -83,12 +96,32 @@ function JobPositionForm() {
             </thead>
 
             <tbody className="divide-y">
-              {rows.map((row, index) => (
-                <tr key={row.id} className="hover:bg-gray-50">
-                  <td className="px-4 py-2">{index + 1}</td>
-                  <td className="px-4 py-2">{row.positionName}</td>
+              {loading ? (
+                <tr>
+                  <td
+                    colSpan="2"
+                    className="px-4 py-6 text-center text-gray-500"
+                  >
+                    Loading positions...
+                  </td>
                 </tr>
-              ))}
+              ) : rows.length === 0 ? (
+                <tr>
+                  <td
+                    colSpan="2"
+                    className="px-4 py-6 text-center text-gray-500"
+                  >
+                    No positions found.
+                  </td>
+                </tr>
+              ) : (
+                rows.map((row, index) => (
+                  <tr key={row.id} className="hover:bg-gray-50">
+                    <td className="px-4 py-2">{index + 1}</td>
+                    <td className="px-4 py-2">{row.positionName}</td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>

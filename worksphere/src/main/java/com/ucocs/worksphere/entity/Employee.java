@@ -54,4 +54,9 @@ public class Employee extends BaseEntity {
     @Column(nullable = true)
     private LocalDateTime joiningDate;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "work_schedule_id")
+    private WorkSchedule workSchedule;
+
+
 }
