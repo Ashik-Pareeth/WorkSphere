@@ -87,6 +87,7 @@ public class EmployeeService {
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with name " + userName));
         employee.setPassword(passwordEncoder.encode(newPassword));
         employee.setPhoneNumber(phoneNumber);
+        employee.setJoiningDate(LocalDateTime.now());
         employee.setEmployeeStatus(EmployeeStatus.ACTIVE);
         employeeRepository.save(employee);
     }
@@ -170,7 +171,7 @@ public class EmployeeService {
         employeeRepository.save(employee);
     }
 
-    // ✅ ADD THIS: Delete Logic
+    // ADD THIS: Delete Logic
     public void deleteEmployee(UUID id) {
         if (!employeeRepository.existsById(id)) {
             throw new ResourceNotFoundException("Employee not found with id: " + id);
@@ -180,9 +181,11 @@ public class EmployeeService {
 
     // In worksphere/service/EmployeeService.java
 
+    // Inside EmployeeService.java
     public EmployeeResponseDTO getEmployeeById(UUID id) {
-        Employee employee = employeeRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + id));
+        Employee employee = employeeRepository.findByIdWithDetails(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
         return EmployeeResponseDTO.fromEntity(employee);
     }
 }

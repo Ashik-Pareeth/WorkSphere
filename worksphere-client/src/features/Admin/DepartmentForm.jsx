@@ -1,33 +1,50 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import AlertMessage from '../../components/common/AlertMessage'; // Assuming you have this
+import AlertMessage from '../../components/common/AlertMessage';
 
 function DepartmentForm() {
-  // Form State
+  // --- State ---
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [editingId, setEditingId] = useState(null); // Track if editing
-
-  // Data State
+  const [editingId, setEditingId] = useState(null);
   const [rows, setRows] = useState([]);
-  const [alert, setAlert] = useState(null); // { type: 'error'|'success', message: '' }
+  const [loading, setLoading] = useState(true);
+  const [alert, setAlert] = useState(null);
 
-  // Fetch Data
-  useEffect(() => {
-    fetchDepartments();
-  }, []);
-
-  const fetchDepartments = async () => {
+  // --- Shared Logic ---
+  // We keep this outside for use in handleSubmit and handleDelete
+  const fetchDepartments = useCallback(async (isMounted = true) => {
     try {
       const response = await axiosInstance.get('/departments');
-      setRows(response.data);
+      if (isMounted) {
+        setRows(response.data);
+      }
     } catch (err) {
       console.error('Failed to fetch', err);
+    } finally {
+      if (isMounted) setLoading(false);
     }
+  }, []);
+
+  const resetForm = () => {
+    setName('');
+    setDescription('');
+    setEditingId(null);
   };
 
-  // --- HANDLERS ---
+  // --- Lifecycle (Vite/Strict Best Practice) ---
+  useEffect(() => {
+    let active = true;
 
+    // Initial Load
+    fetchDepartments(active);
+
+    return () => {
+      active = false; // Prevents "setState on unmounted component"
+    };
+  }, [fetchDepartments]);
+
+  // --- Handlers ---
   const validateForm = () => {
     if (!name.trim()) {
       setAlert({ type: 'error', message: 'Department Name cannot be empty.' });
@@ -44,14 +61,12 @@ function DepartmentForm() {
 
     try {
       if (editingId) {
-        // UPDATE (PUT)
         await axiosInstance.put(`/departments/${editingId}`, payload);
         setAlert({
           type: 'success',
           message: 'Department updated successfully!',
         });
       } else {
-        // CREATE (POST)
         await axiosInstance.post('/departments', payload);
         setAlert({
           type: 'success',
@@ -60,12 +75,13 @@ function DepartmentForm() {
       }
 
       resetForm();
-      fetchDepartments();
+      fetchDepartments(); // Refresh list after mutation
     } catch (err) {
       setAlert({
         type: 'error',
         message: 'Operation failed. Name might be duplicate.',
       });
+      console.error(err);
     }
   };
 
@@ -74,7 +90,7 @@ function DepartmentForm() {
     setDescription(dept.description || '');
     setEditingId(dept.id);
     setAlert(null);
-    window.scrollTo(0, 0); // Scroll to form
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
@@ -90,17 +106,11 @@ function DepartmentForm() {
         type: 'error',
         message: 'Cannot delete. It might be assigned to employees.',
       });
+      console.error(err);
     }
   };
 
-  const resetForm = () => {
-    setName('');
-    setDescription('');
-    setEditingId(null);
-  };
-
-  // --- RENDER ---
-
+  // --- Render ---
   return (
     <div
       className="container"
@@ -126,7 +136,7 @@ function DepartmentForm() {
         />
       )}
 
-      {/* FORM */}
+      {/* FORM CARD */}
       <div
         className="card"
         style={{
@@ -140,7 +150,6 @@ function DepartmentForm() {
         <h3 style={{ margin: '0 0 1rem 0' }}>
           {editingId ? 'Edit Department' : 'Add New Department'}
         </h3>
-
         <form onSubmit={handleSubmit}>
           <div className="form-group" style={{ marginBottom: '1rem' }}>
             <label
@@ -195,7 +204,6 @@ function DepartmentForm() {
           <div style={{ display: 'flex', gap: '1rem' }}>
             <button
               type="submit"
-              className="btn btn-primary"
               style={{
                 background: '#2563eb',
                 color: '#fff',
@@ -207,7 +215,6 @@ function DepartmentForm() {
             >
               {editingId ? 'Update Department' : 'Save Department'}
             </button>
-
             {editingId && (
               <button
                 type="button"
@@ -228,7 +235,7 @@ function DepartmentForm() {
         </form>
       </div>
 
-      {/* TABLE */}
+      {/* LIST CARD */}
       <div
         className="card"
         style={{
@@ -262,7 +269,7 @@ function DepartmentForm() {
                 style={{
                   padding: '0.75rem',
                   borderBottom: '2px solid #e2e8f0',
-                  width: '150px',
+                  width: '100px',
                 }}
               >
                 Actions
@@ -270,7 +277,20 @@ function DepartmentForm() {
             </tr>
           </thead>
           <tbody>
-            {rows.length === 0 ? (
+            {loading ? (
+              <tr>
+                <td
+                  colSpan="3"
+                  style={{
+                    padding: '2rem',
+                    textAlign: 'center',
+                    color: '#666',
+                  }}
+                >
+                  Loading departments...
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
               <tr>
                 <td
                   colSpan="3"
@@ -302,7 +322,6 @@ function DepartmentForm() {
                         cursor: 'pointer',
                         fontSize: '1.1rem',
                       }}
-                      title="Edit"
                     >
                       ✏️
                     </button>
@@ -314,7 +333,6 @@ function DepartmentForm() {
                         cursor: 'pointer',
                         fontSize: '1.1rem',
                       }}
-                      title="Delete"
                     >
                       🗑️
                     </button>
