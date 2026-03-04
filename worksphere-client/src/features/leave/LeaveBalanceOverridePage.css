@@ -1,0 +1,137 @@
+.override-page {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 24px;
+  animation: fadeIn 0.4s ease-out;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.override-header {
+  margin-bottom: 28px;
+}
+
+.override-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.6rem;
+  color: #fff;
+}
+
+.override-header p {
+  color: #8b8b9e;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.override-form {
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.form-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.form-group {
+  margin-bottom: 18px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+  color: #a0a0b0;
+  font-weight: 500;
+}
+
+.form-group.required label::after {
+  content: ' *';
+  color: #ff4757;
+}
+
+.form-group select,
+.form-group input,
+.form-group textarea {
+  width: 100%;
+  padding: 10px 12px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 0.9rem;
+  outline: none;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+  font-family: inherit;
+}
+
+.form-group select {
+  cursor: pointer;
+}
+
+.form-group select option {
+  background: #1e1e2d;
+  color: #fff;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+  border-color: #3b82f6;
+}
+
+.error-alert {
+  background: rgba(255, 71, 87, 0.1);
+  color: #ff4757;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(255, 71, 87, 0.2);
+  font-size: 0.85rem;
+}
+
+.success-alert {
+  background: rgba(52, 211, 153, 0.1);
+  color: #34d399;
+  padding: 12px;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  border: 1px solid rgba(52, 211, 153, 0.2);
+  font-size: 0.85rem;
+}
+
+.btn-submit {
+  width: 100%;
+  padding: 12px;
+  background: #3b82f6;
+  border: none;
+  color: #fff;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 0.95rem;
+  transition: background 0.2s;
+  margin-top: 8px;
+}
+
+.btn-submit:hover:not(:disabled) {
+  background: #2563eb;
+}
+.btn-submit:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

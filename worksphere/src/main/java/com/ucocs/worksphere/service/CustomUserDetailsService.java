@@ -4,13 +4,11 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.repository.EmployeeRepository;
-import jakarta.validation.constraints.NotNull;
 import org.jspecify.annotations.NonNull;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
-
 
 @Service
 public class CustomUserDetailsService implements UserDetailsService {

@@ -22,82 +22,126 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class LeaveRequestService {
 
-    private final LeaveRequestRepository leaveRequestRepository;
-    private final EmployeeRepository employeeRepository;
-    private final LeavePolicyRepository policyRepository;
-    private final LeaveLedgerService leaveLedgerService;
+        private final LeaveRequestRepository leaveRequestRepository;
+        private final EmployeeRepository employeeRepository;
+        private final LeavePolicyRepository policyRepository;
+        private final LeaveLedgerService leaveLedgerService;
 
-    // 1. Employee Submits Request
-    @Transactional
-    public LeaveRequest submitRequest(String username, UUID policyId, LocalDate startDate, LocalDate endDate, double requestedDays, String reason) {
-        Employee employee = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
-        LeavePolicy policy = policyRepository.findById(policyId)
-                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
+        // 1. Employee Submits Request
+        @Transactional
+        public LeaveRequest submitRequest(String username, UUID policyId, LocalDate startDate, LocalDate endDate,
+                        double requestedDays, String reason) {
+                Employee employee = employeeRepository.findByUserName(username)
+                                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+                LeavePolicy policy = policyRepository.findById(policyId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
 
-        LeaveRequest request = new LeaveRequest();
-        request.setEmployee(employee);
-        request.setLeavePolicy(policy);
-        request.setStartDate(startDate);
-        request.setEndDate(endDate);
-        request.setRequestedDays(requestedDays);
-        request.setReason(reason);
-        request.setStatus(LeaveRequestStatus.PENDING);
-        request.setCreatedBy(username);
+                LeaveRequest request = new LeaveRequest();
+                request.setEmployee(employee);
+                request.setLeavePolicy(policy);
+                request.setStartDate(startDate);
+                request.setEndDate(endDate);
+                request.setRequestedDays(requestedDays);
+                request.setReason(reason);
+                request.setStatus(LeaveRequestStatus.PENDING);
+                request.setCreatedBy(username);
 
-        return leaveRequestRepository.save(request);
-    }
-
-    // 2. Manager Approves Request (ATOMIC TRANSACTION)
-    @Transactional
-    public LeaveRequest approveRequest(UUID requestId, String managerUsername, String comment) {
-        LeaveRequest request = leaveRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
-        Employee manager = employeeRepository.findByUserName(managerUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
-
-        if (request.getStatus() != LeaveRequestStatus.PENDING) {
-            throw new IllegalStateException("Only pending requests can be approved.");
+                return leaveRequestRepository.save(request);
         }
 
-        // Apply Row-Level Security: Only HR/Admin or the employee's specific manager can approve
-        boolean isGodMode = manager.getRoles().stream().anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
-        if (!isGodMode && !manager.getDepartment().getId().equals(request.getEmployee().getDepartment().getId())) {
-            throw new AccessDeniedException("You can only approve requests for your own department.");
+        // 2. Manager Approves Request (ATOMIC TRANSACTION)
+        @Transactional
+        public LeaveRequest approveRequest(UUID requestId, String managerUsername, String comment) {
+                LeaveRequest request = leaveRequestRepository.findById(requestId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                Employee manager = employeeRepository.findByUserName(managerUsername)
+                                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+
+                if (request.getStatus() != LeaveRequestStatus.PENDING) {
+                        throw new IllegalStateException("Only pending requests can be approved.");
+                }
+
+                // Apply Row-Level Security: Only HR/Admin or the employee's specific manager
+                // can approve
+                validateReviewerAuthorization(manager, request);
+
+                // A. Update the Request Status
+                request.setStatus(LeaveRequestStatus.APPROVED);
+                request.setReviewer(manager);
+                request.setReviewerComment(comment);
+                LeaveRequest savedRequest = leaveRequestRepository.save(request);
+
+                // B. Automatically Deduct from the Ledger!
+                // If this throws an "Insufficient balance" error, the whole approval rolls
+                // back!
+                leaveLedgerService.adjustBalance(
+                                request.getEmployee().getId(),
+                                request.getLeavePolicy().getId(),
+                                LeaveTransactionType.DEDUCTION,
+                                request.getRequestedDays(),
+                                "Approved Leave Request from " + request.getStartDate() + " to "
+                                                + request.getEndDate());
+
+                return savedRequest;
         }
 
-        // A. Update the Request Status
-        request.setStatus(LeaveRequestStatus.APPROVED);
-        request.setReviewer(manager);
-        request.setReviewerComment(comment);
-        LeaveRequest savedRequest = leaveRequestRepository.save(request);
+        // 3. Manager Rejects Request
+        @Transactional
+        public LeaveRequest rejectRequest(UUID requestId, String managerUsername, String comment) {
+                LeaveRequest request = leaveRequestRepository.findById(requestId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                Employee manager = employeeRepository.findByUserName(managerUsername)
+                                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
 
-        // B. Automatically Deduct from the Ledger!
-        // If this throws an "Insufficient balance" error, the whole approval rolls back!
-        leaveLedgerService.adjustBalance(
-                request.getEmployee().getId(),
-                request.getLeavePolicy().getId(),
-                LeaveTransactionType.DEDUCTION,
-                request.getRequestedDays(),
-                "Approved Leave Request from " + request.getStartDate() + " to " + request.getEndDate()
-        );
+                validateReviewerAuthorization(manager, request);
 
-        return savedRequest;
-    }
+                request.setStatus(LeaveRequestStatus.REJECTED);
+                request.setReviewer(manager);
+                request.setReviewerComment(comment);
 
-    // 3. Manager Rejects Request
-    @Transactional
-    public LeaveRequest rejectRequest(UUID requestId, String managerUsername, String comment) {
-        LeaveRequest request = leaveRequestRepository.findById(requestId)
-                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
-        Employee manager = employeeRepository.findByUserName(managerUsername)
-                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+                // We DO NOT deduct from the ledger on a rejection.
+                return leaveRequestRepository.save(request);
+        }
 
-        request.setStatus(LeaveRequestStatus.REJECTED);
-        request.setReviewer(manager);
-        request.setReviewerComment(comment);
+        // 4. Get Pending Requests (for Manager/HR/Admin approval flow)
+        @Transactional(readOnly = true)
+        public List<LeaveRequest> getPendingRequests(String username) {
+                Employee reviewer = employeeRepository.findByUserName(username)
+                                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
-        // We DO NOT deduct from the ledger on a rejection.
-        return leaveRequestRepository.save(request);
-    }
+                // HR and Admin see ALL pending requests across the organization
+                boolean isHrOrAdmin = reviewer.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().equalsIgnoreCase("HR")
+                                                || r.getRoleName().equalsIgnoreCase("ADMIN"));
+
+                if (isHrOrAdmin) {
+                        return leaveRequestRepository.findAllByStatusWithDetails(LeaveRequestStatus.PENDING);
+                }
+
+                // Managers see only their department's pending requests
+                if (reviewer.getDepartment() == null) {
+                        throw new AccessDeniedException("Cannot determine your department for approvals.");
+                }
+                return leaveRequestRepository.findByDepartmentAndStatusWithDetails(
+                                reviewer.getDepartment().getId(), LeaveRequestStatus.PENDING);
+        }
+
+        private void validateReviewerAuthorization(Employee manager, LeaveRequest request) {
+                if (manager.getId().equals(request.getEmployee().getId())) {
+                        throw new AccessDeniedException("You cannot approve or reject your own leave requests.");
+                }
+
+                boolean isGodMode = manager.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+
+                if (!isGodMode) {
+                        if (manager.getDepartment() == null) {
+                                throw new AccessDeniedException("Cannot determine your department for approvals.");
+                        }
+                        if (!manager.getDepartment().getId().equals(request.getEmployee().getDepartment().getId())) {
+                                throw new AccessDeniedException(
+                                                "You can only access requests for your own department.");
+                        }
+                }
+        }
 }

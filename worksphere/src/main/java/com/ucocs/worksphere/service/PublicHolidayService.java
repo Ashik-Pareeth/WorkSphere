@@ -25,9 +25,16 @@ public class PublicHolidayService {
     // You can add methods here later for Admins to create/delete holidays
     public PublicHoliday createHoliday(PublicHoliday holiday) {
         // Add logic to prevent duplicate dates
-        if(isHoliday(holiday.getDate())) {
+        if (isHoliday(holiday.getDate())) {
             throw new IllegalArgumentException("A holiday already exists on this date.");
         }
         return publicHolidayRepository.save(holiday);
+    }
+
+    public void deleteHoliday(java.util.UUID id) {
+        if (!publicHolidayRepository.existsById(id)) {
+            throw new com.ucocs.worksphere.exception.ResourceNotFoundException("Holiday not found with id: " + id);
+        }
+        publicHolidayRepository.deleteById(id);
     }
 }

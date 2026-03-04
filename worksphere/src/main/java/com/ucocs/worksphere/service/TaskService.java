@@ -30,8 +30,8 @@ public class TaskService {
     private final TaskCommentRepository taskCommentRepository;
 
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
-                       TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
-                       TaskCommentRepository taskCommentRepository) {
+            TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
+            TaskCommentRepository taskCommentRepository) {
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceRepository = taskEvidenceRepository;
@@ -65,8 +65,7 @@ public class TaskService {
                 manager,
                 assignee,
                 request.dueDate(),
-                priorityEnum
-        );
+                priorityEnum);
 
         newTask.setRequiresEvidence(request.requiresEvidence());
 
@@ -85,7 +84,8 @@ public class TaskService {
         TaskStatus oldStatus = task.getStatus();
         TaskStatus newStatus = updateDTO.status();
 
-        if (oldStatus == newStatus) return task;
+        if (oldStatus == newStatus)
+            return task;
 
         boolean isAdmin = hasRole(currentUser, "ADMIN");
         boolean isManager = hasRole(currentUser, "MANAGER");
@@ -98,9 +98,11 @@ public class TaskService {
 
         // --- WIP LIMIT ENFORCEMENT ---
         if (newStatus == TaskStatus.IN_PROGRESS && !hasOversight) { // Managers can bypass WIP limits if needed
-            long currentWip = taskRepository.countByAssignedTo_IdAndStatus(task.getAssignedTo().getId(), TaskStatus.IN_PROGRESS);
+            long currentWip = taskRepository.countByAssignedTo_IdAndStatus(task.getAssignedTo().getId(),
+                    TaskStatus.IN_PROGRESS);
             if (currentWip >= 3) {
-                throw new IllegalStateException("WIP Limit Reached: You already have 3 tasks in progress. Finish one first.");
+                throw new IllegalStateException(
+                        "WIP Limit Reached: You already have 3 tasks in progress. Finish one first.");
             }
         }
 
@@ -130,8 +132,8 @@ public class TaskService {
             case COMPLETED -> task.markAsCompleted();
             case CANCELLED -> task.cancelTask();
             case TODO -> {
-                // If a manager kicks it back all the way to TODO from a higher state
-                if (hasOversight) task.kickBackToInProgress(); // Adjust based on your business logic
+                if (hasOversight)
+                    task.kickBackToInProgress(); // Adjust based on your business logic
             }
         }
 
@@ -145,7 +147,8 @@ public class TaskService {
         logHistory(savedTask, currentUser, updateDTO.comment(), roleSnapshot, oldStatus, newStatus);
 
         return taskRepository.findByIdWithRelations(taskId)
-                .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));    }
+                .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));
+    }
 
     public Task rateTask(UUID taskId, Integer rating) {
         Task task = taskRepository.findByIdWithRelations(taskId)
@@ -200,7 +203,8 @@ public class TaskService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         // Ask Spring Security for your roles directly from the authenticated token
-        boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication()).getAuthorities().stream()
+        boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication())
+                .getAuthorities().stream()
                 .anyMatch(a -> {
                     String role = a.getAuthority();
                     assert role != null;
@@ -211,7 +215,8 @@ public class TaskService {
             return taskRepository.findAllWithRelations();
         }
 
-        // If not a global viewer, they must be a Manager. Give them their department's tasks.
+        // If not a global viewer, they must be a Manager. Give them their department's
+        // tasks.
         if (employee.getDepartment() == null) {
             return List.of();
         }
@@ -243,15 +248,14 @@ public class TaskService {
     // --- HELPERS ---
 
     private void logHistory(Task task, Employee actor, String comment, String roleSnapshot,
-                            TaskStatus oldStatus, TaskStatus newStatus) {
+            TaskStatus oldStatus, TaskStatus newStatus) {
         TaskHistory history = new TaskHistory(
                 task,
                 actor,
                 roleSnapshot,
                 oldStatus != null ? oldStatus : task.getStatus(),
                 newStatus != null ? newStatus : task.getStatus(),
-                comment
-        );
+                comment);
         taskHistoryRepository.save(history);
     }
 
@@ -262,9 +266,7 @@ public class TaskService {
     }
 
     private boolean hasRole(Employee employee, String roleName) {
-        employee.getRoles().forEach(r ->
-                System.out.println("DB ROLE = " + r.getRoleName())
-        );
+        employee.getRoles().forEach(r -> System.out.println("DB ROLE = " + r.getRoleName()));
         return employee.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals(roleName));
     }

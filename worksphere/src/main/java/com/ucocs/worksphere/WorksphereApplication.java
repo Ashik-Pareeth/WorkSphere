@@ -10,8 +10,11 @@ import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.util.Optional;
 
+import org.springframework.scheduling.annotation.EnableScheduling;
+
 @SpringBootApplication
-@EnableJpaAuditing(auditorAwareRef = "auditorAware") // <--- 1. ENABLE AUDITING HERE
+@EnableJpaAuditing(auditorAwareRef = "auditorAware")
+@EnableScheduling
 public class WorksphereApplication {
 
     public static void main(String[] args) {

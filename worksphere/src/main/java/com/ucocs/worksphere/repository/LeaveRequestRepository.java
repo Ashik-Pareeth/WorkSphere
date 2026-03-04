@@ -4,6 +4,8 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.LeaveRequest;
 import com.ucocs.worksphere.enums.LeaveRequestStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -15,4 +17,22 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
 
     // For managers to see pending requests for their department
     List<LeaveRequest> findByEmployeeDepartmentIdAndStatus(UUID departmentId, LeaveRequestStatus status);
+
+    // Fetch all pending requests with employee and policy eagerly loaded (for
+    // HR/Admin)
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "LEFT JOIN FETCH lr.employee " +
+            "LEFT JOIN FETCH lr.leavePolicy " +
+            "WHERE lr.status = :status " +
+            "ORDER BY lr.createdAt DESC")
+    List<LeaveRequest> findAllByStatusWithDetails(@Param("status") LeaveRequestStatus status);
+
+    // Fetch pending requests for a specific department with eager loading
+    @Query("SELECT lr FROM LeaveRequest lr " +
+            "LEFT JOIN FETCH lr.employee " +
+            "LEFT JOIN FETCH lr.leavePolicy " +
+            "WHERE lr.employee.department.id = :deptId AND lr.status = :status " +
+            "ORDER BY lr.createdAt DESC")
+    List<LeaveRequest> findByDepartmentAndStatusWithDetails(@Param("deptId") UUID departmentId,
+            @Param("status") LeaveRequestStatus status);
 }

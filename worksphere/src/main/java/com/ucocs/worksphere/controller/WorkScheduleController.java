@@ -1,0 +1,38 @@
+package com.ucocs.worksphere.controller;
+
+import com.ucocs.worksphere.entity.WorkSchedule;
+import com.ucocs.worksphere.service.WorkScheduleService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
+import java.util.UUID;
+
+@RestController
+@RequestMapping("/api/work-schedules")
+@RequiredArgsConstructor
+public class WorkScheduleController {
+
+    private final WorkScheduleService scheduleService;
+
+    @GetMapping
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<WorkSchedule>> getAllSchedules() {
+        return ResponseEntity.ok(scheduleService.getAllSchedules());
+    }
+
+    @PostMapping
+    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    public ResponseEntity<WorkSchedule> createSchedule(@RequestBody WorkSchedule schedule) {
+        return ResponseEntity.ok(scheduleService.createSchedule(schedule));
+    }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    public ResponseEntity<WorkSchedule> updateSchedule(
+            @PathVariable UUID id, @RequestBody WorkSchedule schedule) {
+        return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule));
+    }
+}
