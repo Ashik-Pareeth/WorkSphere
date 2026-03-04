@@ -1,23 +1,25 @@
 import React from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
 
-// --- IMPORT THE PROVIDER ---
-import { AuthProvider } from './context/AuthContext'; // Adjust path if needed!
-
-import NavBar from './components/layout/NavBar';
 import PrivateRoute from './components/layout/PrivateRoute';
-
 import Login from './features/auth/Login';
 import Onboarding from './features/auth/Onboarding';
 import Dashboard from './pages/Dashboard';
 import TaskBoard from './features/tasks/TaskBoard';
-import DepartmentForm from './features/admin/DepartmentForm';
+import DepartmentForm from './features/Admin/DepartmentForm';
 import AddEmployee from './features/Admin/AddEmployee';
-import RoleForm from './features/admin/RoleForm';
-import JobPositionForm from './features/admin/JobPositionForm';
+import RoleForm from './features/Admin/RoleForm';
+import JobPositionForm from './features/Admin/JobPositionForm';
 import Profile from './pages/Profile';
+import LeaveRequestPage from './pages/LeaveRequestPage';
+import LeaveApprovalsPage from './pages/LeaveApprovalsPage';
+import ManagerDashboard from './pages/ManagerDashboard';
+import LeaveBalanceOverridePage from './features/leave/LeaveBalanceOverridePage';
+import LeavePolicyPage from './features/leave/LeavePolicyPage';
+import PublicHolidayPage from './features/admin/PublicHolidayPage';
+import WorkSchedulePage from './features/admin/WorkSchedulePage';
 
-// Helper to prevent logged-in users from seeing login again
 const isTokenValid = () => {
   const token = localStorage.getItem('token');
   if (!token) return false;
@@ -37,7 +39,6 @@ const PublicRoute = ({ children }) => {
 function App() {
   return (
     <BrowserRouter>
-      {/* --- WRAP THE APP IN THE AUTH PROVIDER --- */}
       <AuthProvider>
         <div className="app">
           <Routes>
@@ -51,20 +52,47 @@ function App() {
               }
             />
 
-            {/* PROTECTED ROUTES */}
-            <Route element={<PrivateRoute />}>
-              {/* Moved Onboarding inside so it is protected from logged-out users */}
+            {/* --- TIER 1: EVERYONE (Employees, Managers, HR, Admins) --- */}
+            <Route
+              element={
+                <PrivateRoute
+                  allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}
+                />
+              }
+            >
               <Route path="/onBoarding" element={<Onboarding />} />
-
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/tasks" element={<TaskBoard />} />
+              <Route path="/leave" element={<LeaveRequestPage />} />
+            </Route>
+
+            {/* --- TIER 1.5: MANAGERS, HR, ADMINS --- */}
+            <Route
+              element={
+                <PrivateRoute allowedRoles={['MANAGER', 'HR', 'ADMIN']} />
+              }
+            >
+              <Route path="/approvals" element={<LeaveApprovalsPage />} />
+              <Route path="/roster" element={<ManagerDashboard />} />
+            </Route>
+
+            {/* --- TIER 2: HR & ADMINS ONLY (System Config) --- */}
+            <Route element={<PrivateRoute allowedRoles={['HR', 'ADMIN']} />}>
               <Route path="/departments" element={<DepartmentForm />} />
               <Route path="/register" element={<AddEmployee />} />
               <Route path="/jobPosition" element={<JobPositionForm />} />
               <Route path="/roles" element={<RoleForm />} />
+              <Route path="/leave-policies" element={<LeavePolicyPage />} />
+              <Route
+                path="/leave-override"
+                element={<LeaveBalanceOverridePage />}
+              />
+              <Route path="/holidays" element={<PublicHolidayPage />} />
+              <Route path="/work-schedules" element={<WorkSchedulePage />} />
             </Route>
 
+            {/* FALLBACK ROUTE */}
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>

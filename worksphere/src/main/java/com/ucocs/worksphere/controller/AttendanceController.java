@@ -3,10 +3,8 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.dto.AttendanceDTO;
 import com.ucocs.worksphere.dto.ManualTimeUpdateRequest;
 import com.ucocs.worksphere.entity.Attendance;
-import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.TimesheetAuditLog;
-import com.ucocs.worksphere.repository.AttendanceRepository;
-import com.ucocs.worksphere.repository.EmployeeRepository;
+import com.ucocs.worksphere.dto.TimesheetAuditLogDTO;
 import com.ucocs.worksphere.service.AttendanceService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -22,7 +20,6 @@ import java.util.UUID;
 @RestController
 public class AttendanceController {
     public final AttendanceService attendanceService;
-
 
     public AttendanceController(AttendanceService attendanceService) {
         this.attendanceService = attendanceService;
@@ -50,22 +47,30 @@ public class AttendanceController {
 
     @PutMapping("/{attendanceId}/manual-update")
     @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
-    public ResponseEntity<Attendance> manuallyUpdateTimesheet(
+    public ResponseEntity<AttendanceDTO> manuallyUpdateTimesheet(
             @PathVariable UUID attendanceId,
             @RequestBody ManualTimeUpdateRequest request,
             Authentication authentication) {
 
-        UUID managerId = UUID.fromString(authentication.getName());
-        Attendance updatedAttendance = attendanceService.manuallyUpdateTimesheet(attendanceId, managerId, request);
-        return ResponseEntity.ok(updatedAttendance);
+        String managerUsername = authentication.getName();
+        Attendance updatedAttendance = attendanceService.manuallyUpdateTimesheet(attendanceId, managerUsername,
+                request);
+        return ResponseEntity.ok(AttendanceDTO.fromEntity(updatedAttendance));
     }
 
     @GetMapping("/{attendanceId}/audit-logs")
     @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
-    public ResponseEntity<List<TimesheetAuditLog>> getTimesheetAuditLogs(@PathVariable UUID attendanceId) {
-        // Now correctly routing through the Service layer!
+    public ResponseEntity<List<TimesheetAuditLogDTO>> getTimesheetAuditLogs(@PathVariable UUID attendanceId) {
         List<TimesheetAuditLog> logs = attendanceService.getAuditLogsForAttendance(attendanceId);
-        return ResponseEntity.ok(logs);
+        List<TimesheetAuditLogDTO> dtos = logs.stream()
+                .map(TimesheetAuditLogDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/roster/today")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    public ResponseEntity<List<com.ucocs.worksphere.dto.DailyRosterDTO>> getDailyRoster(Principal principal) {
+        return ResponseEntity.ok(attendanceService.getDailyRoster(principal.getName()));
     }
 }
-

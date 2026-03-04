@@ -114,7 +114,8 @@ public class AttendanceService {
     public List<AttendanceDTO> getEmployeeAttendanceHistory(String username) {
         Employee employee = getEmployeeByUsername(username);
 
-        // Note: You may need to update AttendanceDTO.fromEntity to handle the UUID change
+        // Note: You may need to update AttendanceDTO.fromEntity to handle the UUID
+        // change
         return attendanceRepository.findByEmployee(employee)
                 .stream()
                 .map(AttendanceDTO::fromEntity)
@@ -123,7 +124,8 @@ public class AttendanceService {
 
     // --- THE NEW MANUAL OVERRIDE LOGIC ---
     @Transactional
-    public Attendance manuallyUpdateTimesheet(UUID attendanceId, UUID managerId, ManualTimeUpdateRequest request) {
+    public Attendance manuallyUpdateTimesheet(UUID attendanceId, String managerUsername,
+            ManualTimeUpdateRequest request) {
         if (request.getReason() == null || request.getReason().trim().isEmpty()) {
             throw new IllegalArgumentException("A valid reason must be provided for manual timesheet adjustments.");
         }
@@ -131,8 +133,7 @@ public class AttendanceService {
         Attendance attendance = attendanceRepository.findById(attendanceId)
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found"));
 
-        Employee modifyingUser = employeeRepository.findById(managerId)
-                .orElseThrow(() -> new ResourceNotFoundException("Modifying user not found"));
+        Employee modifyingUser = getEmployeeByUsername(managerUsername);
 
         Employee targetEmployee = attendance.getEmployee();
 
@@ -148,21 +149,24 @@ public class AttendanceService {
                 throw new AccessDeniedException("Department assignment missing. Cannot verify manager jurisdiction.");
             }
             if (!modifyingUser.getDepartment().getId().equals(targetEmployee.getDepartment().getId())) {
-                throw new AccessDeniedException("Access Denied: Managers can only modify timesheets for employees within their own department.");
+                throw new AccessDeniedException(
+                        "Access Denied: Managers can only modify timesheets for employees within their own department.");
             }
         }
 
         // Audit Clock In Change
         if (request.getNewClockIn() != null && !request.getNewClockIn().equals(attendance.getClockIn())) {
             createAuditLog(attendance, modifyingUser, "clockIn",
-                    String.valueOf(attendance.getClockIn()), String.valueOf(request.getNewClockIn()), request.getReason());
+                    String.valueOf(attendance.getClockIn()), String.valueOf(request.getNewClockIn()),
+                    request.getReason());
             attendance.setClockIn(request.getNewClockIn());
         }
 
         // Audit Clock Out Change
         if (request.getNewClockOut() != null && !request.getNewClockOut().equals(attendance.getClockOut())) {
             createAuditLog(attendance, modifyingUser, "clockOut",
-                    String.valueOf(attendance.getClockOut()), String.valueOf(request.getNewClockOut()), request.getReason());
+                    String.valueOf(attendance.getClockOut()), String.valueOf(request.getNewClockOut()),
+                    request.getReason());
             attendance.setClockOut(request.getNewClockOut());
         }
 
@@ -177,7 +181,8 @@ public class AttendanceService {
         return attendanceRepository.save(attendance);
     }
 
-    private void createAuditLog(Attendance attendance, Employee manager, String field, String oldVal, String newVal, String reason) {
+    private void createAuditLog(Attendance attendance, Employee manager, String field, String oldVal, String newVal,
+            String reason) {
         TimesheetAuditLog log = new TimesheetAuditLog();
         log.setAttendance(attendance);
         log.setChangedBy(manager);
@@ -187,8 +192,46 @@ public class AttendanceService {
         log.setReason(reason);
         auditLogRepository.save(log);
     }
+
     @Transactional(readOnly = true)
     public List<TimesheetAuditLog> getAuditLogsForAttendance(UUID attendanceId) {
         return auditLogRepository.findByAttendanceIdOrderByChangeTimestampDesc(attendanceId);
+    }
+
+    // --- DAILY ROSTER FOR MANAGERS ---
+    @Transactional(readOnly = true)
+    public List<com.ucocs.worksphere.dto.DailyRosterDTO> getDailyRoster(String username) {
+        Employee reviewer = getEmployeeByUsername(username);
+
+        boolean isGodMode = reviewer.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+
+        List<Attendance> todayRecords;
+        LocalDate today = LocalDate.now();
+
+        if (isGodMode) {
+            todayRecords = attendanceRepository.findByDate(today);
+        } else {
+            if (reviewer.getDepartment() == null) {
+                throw new org.springframework.security.access.AccessDeniedException(
+                        "Cannot determine your department for roster access.");
+            }
+            todayRecords = attendanceRepository.findByDateAndEmployee_Department_Id(
+                    today, reviewer.getDepartment().getId());
+        }
+
+        return todayRecords.stream().map(att -> {
+            Employee emp = att.getEmployee();
+            return new com.ucocs.worksphere.dto.DailyRosterDTO(
+                    emp.getId(),
+                    emp.getFirstName(),
+                    emp.getLastName(),
+                    emp.getJobPosition() != null ? emp.getJobPosition().getPositionName() : "Employee",
+                    att.getDailyStatus().name(),
+                    att.getClockIn(),
+                    att.getClockOut(),
+                    att.getId(),
+                    att.getIsManuallyAdjusted());
+        }).toList();
     }
 }

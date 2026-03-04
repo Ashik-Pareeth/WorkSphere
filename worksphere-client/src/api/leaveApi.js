@@ -62,3 +62,11 @@ export const rejectLeaveRequest = async (requestId, comment) => {
   );
   return response.data;
 };
+
+// Manager/HR Only: Get all pending requests for their department (or all if HR)
+export const getPendingLeaveRequests = async () => {
+  // We will assume you add this endpoint to your Spring Boot controller:
+  // @GetMapping("/pending")
+  const response = await axiosInstance.get('/api/leave-requests/pending');
+  return response.data;
+};

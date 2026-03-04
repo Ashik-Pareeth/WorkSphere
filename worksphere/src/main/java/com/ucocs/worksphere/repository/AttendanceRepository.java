@@ -12,4 +12,8 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     Attendance findByEmployeeAndDate(Employee employee, LocalDate date);
 
     List<Attendance> findByEmployee(Employee employee);
+
+    List<Attendance> findByDate(LocalDate date);
+
+    List<Attendance> findByDateAndEmployee_Department_Id(LocalDate date, UUID departmentId);
 }

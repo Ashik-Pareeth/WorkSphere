@@ -32,3 +32,9 @@ export const getTimesheetAuditLogs = async (attendanceId) => {
   );
   return response.data;
 };
+
+// Manager/HR Only: Get today's roster for the department (or all if HR/Admin)
+export const getDailyRoster = async () => {
+  const response = await axiosInstance.get('/attendance/roster/today');
+  return response.data;
+};

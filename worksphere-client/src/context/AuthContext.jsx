@@ -4,19 +4,29 @@ import { createContext, useState } from 'react';
 // eslint-disable-next-line react-refresh/only-export-components
 export const AuthContext = createContext(null);
 
+// Enterprise-grade token validation helper
+const checkTokenValidity = (token) => {
+  if (!token) return false;
+  try {
+    const payload = JSON.parse(atob(token.split('.')[1]));
+    return payload.exp * 1000 > Date.now();
+  } catch {
+    return false;
+  }
+};
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(() => {
     const token = localStorage.getItem('token');
     const employeeId = localStorage.getItem('employeeId');
     const storedRolesStr = localStorage.getItem('roles');
-    const status = localStorage.getItem('status'); // Grab status directly!
+    const status = localStorage.getItem('status');
 
-    // If we have a token AND an employeeId, we consider them logged in
-    if (token && employeeId) {
+    // ONLY hydrate the user if the token actually exists AND is still valid!
+    if (token && employeeId && checkTokenValidity(token)) {
       try {
         const parsedRoles = JSON.parse(storedRolesStr || '[]');
 
-        // Build the user state from your flat local storage keys
         return {
           id: employeeId,
           status: status,
@@ -30,27 +40,31 @@ export const AuthProvider = ({ children }) => {
         };
       } catch (error) {
         console.error('Failed to parse auth data from local storage', error);
-        localStorage.clear();
         return null;
       }
     }
+
+    // If we reach here, the token is expired or missing.
+    // Clean up targeted auth keys just in case, but DO NOT use localStorage.clear()
+    localStorage.removeItem('token');
+    localStorage.removeItem('employeeId');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('status');
     return null;
   });
 
   const [loading] = useState(false);
 
   const handleLogin = (authData) => {
-    // Save to storage using your flat structure
     localStorage.setItem('token', authData.token);
     localStorage.setItem('employeeId', authData.employeeId);
     localStorage.setItem('roles', JSON.stringify(authData.roles));
     localStorage.setItem('status', authData.status);
 
-    // Update React State
     setUser({
       id: authData.employeeId,
       status: authData.status,
-      roles: authData.roles,
+      roles: authData.roles || [],
       isGlobalAdmin: authData.roles.some((r) =>
         ['ROLE_ADMIN', 'ADMIN'].includes(r)
       ),
@@ -61,13 +75,26 @@ export const AuthProvider = ({ children }) => {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    // Targeted removal protects other app data (like theme=dark or cached filters)
+    localStorage.removeItem('token');
+    localStorage.removeItem('employeeId');
+    localStorage.removeItem('roles');
+    localStorage.removeItem('status');
     setUser(null);
   };
 
+  // The golden flag for the UI layer
+  const isAuthenticated = !!user;
+
   return (
     <AuthContext.Provider
-      value={{ user, loading, login: handleLogin, logout: handleLogout }}
+      value={{
+        user,
+        loading,
+        isAuthenticated,
+        login: handleLogin,
+        logout: handleLogout,
+      }}
     >
       {children}
     </AuthContext.Provider>

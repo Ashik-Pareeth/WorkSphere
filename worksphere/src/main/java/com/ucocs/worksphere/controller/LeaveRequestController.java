@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.controller;
 
+import com.ucocs.worksphere.dto.LeaveRequestResponseDTO;
 import com.ucocs.worksphere.dto.LeaveSubmissionDTO;
 import com.ucocs.worksphere.dto.ReviewDTO;
 import com.ucocs.worksphere.entity.LeaveRequest;
@@ -10,6 +11,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.security.Principal;
+import java.util.List;
 import java.util.UUID;
 
 @RestController
@@ -21,34 +23,45 @@ public class LeaveRequestController {
 
     @PostMapping("/submit")
     @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<LeaveRequest> submitRequest(@RequestBody LeaveSubmissionDTO dto, Principal principal) {
+    public ResponseEntity<LeaveRequestResponseDTO> submitRequest(@RequestBody LeaveSubmissionDTO dto,
+            Principal principal) {
         LeaveRequest request = leaveRequestService.submitRequest(
                 principal.getName(),
                 dto.getPolicyId(),
                 dto.getStartDate(),
                 dto.getEndDate(),
                 dto.getRequestedDays(),
-                dto.getReason()
-        );
-        return ResponseEntity.ok(request);
+                dto.getReason());
+        return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
     }
 
     @PutMapping("/{requestId}/approve")
     @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
-    public ResponseEntity<LeaveRequest> approveRequest(
+    public ResponseEntity<LeaveRequestResponseDTO> approveRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
             Principal principal) {
-        return ResponseEntity.ok(leaveRequestService.approveRequest(requestId, principal.getName(), dto.getComment()));
+        LeaveRequest request = leaveRequestService.approveRequest(requestId, principal.getName(), dto.getComment());
+        return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
     }
 
     @PutMapping("/{requestId}/reject")
     @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
-    public ResponseEntity<LeaveRequest> rejectRequest(
+    public ResponseEntity<LeaveRequestResponseDTO> rejectRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
             Principal principal) {
-        return ResponseEntity.ok(leaveRequestService.rejectRequest(requestId, principal.getName(), dto.getComment()));
+        LeaveRequest request = leaveRequestService.rejectRequest(requestId, principal.getName(), dto.getComment());
+        return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
+    }
+
+    @GetMapping("/pending")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getPendingRequests(Principal principal) {
+        List<LeaveRequest> requests = leaveRequestService.getPendingRequests(principal.getName());
+        List<LeaveRequestResponseDTO> dtos = requests.stream()
+                .map(LeaveRequestResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(dtos);
     }
 }
-
