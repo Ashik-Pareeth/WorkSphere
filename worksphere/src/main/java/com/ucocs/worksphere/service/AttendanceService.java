@@ -87,7 +87,8 @@ public class AttendanceService {
 
         Attendance attendance = attendanceRepository.findByEmployeeAndDate(employee, today);
 
-        if (attendance == null) {
+        // Check if attendance record exists AND if the user actually clocked in
+        if (attendance == null || attendance.getClockIn() == null) {
             throw new IllegalStateException("You cannot clock out because you haven't clocked in today.");
         }
 
@@ -100,8 +101,12 @@ public class AttendanceService {
 
         // 3. Work Calculation with Break Deduction
         WorkSchedule schedule = attendance.getWorkSchedule();
+
+        // This line is now safe because of the null check above
         long totalMinutes = Duration.between(attendance.getClockIn(), now).toMinutes();
-        int finalWorkMinutes = (int) (totalMinutes - schedule.getBreakDurationMin());
+
+        int breakMin = (schedule != null) ? schedule.getBreakDurationMin() : 0;
+        int finalWorkMinutes = (int) (totalMinutes - breakMin);
 
         // Ensure we don't save negative minutes if someone clocks out immediately
         attendance.setTotalWorkMinutes(Math.max(0, finalWorkMinutes));
