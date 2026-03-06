@@ -76,9 +76,13 @@ const Profile = () => {
         setLoading(true);
         // Using the user.id from context to fetch full details
         const response = await axiosInstance.get(`/employees/${user.id}`);
+        console.log('User from context:', user);
+        console.log('User ID:', user?.id);
+        console.log(response.data);
         setProfileData(response.data);
       } catch (err) {
         console.error('Failed to fetch profile:', err);
+        console.log(err.response?.data || err.message);
         setError('Could not load profile data. Please try again later.');
       } finally {
         setLoading(false);
