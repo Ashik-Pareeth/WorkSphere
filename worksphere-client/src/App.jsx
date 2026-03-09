@@ -19,6 +19,14 @@ import LeaveBalanceOverridePage from './features/leave/LeaveBalanceOverridePage'
 import LeavePolicyPage from './features/leave/LeavePolicyPage';
 import PublicHolidayPage from './features/admin/PublicHolidayPage';
 import WorkSchedulePage from './features/admin/WorkSchedulePage';
+import AssetDirectory from './features/hr/AssetDirectory';
+import HelpdeskAdmin from './features/hr/HelpdeskAdmin';
+import MyAssets from './features/hr/MyAssets';
+import Helpdesk from './features/hr/Helpdesk';
+import PerformanceOverview from './features/hr/PerformanceOverview';
+import OffboardingTracker from './features/hr/OffboardingTracker';
+import TeamAppraisals from './features/hr/TeamAppraisals';
+import MyAppraisals from './features/hr/MyAppraisals';
 
 const isTokenValid = () => {
   const token = localStorage.getItem('token');
@@ -65,6 +73,9 @@ function App() {
               <Route path="/profile" element={<Profile />} />
               <Route path="/tasks" element={<TaskBoard />} />
               <Route path="/leave" element={<LeaveRequestPage />} />
+              <Route path="/my-assets" element={<MyAssets />} />
+              <Route path="/helpdesk" element={<Helpdesk />} />
+              <Route path="/my-appraisals" element={<MyAppraisals />} />
             </Route>
 
             {/* --- TIER 1.5: MANAGERS, HR, ADMINS --- */}
@@ -75,6 +86,7 @@ function App() {
             >
               <Route path="/approvals" element={<LeaveApprovalsPage />} />
               <Route path="/roster" element={<ManagerDashboard />} />
+              <Route path="/team-appraisals" element={<TeamAppraisals />} />
             </Route>
 
             {/* --- TIER 2: HR & ADMINS ONLY (System Config) --- */}
@@ -90,6 +102,10 @@ function App() {
               />
               <Route path="/holidays" element={<PublicHolidayPage />} />
               <Route path="/work-schedules" element={<WorkSchedulePage />} />
+              <Route path="/hr/assets" element={<AssetDirectory />} />
+              <Route path="/hr/helpdesk" element={<HelpdeskAdmin />} />
+              <Route path="/hr/appraisals" element={<PerformanceOverview />} />
+              <Route path="/hr/offboarding" element={<OffboardingTracker />} />
             </Route>
 
             {/* FALLBACK ROUTE */}

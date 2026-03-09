@@ -22,11 +22,11 @@ public class DataSeeder implements CommandLineRunner {
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(EmployeeRepository employeeRepository,
-                      RoleRepository roleRepository,
-                      DepartmentRepository departmentRepository,
-                      JobPositionRepository jobPositionRepository,
-                      WorkScheduleRepository workScheduleRepository,
-                      PasswordEncoder passwordEncoder) {
+            RoleRepository roleRepository,
+            DepartmentRepository departmentRepository,
+            JobPositionRepository jobPositionRepository,
+            WorkScheduleRepository workScheduleRepository,
+            PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
         this.departmentRepository = departmentRepository;
@@ -36,8 +36,7 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     @Override
-    public void run(String @NonNull ... args) throws
-            Exception {
+    public void run(String @NonNull... args) throws Exception {
         if (employeeRepository.count() == 0) {
 
             // 1. Seed Work Schedule (Required for Attendance Clock-In)
@@ -65,7 +64,8 @@ public class DataSeeder implements CommandLineRunner {
 
             // 3. Seed Job Positions
             JobPosition managerPos = new JobPosition();
-            managerPos.setPositionName("Engineering Manager"); // Change "setTitle" to whatever your JobPosition entity uses
+            managerPos.setPositionName("Engineering Manager"); // Change "setTitle" to whatever your JobPosition entity
+                                                               // uses
             managerPos.setCreatedBy("SYSTEM");
             managerPos = jobPositionRepository.save(managerPos);
 
@@ -96,17 +96,22 @@ public class DataSeeder implements CommandLineRunner {
                     hrDept, hrPos, hrRole, standardShift);
 
             // Engineering Manager
-            createEmployee("Mike", "Johnson", "manager", "manager@worksphere.com", "password",
+            Employee managerEmp = createEmployee("Mike", "Johnson", "manager", "manager@worksphere.com", "password",
                     engDept, managerPos, managerRole, standardShift);
 
             // Normal Employee 1 (You!)
-            createEmployee("Ashik", "Dev", "ashik", "ashik@worksphere.com", "password",
+            Employee ashikEmp = createEmployee("Ashik", "Dev", "ashik", "ashik@worksphere.com", "password",
                     engDept, devPos, employeeRole, standardShift);
 
             // Normal Employee 2
-            createEmployee("John", "Doe", "johndoe", "john@worksphere.com", "password",
+            Employee johnEmp = createEmployee("John", "Doe", "johndoe", "john@worksphere.com", "password",
                     engDept, devPos, employeeRole, standardShift);
 
+            // Link employees to their managers
+            ashikEmp.setManager(managerEmp);
+            johnEmp.setManager(managerEmp);
+            employeeRepository.save(ashikEmp);
+            employeeRepository.save(johnEmp);
 
             System.out.println("---------------------------------------------");
             System.out.println("DATA SEEDER: Mock Environment Generated");
@@ -132,8 +137,8 @@ public class DataSeeder implements CommandLineRunner {
     }
 
     // Helper method to easily spin up users
-    private void createEmployee(String fName, String lName, String uName, String email, String pass,
-                                Department dept, JobPosition pos, Role role, WorkSchedule schedule) {
+    private Employee createEmployee(String fName, String lName, String uName, String email, String pass,
+            Department dept, JobPosition pos, Role role, WorkSchedule schedule) {
         Employee emp = new Employee();
         emp.setFirstName(fName);
         emp.setLastName(lName);
@@ -154,6 +159,6 @@ public class DataSeeder implements CommandLineRunner {
         emp.setWorkSchedule(schedule);
         emp.setCreatedBy("SYSTEM");
 
-        employeeRepository.save(emp);
+        return employeeRepository.save(emp);
     }
 }

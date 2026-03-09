@@ -6,6 +6,6 @@ public enum EmployeeStatus {
     PROBATION,
     SUSPENDED,
     TERMINATED,
-    RESIGNED;
+    RESIGNED,
+    INACTIVE;
 }
-

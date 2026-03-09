@@ -37,7 +37,6 @@ public class Employee extends BaseEntity {
 
     private String profilePic;
 
-
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "department_id")
     private Department department;
@@ -58,5 +57,8 @@ public class Employee extends BaseEntity {
     @JoinColumn(name = "work_schedule_id")
     private WorkSchedule workSchedule;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "manager_id")
+    private Employee manager;
 
 }
