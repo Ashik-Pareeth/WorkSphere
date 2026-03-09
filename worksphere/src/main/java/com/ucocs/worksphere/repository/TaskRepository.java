@@ -51,4 +51,17 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
     // 10. Fetch ALL Tasks with Relations (For Admin Global View)
     @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner")
     List<Task> findAllWithRelations();
+
+    // --- APPRAISAL METRICS ---
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.status = 'COMPLETED' AND t.completedAt BETWEEN :startDate AND :endDate")
+    Integer countCompletedTasksInPeriod(@Param("employeeId") UUID employeeId,
+            @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
+
+    @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.isOverdue = true AND t.completedAt BETWEEN :startDate AND :endDate")
+    Integer countOverdueTasksInPeriod(@Param("employeeId") UUID employeeId,
+            @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
+
+    @Query("SELECT AVG(t.completionScore) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.status = 'COMPLETED' AND t.completedAt BETWEEN :startDate AND :endDate")
+    Double getAverageTaskScoreInPeriod(@Param("employeeId") UUID employeeId,
+            @Param("startDate") java.time.LocalDateTime startDate, @Param("endDate") java.time.LocalDateTime endDate);
 }
