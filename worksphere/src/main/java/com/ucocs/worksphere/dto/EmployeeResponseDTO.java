@@ -8,58 +8,74 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 public record EmployeeResponseDTO(
-        UUID id,
-        String username,
-        String firstName,
-        String lastName,
-        String email,
-        double salary,
+                UUID id,
+                String username,
+                String firstName,
+                String lastName,
+                String email,
+                double salary,
 
-        // ✅ ADDED: IDs for Editing
-        UUID departmentId,
-        UUID jobPositionId,
+                // ✅ ADDED: IDs for Editing
+                UUID departmentId,
+                UUID jobPositionId,
 
-        // Existing Display Fields
-        String departmentName,
-        String jobTitle,
+                // ✅ ADDED: Manager Details
+                UUID managerId,
+                String managerName,
 
-        // ✅ ADDED: Roles for Editing
-        Set<SimpleRoleDTO> roles,
+                UUID workScheduleId,
+                String workScheduleName,
 
-        String profilePic,
-        LocalDateTime joiningDate,
-        EmployeeStatus employeeStatus
-) {
-    // Simple record to hold Role data inside this DTO
-    public record SimpleRoleDTO(UUID id, String roleName) {}
+                // Existing Display Fields
+                String departmentName,
+                String jobTitle,
 
-    public static EmployeeResponseDTO fromEntity(Employee employee) {
-        return new EmployeeResponseDTO(
-                employee.getId(),
-                employee.getUserName(),
-                employee.getFirstName(),
-                employee.getLastName(),
-                employee.getEmail(),
-                employee.getSalary(),
+                // ✅ ADDED: Roles for Editing
+                Set<SimpleRoleDTO> roles,
 
-                // Map IDs (Handle nulls)
-                employee.getDepartment() != null ? employee.getDepartment().getId() : null,
-                employee.getJobPosition() != null ? employee.getJobPosition().getId() : null,
+                String profilePic,
+                LocalDateTime joiningDate,
+                EmployeeStatus employeeStatus) {
+        // Simple record to hold Role data inside this DTO
+        public record SimpleRoleDTO(UUID id, String roleName) {
+        }
 
-                // Map Names
-                employee.getDepartment() != null ? employee.getDepartment().getName() : null,
-                employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null,
+        public static EmployeeResponseDTO fromEntity(Employee employee) {
+                return new EmployeeResponseDTO(
+                                employee.getId(),
+                                employee.getUserName(),
+                                employee.getFirstName(),
+                                employee.getLastName(),
+                                employee.getEmail(),
+                                employee.getSalary(),
 
-                // Map Roles
-                employee.getRoles() != null
-                        ? employee.getRoles().stream()
-                        .map(r -> new SimpleRoleDTO(r.getId(), r.getRoleName()))
-                        .collect(Collectors.toSet())
-                        : Set.of(),
+                                // Map IDs (Handle nulls)
+                                employee.getDepartment() != null ? employee.getDepartment().getId() : null,
+                                employee.getJobPosition() != null ? employee.getJobPosition().getId() : null,
 
-                employee.getProfilePic(),
-                employee.getJoiningDate(),
-                employee.getEmployeeStatus()
-        );
-    }
+                                employee.getManager() != null ? employee.getManager().getId() : null,
+                                employee.getManager() != null
+                                                ? (employee.getManager().getFirstName() + " "
+                                                                + employee.getManager().getLastName())
+                                                : null,
+
+                                employee.getWorkSchedule() != null ? employee.getWorkSchedule().getId() : null,
+                                employee.getWorkSchedule() != null ? employee.getWorkSchedule().getScheduleName()
+                                                : null,
+
+                                // Map Names
+                                employee.getDepartment() != null ? employee.getDepartment().getName() : null,
+                                employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : null,
+
+                                // Map Roles
+                                employee.getRoles() != null
+                                                ? employee.getRoles().stream()
+                                                                .map(r -> new SimpleRoleDTO(r.getId(), r.getRoleName()))
+                                                                .collect(Collectors.toSet())
+                                                : Set.of(),
+
+                                employee.getProfilePic(),
+                                employee.getJoiningDate(),
+                                employee.getEmployeeStatus());
+        }
 }

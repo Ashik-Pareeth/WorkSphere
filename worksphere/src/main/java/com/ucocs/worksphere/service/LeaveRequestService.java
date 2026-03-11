@@ -36,6 +36,18 @@ public class LeaveRequestService {
                 LeavePolicy policy = policyRepository.findById(policyId)
                                 .orElseThrow(() -> new ResourceNotFoundException("Policy not found"));
 
+                boolean hasOverlap = leaveRequestRepository
+                                .existsByEmployee_IdAndStatusInAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                                                employee.getId(),
+                                                List.of(LeaveRequestStatus.PENDING, LeaveRequestStatus.APPROVED),
+                                                endDate,
+                                                startDate);
+
+                if (hasOverlap) {
+                        throw new IllegalStateException(
+                                        "You already have a pending or approved leave request during this period.");
+                }
+
                 LeaveRequest request = new LeaveRequest();
                 request.setEmployee(employee);
                 request.setLeavePolicy(policy);
@@ -138,10 +150,44 @@ public class LeaveRequestService {
                         if (manager.getDepartment() == null) {
                                 throw new AccessDeniedException("Cannot determine your department for approvals.");
                         }
-                        if (!manager.getDepartment().getId().equals(request.getEmployee().getDepartment().getId())) {
+                        if (request.getEmployee().getManager() == null ||
+                                        !request.getEmployee().getManager().getId().equals(manager.getId())) {
                                 throw new AccessDeniedException(
-                                                "You can only access requests for your own department.");
+                                                "You can only approve or reject leaves for your direct reports.");
                         }
                 }
+        }
+
+        @Transactional
+        public LeaveRequest cancelRequest(UUID requestId, String username) {
+                LeaveRequest request = leaveRequestRepository.findById(requestId)
+                                .orElseThrow(() -> new ResourceNotFoundException("Leave request not found"));
+                Employee employee = employeeRepository.findByUserName(username)
+                                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+                boolean isGodMode = employee.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+
+                if (!isGodMode && !request.getEmployee().getId().equals(employee.getId())) {
+                        throw new AccessDeniedException("You can only cancel your own leave requests.");
+                }
+
+                if (request.getStatus() == LeaveRequestStatus.REJECTED
+                                || request.getStatus() == LeaveRequestStatus.CANCELLED) {
+                        throw new IllegalStateException("This request is already cancelled or rejected.");
+                }
+
+                if (request.getStatus() == LeaveRequestStatus.APPROVED) {
+                        leaveLedgerService.adjustBalance(
+                                        request.getEmployee().getId(),
+                                        request.getLeavePolicy().getId(),
+                                        LeaveTransactionType.ACCRUAL,
+                                        request.getRequestedDays(),
+                                        "Cancelled Approved Leave Request from " + request.getStartDate() + " to "
+                                                        + request.getEndDate());
+                }
+
+                request.setStatus(LeaveRequestStatus.CANCELLED);
+                return leaveRequestRepository.save(request);
         }
 }

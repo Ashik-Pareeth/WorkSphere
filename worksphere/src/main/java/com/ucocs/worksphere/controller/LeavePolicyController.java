@@ -23,7 +23,7 @@ public class LeavePolicyController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<LeavePolicy> createPolicy(@RequestBody LeavePolicy policy) {
         return ResponseEntity.ok(policyService.createPolicy(policy));
     }

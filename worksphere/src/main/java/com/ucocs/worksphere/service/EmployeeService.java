@@ -14,6 +14,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -76,7 +78,16 @@ public class EmployeeService {
 
         // 5. Fetch and Set Roles
         if (request.roles() != null && !request.roles().isEmpty()) {
-            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(request.roles()));
+            Set<UUID> roleIds = new HashSet<>(request.roles());
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+                boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                if (isHr && !isAdmin) {
+                    roleRepository.findByRoleName("ADMIN").ifPresent(adminRole -> roleIds.remove(adminRole.getId()));
+                }
+            }
+            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(roleIds));
             employee.setRoles(roleEntities);
         }
 
@@ -164,7 +175,16 @@ public class EmployeeService {
 
         // 5. Update Roles
         if (request.roles() != null && !request.roles().isEmpty()) {
-            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(request.roles()));
+            Set<UUID> roleIds = new HashSet<>(request.roles());
+            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+            if (auth != null) {
+                boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+                boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+                if (isHr && !isAdmin) {
+                    roleRepository.findByRoleName("ADMIN").ifPresent(adminRole -> roleIds.remove(adminRole.getId()));
+                }
+            }
+            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(roleIds));
             employee.setRoles(roleEntities);
         }
 

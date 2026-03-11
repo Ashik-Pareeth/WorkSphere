@@ -24,15 +24,16 @@ public class WorkScheduleController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<WorkSchedule> createSchedule(@RequestBody WorkSchedule schedule) {
         return ResponseEntity.ok(scheduleService.createSchedule(schedule));
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<WorkSchedule> updateSchedule(
             @PathVariable UUID id, @RequestBody WorkSchedule schedule) {
         return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule));
     }
 }
+

@@ -79,8 +79,8 @@ const TaskBoard = () => {
   const userRole = localStorage.getItem('role') || '';
   const normalizedRole = userRole.toUpperCase();
   const isGlobalAdmin = [
-    'ROLE_ADMIN',
-    'ADMIN',
+    'ROLE_SUPER_ADMIN',
+    'SUPER_ADMIN',
     'ROLE_HR',
     'HR',
     'ROLE_AUDITOR',
@@ -134,7 +134,7 @@ const TaskBoard = () => {
       return;
     }
 
-    // --- RULE 2: Only Managers/Admins can move to COMPLETED ---
+    // --- RULE 2: Only Managers/SUPER_ADMINS can move to COMPLETED ---
     if (newStatus === 'COMPLETED' && !hasOversightAccess) {
       setError('Only Managers can mark a task as officially Completed.');
       return;
@@ -526,3 +526,4 @@ const TaskBoard = () => {
 };
 
 export default TaskBoard;
+

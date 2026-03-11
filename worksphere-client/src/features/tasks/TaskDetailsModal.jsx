@@ -14,7 +14,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
   // --- USER ROLE CHECK ---
   const storedRoles = JSON.parse(localStorage.getItem('roles') || '[]');
   const isManagerOrAdmin =
-    storedRoles.includes('ROLE_MANAGER') || storedRoles.includes('ROLE_ADMIN');
+    storedRoles.includes('ROLE_MANAGER') || storedRoles.includes('ROLE_SUPER_ADMIN');
   const currentUser = JSON.parse(localStorage.getItem('user')) || {
     id: localStorage.getItem('employeeId'),
   };
@@ -1179,3 +1179,4 @@ const commentInputStyle = {
 };
 
 export default TaskDetailsModal;
+

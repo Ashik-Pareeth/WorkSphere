@@ -10,6 +10,7 @@ import com.ucocs.worksphere.repository.GrievanceTicketRepository;
 import com.ucocs.worksphere.repository.TicketCommentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -128,6 +129,14 @@ public class GrievanceService {
 
                 GrievanceTicket ticket = ticketRepository.findById(ticketId)
                                 .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+
+                boolean isOwner = ticket.getRaisedBy().getId().equals(author.getId());
+                boolean hasAdminOrHr = author.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().equals("ADMIN") || r.getRoleName().equals("HR"));
+
+                if (!isOwner && !hasAdminOrHr) {
+                        throw new AccessDeniedException("You do not have permission to comment on this ticket.");
+                }
 
                 TicketComment comment = new TicketComment();
                 comment.setTicket(ticket);

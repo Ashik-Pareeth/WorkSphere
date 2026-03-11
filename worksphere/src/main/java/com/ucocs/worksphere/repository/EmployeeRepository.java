@@ -13,6 +13,8 @@ import java.util.UUID;
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     Optional<Employee> findByUserName(String userName);
 
+    Optional<Employee> findByEmail(String email);
+
     // Grabs the employee and their lazy-loaded relationships in a single SQL query
     @Query("SELECT e FROM Employee e " +
             "LEFT JOIN FETCH e.department " +

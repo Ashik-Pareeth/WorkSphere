@@ -22,7 +22,7 @@ public class OffboardingController {
     private final OffboardingService offboardingService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<OffboardingRecordResponse> initiateOffboarding(
             @Valid @RequestBody OffboardingInitiateRequest request,
             Authentication authentication) {
@@ -31,18 +31,19 @@ public class OffboardingController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<List<OffboardingRecordResponse>> getAllOffboardingRecords() {
         return ResponseEntity.ok(offboardingService.getAllOffboardingRecords());
     }
 
     @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<OffboardingRecordResponse> getMyOffboardingRecord(Authentication authentication) {
         return ResponseEntity.ok(offboardingService.getMyOffboardingRecord(authentication.getName()));
     }
 
     @PutMapping("/{id}/clearance")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<OffboardingRecordResponse> updateClearance(
             @PathVariable UUID id,
             @RequestParam String department,
@@ -58,3 +59,4 @@ public class OffboardingController {
                 .ok(offboardingService.updateClearance(id, department, isCleared, authentication.getName()));
     }
 }
+

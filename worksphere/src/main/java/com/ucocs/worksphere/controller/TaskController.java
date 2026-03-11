@@ -71,7 +71,7 @@ public class TaskController {
     }
 
     @GetMapping("/team-tasks")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<TaskResponseDTO>> getTeamTasks() {
         Employee manager = getAuthenticatedEmployee();
         List<Task> tasks = taskService.getTeamTasks(manager.getId());

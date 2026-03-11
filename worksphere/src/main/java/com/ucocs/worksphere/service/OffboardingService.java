@@ -105,6 +105,17 @@ public class OffboardingService {
         OffboardingRecord record = offboardingRepository.findById(recordId)
                 .orElseThrow(() -> new RuntimeException("Offboarding record not found: " + recordId));
 
+        boolean isHRorAdmin = performer.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+
+        boolean hasDepartmentRole = performer.getRoles().stream()
+                .anyMatch(r -> r.getRoleName().toUpperCase().endsWith(department.toUpperCase()));
+
+        if (!isHRorAdmin && !hasDepartmentRole) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "You do not have permission to grant " + department + " clearance.");
+        }
+
         String clearanceField = "";
         switch (department.toUpperCase()) {
             case "IT":

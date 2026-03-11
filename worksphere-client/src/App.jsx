@@ -4,6 +4,8 @@ import { AuthProvider } from './context/AuthContext';
 
 import PrivateRoute from './components/layout/PrivateRoute';
 import Login from './features/auth/Login';
+import ForgotPassword from './features/auth/ForgotPassword';
+import ResetPassword from './features/auth/ResetPassword';
 import Onboarding from './features/auth/Onboarding';
 import Dashboard from './pages/Dashboard';
 import TaskBoard from './features/tasks/TaskBoard';
@@ -27,6 +29,9 @@ import PerformanceOverview from './features/hr/PerformanceOverview';
 import OffboardingTracker from './features/hr/OffboardingTracker';
 import TeamAppraisals from './features/hr/TeamAppraisals';
 import MyAppraisals from './features/hr/MyAppraisals';
+import PayrollDashboard from './features/hr/PayrollDashboard';
+import MyCompensation from './features/hr/MyCompensation';
+import Unauthorized from './pages/Unauthorized';
 
 const isTokenValid = () => {
   const token = localStorage.getItem('token');
@@ -59,12 +64,28 @@ function App() {
                 </PublicRoute>
               }
             />
+            <Route
+              path="/forgot-password"
+              element={
+                <PublicRoute>
+                  <ForgotPassword />
+                </PublicRoute>
+              }
+            />
+            <Route
+              path="/reset-password"
+              element={
+                <PublicRoute>
+                  <ResetPassword />
+                </PublicRoute>
+              }
+            />
 
-            {/* --- TIER 1: EVERYONE (Employees, Managers, HR, Admins) --- */}
+            {/* --- TIER 1: EVERYONE (Employees, Managers, HR, Admins, Auditors) --- */}
             <Route
               element={
                 <PrivateRoute
-                  allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'ADMIN']}
+                  allowedRoles={['EMPLOYEE', 'MANAGER', 'HR', 'SUPER_ADMIN', 'AUDITOR']}
                 />
               }
             >
@@ -76,12 +97,13 @@ function App() {
               <Route path="/my-assets" element={<MyAssets />} />
               <Route path="/helpdesk" element={<Helpdesk />} />
               <Route path="/my-appraisals" element={<MyAppraisals />} />
+              <Route path="/my-compensation" element={<MyCompensation />} />
             </Route>
 
-            {/* --- TIER 1.5: MANAGERS, HR, ADMINS --- */}
+            {/* --- TIER 1.5: MANAGERS, HR, SUPER_ADMINS --- */}
             <Route
               element={
-                <PrivateRoute allowedRoles={['MANAGER', 'HR', 'ADMIN']} />
+                <PrivateRoute allowedRoles={['MANAGER', 'HR', 'SUPER_ADMIN']} />
               }
             >
               <Route path="/approvals" element={<LeaveApprovalsPage />} />
@@ -89,12 +111,16 @@ function App() {
               <Route path="/team-appraisals" element={<TeamAppraisals />} />
             </Route>
 
-            {/* --- TIER 2: HR & ADMINS ONLY (System Config) --- */}
-            <Route element={<PrivateRoute allowedRoles={['HR', 'ADMIN']} />}>
+            {/* --- TIER 1.8: SUPER_ADMINS ONLY (Core System Config) --- */}
+            <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
               <Route path="/departments" element={<DepartmentForm />} />
-              <Route path="/register" element={<AddEmployee />} />
               <Route path="/jobPosition" element={<JobPositionForm />} />
               <Route path="/roles" element={<RoleForm />} />
+            </Route>
+
+            {/* --- TIER 2: HR & SUPER_ADMINS ONLY (System Config) --- */}
+            <Route element={<PrivateRoute allowedRoles={['HR', 'SUPER_ADMIN']} />}>
+              <Route path="/register" element={<AddEmployee />} />
               <Route path="/leave-policies" element={<LeavePolicyPage />} />
               <Route
                 path="/leave-override"
@@ -106,9 +132,11 @@ function App() {
               <Route path="/hr/helpdesk" element={<HelpdeskAdmin />} />
               <Route path="/hr/appraisals" element={<PerformanceOverview />} />
               <Route path="/hr/offboarding" element={<OffboardingTracker />} />
+              <Route path="/hr/payroll" element={<PayrollDashboard />} />
             </Route>
 
             {/* FALLBACK ROUTE */}
+            <Route path="/unauthorized" element={<Unauthorized />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </div>
@@ -118,3 +146,4 @@ function App() {
 }
 
 export default App;
+

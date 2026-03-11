@@ -26,7 +26,7 @@ public class GrievanceController {
      * Get all tickets (HR/Admin view with internal comments visible).
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<List<TicketResponse>> getAllTickets(
             @RequestParam(required = false) GrievanceStatus status) {
         List<TicketResponse> tickets = status != null ? grievanceService.getTicketsByStatus(status)
@@ -38,6 +38,7 @@ public class GrievanceController {
      * Submit a new grievance ticket. Any authenticated employee.
      */
     @PostMapping
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TicketResponse> createTicket(
             @Valid @RequestBody TicketCreateRequest request,
             Authentication auth) {
@@ -49,7 +50,7 @@ public class GrievanceController {
      * Assign a ticket to a handler (HR action).
      */
     @PutMapping("/{id}/assign")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<TicketResponse> assignTicket(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body,
@@ -62,6 +63,7 @@ public class GrievanceController {
      * Add a comment to a ticket thread.
      */
     @PostMapping("/{id}/comment")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<TicketCommentResponse> addComment(
             @PathVariable UUID id,
             @Valid @RequestBody TicketCommentRequest request,
@@ -74,7 +76,7 @@ public class GrievanceController {
      * Resolve a ticket (HR action).
      */
     @PutMapping("/{id}/resolve")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<TicketResponse> resolveTicket(
             @PathVariable UUID id,
             @RequestBody Map<String, String> body,
@@ -87,7 +89,9 @@ public class GrievanceController {
      * Get the authenticated employee's own tickets (non-internal comments only).
      */
     @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TicketResponse>> getMyTickets(Authentication auth) {
         return ResponseEntity.ok(grievanceService.getMyTickets(auth.getName()));
     }
 }
+

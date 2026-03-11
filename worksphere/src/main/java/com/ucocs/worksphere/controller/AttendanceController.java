@@ -46,7 +46,7 @@ public class AttendanceController {
     }
 
     @PutMapping("/{attendanceId}/manual-update")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<AttendanceDTO> manuallyUpdateTimesheet(
             @PathVariable UUID attendanceId,
             @RequestBody ManualTimeUpdateRequest request,
@@ -59,7 +59,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/{attendanceId}/audit-logs")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<TimesheetAuditLogDTO>> getTimesheetAuditLogs(@PathVariable UUID attendanceId) {
         List<TimesheetAuditLog> logs = attendanceService.getAuditLogsForAttendance(attendanceId);
         List<TimesheetAuditLogDTO> dtos = logs.stream()
@@ -69,8 +69,9 @@ public class AttendanceController {
     }
 
     @GetMapping("/roster/today")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<com.ucocs.worksphere.dto.DailyRosterDTO>> getDailyRoster(Principal principal) {
         return ResponseEntity.ok(attendanceService.getDailyRoster(principal.getName()));
     }
 }
+
