@@ -23,7 +23,7 @@ public class AppraisalController {
     private final AppraisalService appraisalService;
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<AppraisalResponse> createAppraisal(
             @Valid @RequestBody AppraisalCreateRequest request,
             Authentication authentication) {
@@ -32,23 +32,25 @@ public class AppraisalController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<List<AppraisalResponse>> getAllAppraisals() {
         return ResponseEntity.ok(appraisalService.getAllAppraisals());
     }
 
     @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<AppraisalResponse>> getMyAppraisals(Authentication authentication) {
         return ResponseEntity.ok(appraisalService.getMyAppraisals(authentication.getName()));
     }
 
     @GetMapping("/team")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<AppraisalResponse>> getTeamAppraisals(Authentication authentication) {
         return ResponseEntity.ok(appraisalService.getTeamAppraisals(authentication.getName()));
     }
 
     @PutMapping("/{id}/self-rating")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<AppraisalResponse> submitSelfAppraisal(
             @PathVariable UUID id,
             @Valid @RequestBody AppraisalUpdateRatingRequest request,
@@ -57,7 +59,7 @@ public class AppraisalController {
     }
 
     @PutMapping("/{id}/manager-rating")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<AppraisalResponse> submitManagerAppraisal(
             @PathVariable UUID id,
             @Valid @RequestBody AppraisalUpdateRatingRequest request,
@@ -66,9 +68,11 @@ public class AppraisalController {
     }
 
     @PutMapping("/{id}/acknowledge")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<AppraisalResponse> acknowledgeAppraisal(
             @PathVariable UUID id,
             Authentication authentication) {
         return ResponseEntity.ok(appraisalService.acknowledgeAppraisal(id, authentication.getName()));
     }
 }
+

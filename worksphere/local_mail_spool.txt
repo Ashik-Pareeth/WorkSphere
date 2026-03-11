@@ -1,0 +1,9 @@
+To: admin@worksphere.com
+Link: http://localhost:5173/reset-password?token=4f050ebf-ce61-47d5-9a30-f08be9cb5277
+
+To: admin@worksphere.com
+Link: http://localhost:5173/reset-password?token=5292142b-7a2d-4289-989a-745e009c16c2
+
+To: admin@worksphere.com
+Link: http://localhost:5173/reset-password?token=172364ea-011b-4db3-bc20-cf3caf6e0af7
+

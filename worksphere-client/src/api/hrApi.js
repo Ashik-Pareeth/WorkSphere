@@ -125,3 +125,39 @@ export const updateOffboardingClearance = (id, department, isCleared) => {
     params: { department, isCleared },
   });
 };
+
+// ==================== PAYROLL ENDPOINTS ====================
+
+export const generatePayroll = (data) => {
+  return axiosInstance.post("/api/hr/payroll/generate", data);
+};
+
+export const fetchPayrollSummary = (month, year) => {
+  return axiosInstance.get("/api/hr/payroll/summary", {
+    params: { month, year },
+  });
+};
+
+export const fetchEmployeePayroll = (employeeId) => {
+  return axiosInstance.get(`/api/hr/payroll/employee/${employeeId}`);
+};
+
+export const fetchMyPayroll = () => {
+  return axiosInstance.get("/api/hr/payroll/my");
+};
+
+export const processPayroll = (id) => {
+  return axiosInstance.put(`/api/hr/payroll/${id}/process`);
+};
+
+export const markPayrollPaid = (id) => {
+  return axiosInstance.put(`/api/hr/payroll/${id}/mark-paid`);
+};
+
+export const saveSalaryStructure = (data) => {
+  return axiosInstance.post("/api/hr/payroll/salary-structure", data);
+};
+
+export const fetchSalaryStructure = (employeeId) => {
+  return axiosInstance.get(`/api/hr/payroll/salary-structure/${employeeId}`);
+};

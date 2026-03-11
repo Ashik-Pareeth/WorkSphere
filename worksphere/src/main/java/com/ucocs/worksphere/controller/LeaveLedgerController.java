@@ -47,7 +47,7 @@ public class LeaveLedgerController {
 
     // 3. HR Manually adjusting a balance (The DTO is kept inline for brevity)
     @PostMapping("/adjust-balance")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<LeaveBalanceDTO> adjustBalance(@RequestBody ManualAdjustmentRequest request) {
         LeaveBalance updatedBalance = ledgerService.adjustBalance(
                 request.getEmployeeId(),
@@ -58,3 +58,4 @@ public class LeaveLedgerController {
         return ResponseEntity.ok(LeaveBalanceDTO.fromEntity(updatedBalance));
     }
 }
+

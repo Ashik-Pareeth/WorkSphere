@@ -144,10 +144,13 @@ public class AppraisalService {
                 PerformanceAppraisal appraisal = appraisalRepository.findById(appraisalId)
                                 .orElseThrow(() -> new RuntimeException("Appraisal not found: " + appraisalId));
 
-                if (appraisal.getManager() == null || !appraisal.getManager().getId().equals(manager.getId())) {
-                        // Alternatively, allow HR/Admin to perform this action. Keeping it strictly
-                        // manager for now.
-                        throw new RuntimeException("Only the assigned manager can submit the manager appraisal");
+                boolean isHrOrAdmin = manager.getRoles().stream()
+                                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+
+                if (!isHrOrAdmin && (appraisal.getManager() == null
+                                || !appraisal.getManager().getId().equals(manager.getId()))) {
+                        throw new RuntimeException(
+                                        "Only the assigned manager, HR, or Admin can submit the manager appraisal");
                 }
 
                 if (appraisal.getStatus() != AppraisalStatus.IN_REVIEW) {

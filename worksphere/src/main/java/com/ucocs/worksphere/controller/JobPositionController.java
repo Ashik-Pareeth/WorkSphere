@@ -19,7 +19,7 @@ public class JobPositionController {
     }
 
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<?> createJobPosition(@RequestBody JobPosition jobPosition) {
         jobPositionService.createJobPosition(jobPosition);
         return ResponseEntity.noContent().build();
@@ -32,17 +32,18 @@ public class JobPositionController {
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<JobPosition> updateJobPosition(@PathVariable UUID id, @RequestBody JobPosition jobPosition) {
         return ResponseEntity.ok(jobPositionService.updateJobPosition(id, jobPosition));
     }
 
     // ✅ ADD THIS: Delete Endpoint
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteJobPosition(@PathVariable UUID id) {
         jobPositionService.deleteJobPosition(id);
         return ResponseEntity.noContent().build();
     }
 }
+
 

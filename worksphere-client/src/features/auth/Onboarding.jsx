@@ -1,9 +1,12 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
+import { useAuth } from '../../hooks/useAuth';
 
 const Onboarding = () => {
   const navigate = useNavigate();
+  const { user, login } = useAuth();
+
   const [step, setStep] = useState(1);
   const [contactNo, setContactNo] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +32,15 @@ const Onboarding = () => {
     formData.append('profilePic', profileImage);
     try {
       await axiosInstance.post(`employees/photo`, formData);
-      localStorage.setItem('status', 'ACTIVE');
+
+      // 3. Update context state with the new ACTIVE status
+      login({
+        token: localStorage.getItem('token'),
+        employeeId: user.id,
+        roles: user.roles,
+        status: 'ACTIVE',
+      });
+
       navigate('/dashboard');
     } catch (err) {
       console.log(err);
@@ -37,7 +48,7 @@ const Onboarding = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 px-4">
+    <div className="min-h-screen flex items-center justify-center bg-linear-to-br from-slate-100 to-slate-200 px-4">
       <div className="w-full max-w-md bg-white shadow-xl rounded-2xl p-8 space-y-6">
         {/* Step Indicator */}
         <div className="flex items-center justify-center gap-2 text-sm font-medium">

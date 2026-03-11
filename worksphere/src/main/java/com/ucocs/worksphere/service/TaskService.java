@@ -15,8 +15,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -88,12 +91,16 @@ public class TaskService {
             return task;
 
         boolean isAdmin = hasRole(currentUser, "ADMIN");
-        boolean isManager = hasRole(currentUser, "MANAGER");
-        boolean hasOversight = isAdmin || isManager;
+        boolean isAssigner = task.getAssigner().getId().equals(currentUser.getId());
+        boolean isAssignee = task.getAssignedTo().getId().equals(currentUser.getId());
+        boolean isDirectManager = task.getAssignedTo().getManager() != null
+                && task.getAssignedTo().getManager().getId().equals(currentUser.getId());
+        boolean hasOversight = isAdmin || isAssigner || isDirectManager;
 
         // --- ROLE PROTECTIONS ---
         if ((newStatus == TaskStatus.COMPLETED || newStatus == TaskStatus.CANCELLED) && !hasOversight) {
-            throw new AccessDeniedException("Only Managers and Admins can complete or cancel tasks.");
+            throw new AccessDeniedException(
+                    "Only the Assigner, Direct Manager, or Admin can complete or cancel tasks.");
         }
 
         // --- WIP LIMIT ENFORCEMENT ---
@@ -143,7 +150,7 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
-        String roleSnapshot = isAdmin ? "ROLE_ADMIN" : (isManager ? "ROLE_MANAGER" : "ROLE_EMPLOYEE");
+        String roleSnapshot = isAdmin ? "ROLE_ADMIN" : "ROLE_EMPLOYEE";
         logHistory(savedTask, currentUser, updateDTO.comment(), roleSnapshot, oldStatus, newStatus);
 
         return taskRepository.findByIdWithRelations(taskId)
@@ -157,10 +164,14 @@ public class TaskService {
         Employee currentUser = getCurrentUser();
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         assert auth != null;
-        System.out.println("Authorities: " + auth.getAuthorities());
-        System.out.println("Current user role from DB: " + currentUser.getRoles());
-        if (!hasRole(currentUser, "MANAGER") && !hasRole(currentUser, "ADMIN")) {
-            throw new AccessDeniedException("Only Managers can rate tasks.");
+
+        boolean isAdmin = hasRole(currentUser, "ADMIN");
+        boolean isAssigner = task.getAssigner().getId().equals(currentUser.getId());
+        boolean isDirectManager = task.getAssignedTo().getManager() != null
+                && task.getAssignedTo().getManager().getId().equals(currentUser.getId());
+
+        if (!isAdmin && !isAssigner && !isDirectManager) {
+            throw new AccessDeniedException("Only the Assigner, Direct Manager, or Admin can rate tasks.");
         }
 
         // Calculate score based on lateness
@@ -199,9 +210,6 @@ public class TaskService {
     }
 
     public List<Task> getTeamTasks(UUID employeeId) {
-        Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
-
         // Ask Spring Security for your roles directly from the authenticated token
         boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication())
                 .getAuthorities().stream()
@@ -215,13 +223,15 @@ public class TaskService {
             return taskRepository.findAllWithRelations();
         }
 
-        // If not a global viewer, they must be a Manager. Give them their department's
-        // tasks.
-        if (employee.getDepartment() == null) {
-            return List.of();
-        }
+        // If not a global viewer, they must be a Manager. Give them their assigned
+        // tasks + tasks given to direct reports
+        List<Task> assignedByMe = taskRepository.findByAssigner_Id(employeeId);
+        List<Task> assignedToMyTeam = taskRepository.findByAssignedTo_Manager_Id(employeeId);
 
-        return taskRepository.findAllByDepartmentId(employee.getDepartment().getId());
+        Set<Task> combined = new HashSet<>(assignedByMe);
+        combined.addAll(assignedToMyTeam);
+
+        return new ArrayList<>(combined);
     }
 
     public List<Task> getTasksByManager(UUID managerId) {

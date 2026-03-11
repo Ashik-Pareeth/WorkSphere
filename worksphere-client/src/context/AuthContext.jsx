@@ -32,7 +32,7 @@ export const AuthProvider = ({ children }) => {
           status: status,
           roles: parsedRoles,
           isGlobalAdmin: parsedRoles.some((r) =>
-            ['ROLE_ADMIN', 'ADMIN'].includes(r)
+            ['ROLE_SUPER_ADMIN', 'SUPER_ADMIN'].includes(r)
           ),
           isHR: parsedRoles.some((r) => ['ROLE_HR', 'HR'].includes(r)),
           isExecutive: parsedRoles.some((r) => ['ROLE_EXECUTIVE'].includes(r)),
@@ -66,7 +66,7 @@ export const AuthProvider = ({ children }) => {
       status: authData.status,
       roles: authData.roles || [],
       isGlobalAdmin: authData.roles.some((r) =>
-        ['ROLE_ADMIN', 'ADMIN'].includes(r)
+        ['ROLE_SUPER_ADMIN', 'SUPER_ADMIN'].includes(r)
       ),
       isHR: authData.roles.some((r) => ['ROLE_HR', 'HR'].includes(r)),
       isExecutive: authData.roles.some((r) => ['ROLE_EXECUTIVE'].includes(r)),
@@ -100,3 +100,4 @@ export const AuthProvider = ({ children }) => {
     </AuthContext.Provider>
   );
 };
+

@@ -1,8 +1,17 @@
 import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import AlertMessage from '../../components/common/AlertMessage';
+import { useAuth } from '../../hooks/useAuth';
 
 function AddEmployee() {
+  const { user } = useAuth();
+
+  // Determine if the logged-in user is an Admin
+  const userRoles = (user?.roles || []).map((r) =>
+    r.replace('ROLE_', '').toUpperCase()
+  );
+  const isAdmin = userRoles.includes('SUPER_ADMIN');
+
   // --- FORM STATE ---
   const [username, setUsername] = useState('');
   const [firstName, setFirstName] = useState('');
@@ -12,16 +21,17 @@ function AddEmployee() {
   const [password, setPassword] = useState('');
 
   // IDs for Relations
-  const [roleId, setRoleId] = useState('');
+  const [selectedRoles, setSelectedRoles] = useState([]); // Now an array of IDs
   const [departmentId, setDepartmentId] = useState('');
   const [jobPositionId, setJobPositionId] = useState('');
+  const [managerId, setManagerId] = useState('');
 
   // EDIT STATE (Null = Create Mode)
   const [editingId, setEditingId] = useState(null);
 
   // --- DATA LISTS ---
   const [employees, setEmployees] = useState([]);
-  const [roles, setRoles] = useState([]);
+  const [availableRoles, setAvailableRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
 
@@ -40,18 +50,28 @@ function AddEmployee() {
         axiosInstance.get('/departments'),
         axiosInstance.get('/jobPositions'),
       ]);
+
       setEmployees(empRes.data);
-      console.log(empRes.data);
-      setRoles(roleRes.data);
       setDepartments(depRes.data);
       setPositions(posRes.data);
+
+      // Filter roles securely based on logged-in user's authority
+      let fetchedRoles = roleRes.data;
+      if (!isAdmin) {
+        fetchedRoles = fetchedRoles.filter(
+          (r) =>
+            r.roleName.toUpperCase() !== 'SUPER_ADMIN' &&
+            r.roleName.toUpperCase() !== 'ROLE_SUPER_ADMIN'
+        );
+      }
+      setAvailableRoles(fetchedRoles);
     } catch (err) {
       console.error(err);
       setError('Failed to load data from server.');
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [isAdmin]);
 
   useEffect(() => {
     fetchAllData();
@@ -65,9 +85,10 @@ function AddEmployee() {
     setEmail('');
     setSalary(0);
     setPassword('');
-    setRoleId('');
+    setSelectedRoles([]);
     setDepartmentId('');
     setJobPositionId('');
+    setManagerId('');
 
     setEditingId(null);
     setSuccess(null);
@@ -84,8 +105,8 @@ function AddEmployee() {
       setError('Please fill in all required text fields.');
       return false;
     }
-    if (!roleId || !departmentId || !jobPositionId) {
-      setError('Please select Role, Department, and Position.');
+    if (selectedRoles.length === 0 || !departmentId || !jobPositionId) {
+      setError('Please select at least one Role, Department, and Position.');
       return false;
     }
     // Password is mandatory for NEW employees, optional for EDITS
@@ -98,6 +119,16 @@ function AddEmployee() {
 
   // --- 3. ACTIONS (Edit / Delete / Save) ---
 
+  const handleRoleToggle = (roleId) => {
+    setSelectedRoles((prevSelected) => {
+      if (prevSelected.includes(roleId)) {
+        return prevSelected.filter((id) => id !== roleId);
+      } else {
+        return [...prevSelected, roleId];
+      }
+    });
+  };
+
   const handleEdit = (emp) => {
     setEditingId(emp.id);
 
@@ -108,17 +139,17 @@ function AddEmployee() {
     setSalary(emp.salary);
     setPassword('');
 
-    // ✅ FIX: Use the flat IDs from the new DTO
     setDepartmentId(emp.departmentId || '');
     setJobPositionId(emp.jobPositionId || '');
+    setManagerId(emp.managerId || '');
 
-    // ✅ FIX: Roles are now available in the DTO
-    const firstRole = emp.roles && emp.roles.length > 0 ? emp.roles[0].id : '';
-    setRoleId(firstRole);
+    // Map the existing roles of the employee into our array
+    const empRoleIds = emp.roles ? emp.roles.map((r) => r.id) : [];
+    setSelectedRoles(empRoleIds);
 
     setSuccess(null);
     setError(null);
-    window.scrollTo(0, 0);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleDelete = async (id) => {
@@ -150,14 +181,10 @@ function AddEmployee() {
       lastName,
       email,
       salary,
-      // Fix 1: Wrap roleId in an array and rename key to 'roles'. Remove Number()
-      roles: [roleId],
-
-      // Fix 2: Rename 'departmentId' to 'Id' to match backend DTO
-      Id: departmentId,
-
-      // Fix 3: Remove Number() wrapper. IDs are UUID strings.
+      roles: selectedRoles, // Send array of Role IDs
+      Id: departmentId, // Map to department Id
       jobPositionId: jobPositionId,
+      managerId: managerId || null,
     };
 
     // Only attach password if user typed one
@@ -169,7 +196,6 @@ function AddEmployee() {
       if (editingId) {
         // UPDATE
         await axiosInstance.put(`/employees/${editingId}`, payload);
-        console.log(payload);
         setSuccess('Employee updated successfully!');
       } else {
         // CREATE
@@ -268,24 +294,32 @@ function AddEmployee() {
               />
             </div>
 
-            {/* DROPDOWNS */}
-            <div>
-              <label className="block text-sm font-medium mb-1">
-                System Role <span className="text-red-500">*</span>
+            {/* CHECKBOXES FOR ROLES */}
+            <div className="col-span-1 md:col-span-2 lg:col-span-3">
+              <label className="block text-sm font-medium mb-2">
+                Assign Roles <span className="text-red-500">*</span>
               </label>
-              <select
-                className={inputStyle}
-                value={roleId}
-                onChange={(e) => setRoleId(e.target.value)}
-              >
-                <option value="">-- Select Role --</option>
-                {roles.map((r) => (
-                  <option key={r.id} value={r.id}>
-                    {r.roleName}
-                  </option>
+              <div className="flex flex-wrap gap-4 p-3 border border-gray-300 rounded-md bg-gray-50">
+                {availableRoles.map((role) => (
+                  <label
+                    key={role.id}
+                    className="flex items-center space-x-2 cursor-pointer"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={selectedRoles.includes(role.id)}
+                      onChange={() => handleRoleToggle(role.id)}
+                      className="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                    />
+                    <span className="text-sm text-gray-700 font-medium">
+                      {role.roleName ? role.roleName.replace('ROLE_', '') : ''}
+                    </span>
+                  </label>
                 ))}
-              </select>
+              </div>
             </div>
+
+            {/* DROPDOWNS */}
             <div>
               <label className="block text-sm font-medium mb-1">
                 Department <span className="text-red-500">*</span>
@@ -320,14 +354,37 @@ function AddEmployee() {
                 ))}
               </select>
             </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Line Manager
+              </label>
+              <select
+                className={inputStyle}
+                value={managerId}
+                onChange={(e) => setManagerId(e.target.value)}
+              >
+                <option value="">-- No Manager --</option>
+                {employees
+                  .filter(
+                    (e) =>
+                      e.roles &&
+                      e.roles.some((r) => r.roleName.includes('MANAGER'))
+                  )
+                  .map((mgr) => (
+                    <option key={mgr.id} value={mgr.id}>
+                      {mgr.firstName} {mgr.lastName}
+                    </option>
+                  ))}
+              </select>
+            </div>
           </div>
 
           {/* FORM BUTTONS */}
-          <div className="flex gap-3">
+          <div className="flex gap-3 pt-4">
             <button
               type="submit"
               disabled={loading}
-              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50"
+              className="bg-blue-600 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-blue-700 disabled:opacity-50 transition-colors"
             >
               {loading
                 ? 'Saving...'
@@ -340,7 +397,7 @@ function AddEmployee() {
               <button
                 type="button"
                 onClick={resetForm}
-                className="bg-gray-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-600"
+                className="bg-gray-500 text-white px-6 py-2.5 rounded-lg text-sm font-medium hover:bg-gray-600 transition-colors"
               >
                 Cancel Edit
               </button>
@@ -350,7 +407,7 @@ function AddEmployee() {
       </div>
 
       {/* --- TABLE CARD --- */}
-      <div className="bg-white shadow-sm rounded-xl p-6">
+      <div className="bg-white shadow-sm rounded-xl p-6 mt-6">
         <h3 className="text-lg font-semibold mb-4">Employee List</h3>
         <div className="overflow-x-auto">
           <table className="w-full text-sm text-left border border-gray-200 rounded-lg">
@@ -369,8 +426,8 @@ function AddEmployee() {
               {employees.length === 0 ? (
                 <tr>
                   <td
-                    colSpan="6"
-                    className="px-4 py-4 text-center text-gray-500"
+                    colSpan="7"
+                    className="px-4 py-8 text-center text-gray-500 italic"
                   >
                     No employees found.
                   </td>
@@ -387,22 +444,28 @@ function AddEmployee() {
                     <td className="px-4 py-3 text-gray-600">{emp.username}</td>
                     <td className="px-4 py-3 text-gray-600">
                       {emp.roles && emp.roles.length > 0 ? (
-                        emp.roles.map((r) => (
-                          <span
-                            key={r.id}
-                            className="inline-block bg-blue-100 text-blue-700 text-xs font-medium px-2 py-1 rounded-full mr-1"
-                          >
-                            {r.roleName}
-                          </span>
-                        ))
+                        <div className="flex flex-wrap gap-1">
+                          {emp.roles.map((r) => (
+                            <span
+                              key={r.id}
+                              className="inline-block bg-blue-50 border border-blue-200 text-blue-700 text-xs font-medium px-2 py-0.5 rounded-full"
+                            >
+                              {r.roleName
+                                ? r.roleName.replace('ROLE_', '')
+                                : ''}
+                            </span>
+                          ))}
+                        </div>
                       ) : (
-                        <span className="text-red-400 italic">No Role</span>
+                        <span className="text-red-400 italic text-xs">
+                          No Role
+                        </span>
                       )}
                     </td>
 
                     <td className="px-4 py-3 text-gray-600">
                       {emp.departmentName || (
-                        <span className="text-red-400 italic">
+                        <span className="text-gray-400 italic text-xs">
                           Not Assigned
                         </span>
                       )}
@@ -423,16 +486,16 @@ function AddEmployee() {
                     </td>
 
                     {/* ACTION BUTTONS */}
-                    <td className="px-4 py-3 text-right space-x-2">
+                    <td className="px-4 py-3 text-right space-x-3">
                       <button
                         onClick={() => handleEdit(emp)}
-                        className="text-blue-600 hover:text-blue-800 font-medium"
+                        className="text-blue-600 hover:text-blue-800 font-medium transition-colors"
                       >
                         Edit
                       </button>
                       <button
                         onClick={() => handleDelete(emp.id)}
-                        className="text-red-600 hover:text-red-800 font-medium"
+                        className="text-red-600 hover:text-red-800 font-medium transition-colors"
                       >
                         Delete
                       </button>
@@ -449,3 +512,4 @@ function AddEmployee() {
 }
 
 export default AddEmployee;
+

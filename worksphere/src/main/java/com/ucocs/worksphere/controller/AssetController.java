@@ -25,7 +25,7 @@ public class AssetController {
      * Get all assets. HR/Admin only.
      */
     @GetMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<List<AssetResponse>> getAllAssets(
             @RequestParam(required = false) AssetType type) {
         List<AssetResponse> assets = type != null ? assetService.getAssetsByType(type) : assetService.getAllAssets();
@@ -36,7 +36,7 @@ public class AssetController {
      * Register a new asset. HR/Admin only.
      */
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<AssetResponse> createAsset(
             @Valid @RequestBody AssetCreateRequest request,
             Authentication auth) {
@@ -48,7 +48,7 @@ public class AssetController {
      * Assign asset to an employee. HR/Admin only.
      */
     @PutMapping("/{id}/assign")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<AssetResponse> assignAsset(
             @PathVariable UUID id,
             @Valid @RequestBody AssetAssignRequest request,
@@ -60,7 +60,7 @@ public class AssetController {
      * Record return of an asset. HR/Admin only.
      */
     @PutMapping("/{id}/return")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<AssetResponse> returnAsset(
             @PathVariable UUID id,
             @Valid @RequestBody AssetReturnRequest request,
@@ -73,7 +73,7 @@ public class AssetController {
      * Accessible by HR/Admin or the employee themselves.
      */
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN') or #employeeId.toString() == authentication.name")
+    @PreAuthorize("hasRole('HR') or #employeeId.toString() == authentication.name")
     public ResponseEntity<List<AssetResponse>> getEmployeeAssets(
             @PathVariable UUID employeeId) {
         return ResponseEntity.ok(assetService.getAssetsForEmployee(employeeId));
@@ -83,7 +83,9 @@ public class AssetController {
      * Get assets assigned to the currently authenticated employee.
      */
     @GetMapping("/my")
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<AssetResponse>> getMyAssets(Authentication auth) {
         return ResponseEntity.ok(assetService.getAssetsForUsername(auth.getName()));
     }
 }
+

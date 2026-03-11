@@ -3,7 +3,6 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.dto.ActivateAccountRequest;
 import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
-import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -26,13 +25,14 @@ public class EmployeeController {
     }
 
     @GetMapping("/bonus")
+    @PreAuthorize("isAuthenticated()")
     public double getBonus(@RequestParam double salary) {
 
         return employeeService.calculateBonus(salary);
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasRole('HR')")
     public void createEmployee(@RequestBody CreateEmployeeRequest request) {
 
         employeeService.saveEmployee(request);
@@ -41,7 +41,7 @@ public class EmployeeController {
     @PostMapping("/activate")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<?> activateAccount(Principal principal,
-                                             @Valid @RequestBody ActivateAccountRequest accountRequest) {
+            @Valid @RequestBody ActivateAccountRequest accountRequest) {
         String password = accountRequest.password();
         String phoneNumber = accountRequest.phoneNumber();
         employeeService.activateEmployee(principal.getName(), password, phoneNumber);
@@ -57,13 +57,13 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')")
+    @PreAuthorize("hasRole('MANAGER')")
     public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }
 
     @PutMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> updateEmployee(
             @PathVariable UUID id,
             @RequestBody CreateEmployeeRequest request) {
@@ -73,7 +73,7 @@ public class EmployeeController {
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('ADMIN', 'HR')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> deleteEmployee(@PathVariable UUID id) {
 
         employeeService.deleteEmployee(id);
@@ -83,10 +83,11 @@ public class EmployeeController {
     // In worksphere/controller/EmployeeController.java
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN', 'HR')") // Adjust roles as needed
+    @PreAuthorize("hasRole('MANAGER')") // Adjust roles as needed
     public ResponseEntity<EmployeeResponseDTO> getEmployeeById(@PathVariable UUID id) {
         EmployeeResponseDTO employeeDTO = employeeService.getEmployeeById(id);
         return ResponseEntity.ok(employeeDTO);
     }
 
 }
+

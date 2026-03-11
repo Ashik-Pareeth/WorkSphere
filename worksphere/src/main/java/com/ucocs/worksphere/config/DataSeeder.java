@@ -8,6 +8,8 @@ import org.springframework.boot.CommandLineRunner;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.Set;
 
@@ -19,6 +21,8 @@ public class DataSeeder implements CommandLineRunner {
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
     private final WorkScheduleRepository workScheduleRepository;
+    private final TaxSlabConfigRepository taxSlabConfigRepository;
+    private final SalaryStructureRepository salaryStructureRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(EmployeeRepository employeeRepository,
@@ -26,12 +30,16 @@ public class DataSeeder implements CommandLineRunner {
             DepartmentRepository departmentRepository,
             JobPositionRepository jobPositionRepository,
             WorkScheduleRepository workScheduleRepository,
+            TaxSlabConfigRepository taxSlabConfigRepository,
+            SalaryStructureRepository salaryStructureRepository,
             PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
         this.departmentRepository = departmentRepository;
         this.jobPositionRepository = jobPositionRepository;
         this.workScheduleRepository = workScheduleRepository;
+        this.taxSlabConfigRepository = taxSlabConfigRepository;
+        this.salaryStructureRepository = salaryStructureRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -80,16 +88,21 @@ public class DataSeeder implements CommandLineRunner {
             hrPos = jobPositionRepository.save(hrPos);
 
             // 4. Seed Roles
-            Role adminRole = createRoleIfNotFound("ADMIN");
-            Role hrRole = createRoleIfNotFound("HR");
-            Role managerRole = createRoleIfNotFound("MANAGER");
-            Role employeeRole = createRoleIfNotFound("EMPLOYEE");
+            Role superAdminRole = createRoleIfNotFound("SUPER_ADMIN", true);
+            Role hrRole = createRoleIfNotFound("HR", false);
+            Role managerRole = createRoleIfNotFound("MANAGER", false);
+            Role employeeRole = createRoleIfNotFound("EMPLOYEE", false);
+            Role auditorRole = createRoleIfNotFound("AUDITOR", false);
 
             // 5. Seed Employees
 
             // System Admin (No Dept)
             createEmployee("Super", "Admin", "admin", "admin@worksphere.com", "admin123",
-                    null, null, adminRole, standardShift);
+                    null, null, superAdminRole, standardShift);
+
+            // Auditor (No Dept)
+            createEmployee("Audit", "User", "auditor", "auditor@worksphere.com", "password",
+                    null, null, auditorRole, standardShift);
 
             // HR Admin
             createEmployee("Sarah", "Smith", "hr_admin", "hr@worksphere.com", "password",
@@ -113,6 +126,12 @@ public class DataSeeder implements CommandLineRunner {
             employeeRepository.save(ashikEmp);
             employeeRepository.save(johnEmp);
 
+            // 6. Seed Tax Slabs (India New Regime FY 2025-26)
+            seedTaxSlabs();
+
+            // 7. Seed sample Salary Structures
+            seedSalaryStructures(managerPos, devPos);
+
             System.out.println("---------------------------------------------");
             System.out.println("DATA SEEDER: Mock Environment Generated");
             System.out.println("---------------------------------------------");
@@ -122,15 +141,17 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("- manager");
             System.out.println("- ashik");
             System.out.println("- johndoe");
+            System.out.println("Tax slabs (FY 2025-26) and salary structures seeded.");
             System.out.println("---------------------------------------------");
         }
     }
 
     // Helper method to keep code clean
-    private Role createRoleIfNotFound(String name) {
+    private Role createRoleIfNotFound(String name, boolean isExclusive) {
         return roleRepository.findByRoleName(name).orElseGet(() -> {
             Role role = new Role();
             role.setRoleName(name);
+            role.setExclusive(isExclusive);
             role.setCreatedBy("SYSTEM");
             return roleRepository.save(role);
         });
@@ -160,5 +181,61 @@ public class DataSeeder implements CommandLineRunner {
         emp.setCreatedBy("SYSTEM");
 
         return employeeRepository.save(emp);
+    }
+
+    private void seedTaxSlabs() {
+        if (taxSlabConfigRepository.count() > 0)
+            return;
+        String fy = "2025-26";
+
+        createSlab(BigDecimal.ZERO, new BigDecimal("300000"), BigDecimal.ZERO, fy, "0% - Exempt");
+        createSlab(new BigDecimal("300000"), new BigDecimal("700000"), new BigDecimal("5"), fy, "5% slab");
+        createSlab(new BigDecimal("700000"), new BigDecimal("1000000"), new BigDecimal("10"), fy, "10% slab");
+        createSlab(new BigDecimal("1000000"), new BigDecimal("1200000"), new BigDecimal("15"), fy, "15% slab");
+        createSlab(new BigDecimal("1200000"), new BigDecimal("1500000"), new BigDecimal("20"), fy, "20% slab");
+        createSlab(new BigDecimal("1500000"), null, new BigDecimal("30"), fy, "30% slab + 4% cess");
+    }
+
+    private void createSlab(BigDecimal min, BigDecimal max, BigDecimal rate, String fy, String desc) {
+        TaxSlabConfig slab = new TaxSlabConfig();
+        slab.setMinIncome(min);
+        slab.setMaxIncome(max);
+        slab.setTaxRate(rate);
+        slab.setFinancialYear(fy);
+        slab.setDescription(desc);
+        slab.setCreatedBy("SYSTEM");
+        taxSlabConfigRepository.save(slab);
+    }
+
+    private void seedSalaryStructures(JobPosition managerPos, JobPosition devPos) {
+        // Manager position default
+        SalaryStructure mgrStructure = new SalaryStructure();
+        mgrStructure.setBaseSalary(new BigDecimal("80000"));
+        mgrStructure.setHra(new BigDecimal("32000"));
+        mgrStructure.setDa(new BigDecimal("8000"));
+        mgrStructure.setTravelAllowance(new BigDecimal("5000"));
+        mgrStructure.setOtherAllowances(new BigDecimal("5000"));
+        mgrStructure.setPfEmployeePercent(12.0);
+        mgrStructure.setPfEmployerPercent(12.0);
+        mgrStructure.setProfessionalTax(new BigDecimal("200"));
+        mgrStructure.setEffectiveDate(LocalDate.of(2025, 4, 1));
+        mgrStructure.setJobPosition(managerPos);
+        mgrStructure.setCreatedBy("SYSTEM");
+        salaryStructureRepository.save(mgrStructure);
+
+        // Developer position default
+        SalaryStructure devStructure = new SalaryStructure();
+        devStructure.setBaseSalary(new BigDecimal("50000"));
+        devStructure.setHra(new BigDecimal("20000"));
+        devStructure.setDa(new BigDecimal("5000"));
+        devStructure.setTravelAllowance(new BigDecimal("3000"));
+        devStructure.setOtherAllowances(new BigDecimal("2000"));
+        devStructure.setPfEmployeePercent(12.0);
+        devStructure.setPfEmployerPercent(12.0);
+        devStructure.setProfessionalTax(new BigDecimal("200"));
+        devStructure.setEffectiveDate(LocalDate.of(2025, 4, 1));
+        devStructure.setJobPosition(devPos);
+        devStructure.setCreatedBy("SYSTEM");
+        salaryStructureRepository.save(devStructure);
     }
 }

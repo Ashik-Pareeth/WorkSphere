@@ -21,7 +21,7 @@ public class RoleController {
 
     // CREATE
     @PostMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Role> saveRole(@RequestBody Role role) {
         Role savedRole = roleService.createRole(role);
         return ResponseEntity.ok(savedRole);
@@ -29,21 +29,21 @@ public class RoleController {
 
     // GET ALL
     @GetMapping
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleService.findAll());
     }
 
     // GET BY ID (useful for edit forms / future)
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Role> getRoleById(@PathVariable UUID id) {
         return ResponseEntity.ok(roleService.findById(id));
     }
 
     // UPDATE
     @PutMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Role> updateRole(
             @PathVariable UUID id,
             @RequestBody Role role
@@ -54,9 +54,10 @@ public class RoleController {
 
     // DELETE
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasRole('ADMIN')")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
     public ResponseEntity<Void> deleteRole(@PathVariable UUID id) {
         roleService.deleteRole(id);
         return ResponseEntity.noContent().build();
     }
 }
+

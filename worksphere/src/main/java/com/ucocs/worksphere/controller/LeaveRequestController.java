@@ -36,7 +36,7 @@ public class LeaveRequestController {
     }
 
     @PutMapping("/{requestId}/approve")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LeaveRequestResponseDTO> approveRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
@@ -46,7 +46,7 @@ public class LeaveRequestController {
     }
 
     @PutMapping("/{requestId}/reject")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<LeaveRequestResponseDTO> rejectRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
@@ -56,7 +56,7 @@ public class LeaveRequestController {
     }
 
     @GetMapping("/pending")
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<LeaveRequestResponseDTO>> getPendingRequests(Principal principal) {
         List<LeaveRequest> requests = leaveRequestService.getPendingRequests(principal.getName());
         List<LeaveRequestResponseDTO> dtos = requests.stream()
@@ -64,4 +64,14 @@ public class LeaveRequestController {
                 .toList();
         return ResponseEntity.ok(dtos);
     }
+
+    @PutMapping("/{requestId}/cancel")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LeaveRequestResponseDTO> cancelRequest(
+            @PathVariable UUID requestId,
+            Principal principal) {
+        LeaveRequest request = leaveRequestService.cancelRequest(requestId, principal.getName());
+        return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
+    }
 }
+

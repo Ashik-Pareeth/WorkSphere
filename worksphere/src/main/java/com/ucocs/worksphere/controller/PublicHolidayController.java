@@ -27,15 +27,16 @@ public class PublicHolidayController {
     }
 
     @PostMapping
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<PublicHoliday> createHoliday(@RequestBody PublicHoliday holiday) {
         return ResponseEntity.ok(holidayService.createHoliday(holiday));
     }
 
     @DeleteMapping("/{id}")
-    @PreAuthorize("hasAnyRole('HR', 'ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> deleteHoliday(@PathVariable UUID id) {
         holidayService.deleteHoliday(id);
         return ResponseEntity.noContent().build();
     }
 }
+

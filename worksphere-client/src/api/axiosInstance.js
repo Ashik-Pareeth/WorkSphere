@@ -20,14 +20,15 @@ axiosInstance.interceptors.response.use(
   },
   (error) => {
     // If the error is a 401 (Unauthorized / Token Expired)
-    if (error.response && error.response.status === 401) {
-      console.warn('Session expired. Redirecting to login...');
-
-      // Clear all stored user data
-      localStorage.clear();
-
-      // Force a redirect to the login page (your login route is '/')
-      window.location.href = '/';
+    if (error.response) {
+      if (error.response.status === 401) {
+        console.warn('Session expired. Redirecting to login...');
+        localStorage.clear();
+        window.location.href = '/';
+      } else if (error.response.status === 403) {
+        console.warn('Forbidden access. Redirecting to Unauthorized...');
+        window.location.href = '/unauthorized';
+      }
     }
 
     // Always reject the promise so the component calling it can also handle the error if needed
