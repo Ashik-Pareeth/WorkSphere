@@ -16,7 +16,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.function.Function;
 
-
 @Component
 public class JwtUtil {
     @Value("${jwt.secret}")
@@ -41,6 +40,35 @@ public class JwtUtil {
                 .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 10)) // 10 hours
                 .signWith(getSignKey(), SignatureAlgorithm.HS256)
                 .compact();
+    }
+
+    public String generateOfferToken(String email, String offerId) {
+        Map<String, Object> claims = new HashMap<>();
+        claims.put("offerId", offerId);
+        claims.put("type", "OFFER_RESPONSE");
+        return Jwts.builder()
+                .setClaims(claims)
+                .setSubject(email)
+                .setIssuedAt(new Date(System.currentTimeMillis()))
+                .setExpiration(new Date(System.currentTimeMillis() + 1000 * 60 * 60 * 24 * 7)) // 7 days
+                .signWith(getSignKey(), SignatureAlgorithm.HS256)
+                .compact();
+    }
+
+    public Boolean validateOfferToken(String token, String expectedEmail, String expectedOfferId) {
+        try {
+            Claims claims = extractAllClaims(token);
+            String tokenEmail = claims.getSubject();
+            String tokenOfferId = claims.get("offerId", String.class);
+            String tokenType = claims.get("type", String.class);
+
+            return "OFFER_RESPONSE".equals(tokenType) &&
+                    expectedEmail.equals(tokenEmail) &&
+                    expectedOfferId.equals(tokenOfferId) &&
+                    !isTokenExpired(token);
+        } catch (Exception e) {
+            return false;
+        }
     }
 
     public Claims extractAllClaims(String token) {

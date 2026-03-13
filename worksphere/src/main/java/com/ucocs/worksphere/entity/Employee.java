@@ -8,10 +8,13 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+
 @Setter
 @Getter
 @Entity
 @Table(name = "employees")
+@JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
 public class Employee extends BaseEntity {
 
     @Column(nullable = false)

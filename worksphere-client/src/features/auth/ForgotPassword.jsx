@@ -57,7 +57,7 @@ export default function ForgotPassword() {
         <div className="absolute inset-x-0 top-0 h-px mx-10 bg-gradient-to-r from-transparent via-blue-400/30 to-transparent rounded-full" />
 
         <Link
-          to="/"
+          to="/login"
           className="inline-flex items-center text-sm font-medium text-slate-400 hover:text-slate-200 transition-colors mb-6"
         >
           <ArrowLeft className="w-4 h-4 mr-2" />

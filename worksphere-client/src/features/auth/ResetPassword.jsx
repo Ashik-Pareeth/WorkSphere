@@ -53,11 +53,13 @@ export default function ResetPassword() {
       setSuccess(response.data);
       // Wait briefly then redirect to login
       setTimeout(() => {
-        navigate('/');
+        navigate('/login');
       }, 3000);
     } catch (err) {
       console.error('Reset password failed', err);
-      setError(err.response?.data || 'Reset failed. Your token may be expired.');
+      setError(
+        err.response?.data?.message ||
+          'Failed to reset password. The link might be expired.');
     } finally {
       setLoading(false);
     }
@@ -114,7 +116,9 @@ export default function ResetPassword() {
         {success ? (
           <div className="text-center">
             <p className="text-slate-400 mb-6">Redirecting to login...</p>
-            <Link to="/" className="text-blue-400 hover:text-blue-300 font-medium">Click here if not redirected</Link>
+            <div className="text-center mt-6">
+              <Link to="/login" className="text-blue-400 hover:text-blue-300 font-medium">Click here if not redirected</Link>
+            </div>
           </div>
         ) : (
           <form onSubmit={handleSubmit} className="space-y-5">

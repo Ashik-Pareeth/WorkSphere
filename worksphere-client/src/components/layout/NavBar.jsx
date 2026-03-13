@@ -41,13 +41,13 @@ export default function NavBar() {
                   Home
                 </NavLink>
                 <NavLink to="/tasks" className={linkClass}>
-                  Tasks
+                  My Tasks
                 </NavLink>
                 <NavLink to="/leave" className={linkClass}>
                   Leave
                 </NavLink>
                 <NavLink to="/my-compensation" className={linkClass}>
-                  Pay
+                  Compensation
                 </NavLink>
 
                 {/* Tier 1.5: Managers and above */}
@@ -55,7 +55,7 @@ export default function NavBar() {
                   <>
                     <div className="w-px h-5 bg-gray-700 mx-2 inline-block align-middle" />
                     <NavLink to="/roster" className={linkClass}>
-                      Roster
+                      Team Roster
                     </NavLink>
                     <NavLink to="/approvals" className={linkClass}>
                       Approvals
@@ -78,7 +78,7 @@ export default function NavBar() {
                   }
                   className="text-gray-300 hover:bg-gray-700 hover:text-white px-3 py-2 rounded-md text-sm font-medium flex items-center gap-1 transition-colors"
                 >
-                  System Admin
+                  Administration
                   <svg
                     className="w-4 h-4"
                     fill="none"
@@ -111,8 +111,16 @@ export default function NavBar() {
                         to="/roles"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                       >
-                        Roles
+                        Permission Roles
                       </NavLink>
+                      {userRoles.includes('SUPER_ADMIN') && (
+                        <NavLink
+                          to="/role-management"
+                          className="block px-4 py-2 text-sm text-gray-700 hover:bg-red-50 hover:text-red-700 font-medium"
+                        >
+                          User Role Allocation
+                        </NavLink>
+                      )}
                       <NavLink
                         to="/jobPosition"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
@@ -127,13 +135,19 @@ export default function NavBar() {
                         to="/register"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                       >
-                        Add Employee
+                        Onboard Employee
+                      </NavLink>
+                      <NavLink
+                        to="/hiring/jobs"
+                        className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700 font-semibold text-blue-600"
+                      >
+                        Recruitment Hub
                       </NavLink>
                       <NavLink
                         to="/hr/payroll"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                       >
-                        Payroll Management
+                        Payroll
                       </NavLink>
 
                       <div className="px-4 py-2 text-xs font-semibold text-gray-500 uppercase tracking-wider bg-gray-50 border-t border-gray-100">
@@ -149,7 +163,7 @@ export default function NavBar() {
                         to="/leave-override"
                         className="block px-4 py-2 text-sm text-gray-700 hover:bg-blue-50 hover:text-blue-700"
                       >
-                        Balance Override
+                        Adjust Balances
                       </NavLink>
                       <NavLink
                         to="/holidays"
