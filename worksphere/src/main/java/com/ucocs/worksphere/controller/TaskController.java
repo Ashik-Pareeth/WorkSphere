@@ -31,8 +31,7 @@ public class TaskController {
     public TaskController(
             TaskService taskService,
             EmployeeRepository employeeRepository,
-            TaskEvidenceService taskEvidenceService)
-    {
+            TaskEvidenceService taskEvidenceService) {
         this.taskService = taskService;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceService = taskEvidenceService;
@@ -40,7 +39,7 @@ public class TaskController {
 
     // --- 1. CREATE TASK ---
     @PostMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskCreateRequest request) {
         Employee manager = getAuthenticatedEmployee();
 
@@ -118,7 +117,7 @@ public class TaskController {
     }
 
     @PatchMapping("/evidence/{evidenceId}/review")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<TaskEvidence> reviewEvidence(
             @PathVariable UUID evidenceId,
             @RequestParam EvidenceStatus status,
@@ -130,7 +129,7 @@ public class TaskController {
 
     // --- 6. RATING & FLAGGING ---
     @PostMapping("/{taskId}/rate")
-    @PreAuthorize("hasAnyRole('MANAGER', 'ADMIN')")
+    @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<TaskResponseDTO> rateTask(
             @PathVariable UUID taskId,
             @RequestBody TaskRatingRequest request) {
@@ -140,7 +139,7 @@ public class TaskController {
     }
 
     @PostMapping("/{taskId}/flag")
-    @PreAuthorize("hasAnyRole('AUDITOR', 'ADMIN')")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'SUPER_ADMIN')")
     public ResponseEntity<TaskResponseDTO> flagTask(
             @PathVariable UUID taskId,
             @RequestBody String reason) {

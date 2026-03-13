@@ -9,6 +9,7 @@ import com.ucocs.worksphere.repository.DepartmentRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobPositionRepository;
 import com.ucocs.worksphere.repository.RoleRepository;
+import com.ucocs.worksphere.repository.WorkScheduleRepository;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,6 +29,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import com.ucocs.worksphere.entity.Candidate;
+import com.ucocs.worksphere.entity.OfferLetter;
+import com.ucocs.worksphere.entity.JobOpening;
+
 @Service
 public class EmployeeService {
     private final PasswordEncoder passwordEncoder;
@@ -36,18 +41,51 @@ public class EmployeeService {
     private final DepartmentRepository departmentRepository;
     private final JobPositionRepository jobPositionRepository;
     private final RoleRepository roleRepository;
+    private final WorkScheduleRepository workScheduleRepository;
+    private final EmailService emailService;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
             EmployeeRepository employeeRepository,
             DepartmentRepository departmentRepository,
             JobPositionRepository jobPositionRepository,
-            RoleRepository roleRepository) {
+            RoleRepository roleRepository,
+            WorkScheduleRepository workScheduleRepository,
+            EmailService emailService) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
         this.jobPositionRepository = jobPositionRepository;
         this.roleRepository = roleRepository;
+        this.workScheduleRepository = workScheduleRepository;
+        this.emailService = emailService;
+    }
+
+    // Helper to validate and fetch roles, enforcing singularity constraints
+    private Set<Role> validateAndFetchRoles(Set<UUID> roleIds) {
+        Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(roleIds));
+
+        boolean hasExclusiveRole = roleEntities.stream().anyMatch(Role::isExclusive);
+
+        if (hasExclusiveRole && roleEntities.size() > 1) {
+            throw new IllegalArgumentException(
+                    "Exclusive roles (like SUPER_ADMIN) cannot be combined with any other roles.");
+        }
+
+        // Retain existing security context logic preventing HR from creating
+        // SUPER_ADMINs
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+            boolean isSuperAdmin = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
+
+            if (isHr && !isSuperAdmin && hasExclusiveRole) {
+                throw new SecurityException("HR users are not authorized to assign the SUPER_ADMIN role.");
+            }
+        }
+
+        return roleEntities;
     }
 
     // UPDATE THIS METHOD to take the DTO instead of the Entity
@@ -61,8 +99,9 @@ public class EmployeeService {
         employee.setEmail(request.email());
         employee.setSalary(request.salary());
 
-        // 2. Encode Password
+        // 2. Encode Password and Default Status
         employee.setPassword(passwordEncoder.encode(request.password()));
+        employee.setEmployeeStatus(EmployeeStatus.PENDING);
 
         // 3. Fetch and Set Department
         if (request.Id() != null) {
@@ -79,20 +118,24 @@ public class EmployeeService {
         // 5. Fetch and Set Roles
         if (request.roles() != null && !request.roles().isEmpty()) {
             Set<UUID> roleIds = new HashSet<>(request.roles());
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null) {
-                boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
-                boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-                if (isHr && !isAdmin) {
-                    roleRepository.findByRoleName("ADMIN").ifPresent(adminRole -> roleIds.remove(adminRole.getId()));
-                }
-            }
-            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(roleIds));
-            employee.setRoles(roleEntities);
+            employee.setRoles(validateAndFetchRoles(roleIds));
+        }
+
+        // 6. Fetch and Set Manager
+        if (request.managerId() != null) {
+            employee.setManager(employeeRepository.findById(request.managerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+        }
+
+        // 7. Fetch and Set Work Schedule
+        if (request.workScheduleId() != null) {
+            employee.setWorkSchedule(workScheduleRepository.findById(request.workScheduleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Work Schedule not found")));
         }
 
         employeeRepository.save(employee);
     }
+
     public void activateEmployee(String userName, String newPassword, String phoneNumber) {
         Employee employee = employeeRepository.findByUserName(userName)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with name " + userName));
@@ -136,7 +179,6 @@ public class EmployeeService {
                 .toList();
     }
 
-
     public double calculateBonus(double salary) {
         if (salary > 50000) {
             return salary * .10;
@@ -161,7 +203,8 @@ public class EmployeeService {
             employee.setPassword(passwordEncoder.encode(request.password()));
         }
 
-        // 3. Update Department (Note: DTO field 'Id' maps to Department per your save logic)
+        // 3. Update Department (Note: DTO field 'Id' maps to Department per your save
+        // logic)
         if (request.Id() != null) {
             employee.setDepartment(departmentRepository.findById(request.Id())
                     .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
@@ -176,16 +219,23 @@ public class EmployeeService {
         // 5. Update Roles
         if (request.roles() != null && !request.roles().isEmpty()) {
             Set<UUID> roleIds = new HashSet<>(request.roles());
-            Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-            if (auth != null) {
-                boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
-                boolean isAdmin = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
-                if (isHr && !isAdmin) {
-                    roleRepository.findByRoleName("ADMIN").ifPresent(adminRole -> roleIds.remove(adminRole.getId()));
-                }
-            }
-            Set<Role> roleEntities = new HashSet<>(roleRepository.findAllById(roleIds));
-            employee.setRoles(roleEntities);
+            employee.setRoles(validateAndFetchRoles(roleIds));
+        }
+
+        // 6. Update Manager
+        if (request.managerId() != null) {
+            employee.setManager(employeeRepository.findById(request.managerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+        } else {
+            employee.setManager(null);
+        }
+
+        // 7. Update Work Schedule
+        if (request.workScheduleId() != null) {
+            employee.setWorkSchedule(workScheduleRepository.findById(request.workScheduleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Work Schedule not found")));
+        } else {
+            employee.setWorkSchedule(null);
         }
 
         employeeRepository.save(employee);
@@ -199,6 +249,59 @@ public class EmployeeService {
         employeeRepository.deleteById(id);
     }
 
+    @Transactional
+    public void updateEmployeeRoles(UUID employeeId, List<UUID> roleIds) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (roleIds != null) {
+            employee.setRoles(validateAndFetchRoles(new HashSet<>(roleIds)));
+        } else {
+            employee.getRoles().clear();
+        }
+        
+        employeeRepository.save(employee);
+    }
+
+    @Transactional
+    public Employee finalizeHire(com.ucocs.worksphere.dto.hiring.FinalizeHireRequest request) {
+        Employee employee = employeeRepository.findById(request.getEmployeeId())
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        if (employee.getEmployeeStatus() != EmployeeStatus.PENDING) {
+            throw new IllegalStateException("Employee is not in PENDING state.");
+        }
+
+        // 1. Roles
+        if (request.getRoleIds() != null && !request.getRoleIds().isEmpty()) {
+            employee.setRoles(validateAndFetchRoles(request.getRoleIds()));
+        }
+
+        // 2. Manager
+        if (request.getManagerId() != null) {
+            employee.setManager(employeeRepository.findById(request.getManagerId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+        }
+
+        // 3. Work Schedule
+        if (request.getWorkScheduleId() != null) {
+            employee.setWorkSchedule(workScheduleRepository.findById(request.getWorkScheduleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Work Schedule not found")));
+        }
+
+        Employee savedEmployee = employeeRepository.save(employee);
+
+        // NOTE: The temporary password 'Welcome123!' was set during convertCandidateToEmployee
+        // Send the invite email
+        emailService.sendOnboardingInviteEmail(
+                savedEmployee.getEmail(),
+                savedEmployee.getUserName(),
+                "Welcome123!"
+        );
+
+        return savedEmployee;
+    }
+
     // In worksphere/service/EmployeeService.java
 
     // Inside EmployeeService.java
@@ -208,7 +311,38 @@ public class EmployeeService {
 
         return EmployeeResponseDTO.fromEntity(employee);
     }
+
+    @Transactional
+    public Employee convertCandidateToEmployee(Candidate candidate, OfferLetter offer) {
+        Employee employee = new Employee();
+
+        String[] nameParts = candidate.getFullName().split(" ", 2);
+        employee.setFirstName(nameParts[0]);
+        employee.setLastName(nameParts.length > 1 ? nameParts[1] : "");
+        employee.setUserName(candidate.getEmail());
+        employee.setEmail(candidate.getEmail());
+
+        if (candidate.getPhone() != null && !candidate.getPhone().isEmpty()) {
+            employee.setPhoneNumber(candidate.getPhone());
+        }
+
+        if (offer.getProposedSalary() != null) {
+            employee.setSalary(offer.getProposedSalary().doubleValue());
+        }
+
+        employee.setPassword(passwordEncoder.encode("Welcome123!"));
+
+        JobOpening job = offer.getJobOpening();
+        if (job != null) {
+            employee.setDepartment(job.getDepartment());
+            employee.setJobPosition(job.getJobPosition());
+        }
+
+        roleRepository.findByRoleName("EMPLOYEE").ifPresent(role -> {
+            employee.setRoles(Set.of(role));
+        });
+
+        employee.setEmployeeStatus(EmployeeStatus.PENDING);
+        return employeeRepository.save(employee);
+    }
 }
-
-
-

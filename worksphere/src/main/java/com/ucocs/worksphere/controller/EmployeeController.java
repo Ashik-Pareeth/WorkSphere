@@ -72,12 +72,28 @@ public class EmployeeController {
         return ResponseEntity.noContent().build();
     }
 
+    @PatchMapping("/{id}/roles")
+    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    public ResponseEntity<Void> updateEmployeeRoles(
+            @PathVariable UUID id,
+            @RequestBody List<UUID> roleIds) {
+        employeeService.updateEmployeeRoles(id, roleIds);
+        return ResponseEntity.noContent().build();
+    }
+
     @DeleteMapping("/{id}")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> deleteEmployee(@PathVariable UUID id) {
 
         employeeService.deleteEmployee(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/finalize-hire")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<com.ucocs.worksphere.entity.Employee> finalizeHire(
+            @RequestBody com.ucocs.worksphere.dto.hiring.FinalizeHireRequest request) {
+        return ResponseEntity.ok(employeeService.finalizeHire(request));
     }
 
     // In worksphere/controller/EmployeeController.java

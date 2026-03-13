@@ -28,7 +28,7 @@ const PrivateRoute = ({ allowedRoles = [] }) => {
 
   // 3. Not logged in (or token expired)? Kick them to login.
   if (!isAuthenticated) {
-    return <Navigate to="/" replace state={{ from: location }} />;
+    return <Navigate to="/login" replace state={{ from: location }} />;
   }
 
   // 4. Needs Onboarding?
@@ -38,7 +38,7 @@ const PrivateRoute = ({ allowedRoles = [] }) => {
 
   // 5. Check if they were logged out by the useEffect safety catch
   if (user.status !== 'ACTIVE' && user.status !== 'PENDING') {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   // 6. Bulletproof Role-Based Access Control
