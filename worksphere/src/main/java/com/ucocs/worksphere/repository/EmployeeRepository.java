@@ -11,16 +11,43 @@ import java.util.Optional;
 import java.util.UUID;
 
 public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
-    Optional<Employee> findByUserName(String userName);
+       @Query("SELECT DISTINCT e FROM Employee e " +
+                     "LEFT JOIN FETCH e.department " +
+                     "LEFT JOIN FETCH e.jobPosition " +
+                     "LEFT JOIN FETCH e.roles " +
+                     "LEFT JOIN FETCH e.manager " +
+                     "LEFT JOIN FETCH e.workSchedule " +
+                     "WHERE e.userName = :userName")
+       Optional<Employee> findByUserName(@Param("userName") String userName);
 
-    Optional<Employee> findByEmail(String email);
+       @Query("SELECT DISTINCT e FROM Employee e " +
+                     "LEFT JOIN FETCH e.department " +
+                     "LEFT JOIN FETCH e.jobPosition " +
+                     "LEFT JOIN FETCH e.roles " +
+                     "LEFT JOIN FETCH e.manager " +
+                     "LEFT JOIN FETCH e.workSchedule " +
+                     "WHERE e.email = :email")
+       Optional<Employee> findByEmail(@Param("email") String email);
 
-    // Grabs the employee and their lazy-loaded relationships in a single SQL query
-    @Query("SELECT e FROM Employee e " +
-            "LEFT JOIN FETCH e.department " +
-            "LEFT JOIN FETCH e.jobPosition " +
-            "WHERE e.id = :id")
-    Optional<Employee> findByIdWithDetails(@Param("id") UUID id);
+       // Grabs the employee and their lazy-loaded relationships in a single SQL query
+       @Query("SELECT e FROM Employee e " +
+                     "LEFT JOIN FETCH e.department " +
+                     "LEFT JOIN FETCH e.jobPosition " +
+                     "WHERE e.id = :id")
+       Optional<Employee> findByIdWithDetails(@Param("id") UUID id);
 
-    List<Employee> findByEmployeeStatus(EmployeeStatus status);
+       @Query("SELECT DISTINCT e FROM Employee e " +
+                     "LEFT JOIN FETCH e.department " +
+                     "LEFT JOIN FETCH e.jobPosition " +
+                     "LEFT JOIN FETCH e.roles " +
+                     "LEFT JOIN FETCH e.manager " +
+                     "LEFT JOIN FETCH e.workSchedule " +
+                     "WHERE e.employeeStatus = :status")
+       List<Employee> findByEmployeeStatus(@Param("status") EmployeeStatus status);
+
+       @Query("SELECT DISTINCT e FROM Employee e " +
+                     "JOIN e.roles r " +
+                     "LEFT JOIN FETCH e.roles " +
+                     "WHERE r.roleName IN :roleNames")
+       List<Employee> findByRoleNamesIn(@Param("roleNames") List<String> roleNames);
 }

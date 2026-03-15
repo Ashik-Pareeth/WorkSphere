@@ -25,7 +25,8 @@ public class OfferService {
     private final EmailService emailService;
 
     public OfferLetter getOfferForCandidate(UUID candidateId) {
-        return offerRepository.findByCandidateId(candidateId);
+        return offerRepository.findByCandidateId(candidateId)
+                .orElse(null);
     }
 
     public OfferLetter getOfferById(UUID offerId) {

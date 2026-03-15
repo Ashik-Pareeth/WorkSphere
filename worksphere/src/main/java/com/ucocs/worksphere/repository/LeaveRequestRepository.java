@@ -14,24 +14,37 @@ import java.util.UUID;
 
 @Repository
 public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID> {
-        List<LeaveRequest> findByEmployeeOrderByCreatedAtDesc(Employee employee);
+        @Query("SELECT DISTINCT lr FROM LeaveRequest lr " +
+               "LEFT JOIN FETCH lr.employee " +
+               "LEFT JOIN FETCH lr.leavePolicy " +
+               "LEFT JOIN FETCH lr.reviewer " +
+               "WHERE lr.employee = :employee " +
+               "ORDER BY lr.createdAt DESC")
+        List<LeaveRequest> findByEmployeeOrderByCreatedAtDesc(@Param("employee") Employee employee);
 
         // For managers to see pending requests for their department
-        List<LeaveRequest> findByEmployeeDepartmentIdAndStatus(UUID departmentId, LeaveRequestStatus status);
+        @Query("SELECT DISTINCT lr FROM LeaveRequest lr " +
+               "LEFT JOIN FETCH lr.employee " +
+               "LEFT JOIN FETCH lr.leavePolicy " +
+               "LEFT JOIN FETCH lr.reviewer " +
+               "WHERE lr.employee.department.id = :departmentId AND lr.status = :status")
+        List<LeaveRequest> findByEmployeeDepartmentIdAndStatus(@Param("departmentId") UUID departmentId, @Param("status") LeaveRequestStatus status);
 
         // Fetch all pending requests with employee and policy eagerly loaded (for
         // HR/Admin)
-        @Query("SELECT lr FROM LeaveRequest lr " +
+        @Query("SELECT DISTINCT lr FROM LeaveRequest lr " +
                         "LEFT JOIN FETCH lr.employee " +
                         "LEFT JOIN FETCH lr.leavePolicy " +
+                        "LEFT JOIN FETCH lr.reviewer " +
                         "WHERE lr.status = :status " +
                         "ORDER BY lr.createdAt DESC")
         List<LeaveRequest> findAllByStatusWithDetails(@Param("status") LeaveRequestStatus status);
 
         // Fetch pending requests for a specific department with eager loading
-        @Query("SELECT lr FROM LeaveRequest lr " +
+        @Query("SELECT DISTINCT lr FROM LeaveRequest lr " +
                         "LEFT JOIN FETCH lr.employee " +
                         "LEFT JOIN FETCH lr.leavePolicy " +
+                        "LEFT JOIN FETCH lr.reviewer " +
                         "WHERE lr.employee.department.id = :deptId AND lr.status = :status " +
                         "ORDER BY lr.createdAt DESC")
         List<LeaveRequest> findByDepartmentAndStatusWithDetails(@Param("deptId") UUID departmentId,

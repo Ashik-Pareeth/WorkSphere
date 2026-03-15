@@ -56,7 +56,8 @@ public class MidnightAbsenteeJob {
             }
 
             // 4. Check if an attendance record already exists for today
-            Attendance existing = attendanceRepository.findByEmployeeAndDate(emp, today);
+            Attendance existing = attendanceRepository.findByEmployeeAndDate(emp, today)
+                    .orElse(null);
             if (existing != null) {
                 continue; // They clocked in (or were already marked)
             }

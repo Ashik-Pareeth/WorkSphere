@@ -55,10 +55,7 @@ public class AssetWarrantyAlertJob {
                 expiringAssets.size());
 
         // Notify HR/Admin users
-        List<Employee> hrAdmins = employeeRepository.findAll().stream()
-                .filter(e -> e.getRoles().stream()
-                        .anyMatch(r -> r.getRoleName().equals("HR") || r.getRoleName().equals("ADMIN")))
-                .toList();
+        List<Employee> hrAdmins = employeeRepository.findByRoleNamesIn(java.util.List.of("HR", "ADMIN"));
 
         String assetList = expiringAssets.stream()
                 .map(a -> a.getAssetTag() + " (" + a.getMakeModel() + ") expires " + a.getWarrantyExpiry())

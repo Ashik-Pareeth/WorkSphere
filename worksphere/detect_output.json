@@ -1,0 +1,206 @@
+[
+  {
+    "repo": "AttendanceRepository.java",
+    "methods": [
+      "Attendance findByEmployeeAndDate(Employee employee, LocalDate date);",
+      "List<Attendance> findByEmployee(Employee employee);",
+      "List<Attendance> findByDate(LocalDate date);",
+      "List<Attendance> findByDateAndEmployee_Department_Id(LocalDate date, UUID departmentId);"
+    ]
+  },
+  {
+    "repo": "AuditLogRepository.java",
+    "methods": [
+      "List<AuditLog> findByEntityTypeAndEntityIdOrderByCreatedAtDesc(String entityType, UUID entityId);",
+      "List<AuditLog> findByPerformedByOrderByCreatedAtDesc(UUID performedBy);",
+      "List<AuditLog> findByActionOrderByCreatedAtDesc(AuditAction action);"
+    ]
+  },
+  {
+    "repo": "CandidateRepository.java",
+    "methods": [
+      "List<Candidate> findByJobOpeningId(UUID jobOpeningId);",
+      "List<Candidate> findByJobOpeningIdWithDetails(@Param(\"jobId\") UUID jobId);",
+      "Optional<Candidate> findByIdWithDetails(@Param(\"id\") UUID id);"
+    ]
+  },
+  {
+    "repo": "CompanyAssetRepository.java",
+    "methods": [
+      "Optional<CompanyAsset> findByAssetTag(String assetTag);",
+      "Optional<CompanyAsset> findBySerialNumber(String serialNumber);",
+      "List<CompanyAsset> findByEmployee(Employee employee);",
+      "List<CompanyAsset> findByEmployeeIsNull();",
+      "List<CompanyAsset> findByType(AssetType type);",
+      "List<CompanyAsset> findByCondition(AssetCondition condition);",
+      "List<CompanyAsset> findByWarrantyExpiryBetween(LocalDate start, LocalDate end);"
+    ]
+  },
+  {
+    "repo": "DepartmentRepository.java",
+    "methods": [
+      "Optional<Department> findByName(String name);"
+    ]
+  },
+  {
+    "repo": "EmployeeRepository.java",
+    "methods": [
+      "Optional<Employee> findByUserName(String userName);",
+      "Optional<Employee> findByEmail(String email);",
+      "Optional<Employee> findByIdWithDetails(@Param(\"id\") UUID id);",
+      "List<Employee> findByEmployeeStatus(EmployeeStatus status);"
+    ]
+  },
+  {
+    "repo": "GrievanceTicketRepository.java",
+    "methods": [
+      "Optional<GrievanceTicket> findByTicketNumber(String ticketNumber);",
+      "List<GrievanceTicket> findByRaisedBy(Employee raisedBy);",
+      "List<GrievanceTicket> findByStatus(GrievanceStatus status);",
+      "List<GrievanceTicket> findByCategory(GrievanceCategory category);",
+      "List<GrievanceTicket> findByPriority(GrievancePriority priority);",
+      "List<GrievanceTicket> findByAssignedTo(UUID assignedTo);",
+      "List<GrievanceTicket> findByRaisedByOrderByCreatedAtDesc(Employee raisedBy);"
+    ]
+  },
+  {
+    "repo": "InterviewScheduleRepository.java",
+    "methods": [
+      "List<InterviewSchedule> findByCandidateId(UUID candidateId);",
+      "List<InterviewSchedule> findByInterviewerId(UUID interviewerId);"
+    ]
+  },
+  {
+    "repo": "JobOpeningRepository.java",
+    "methods": [
+      "List<JobOpening> findByStatus(JobOpeningStatus status);"
+    ]
+  },
+  {
+    "repo": "LeaveBalanceRepository.java",
+    "methods": [
+      "List<LeaveBalance> findByEmployeeAndValidForYear(Employee employee, Integer validForYear);",
+      "List<LeaveBalance> findByValidForYear(Integer validForYear);"
+    ]
+  },
+  {
+    "repo": "LeavePolicyRepository.java",
+    "methods": [
+      "Optional<LeavePolicy> findByName(String name);"
+    ]
+  },
+  {
+    "repo": "LeaveRequestRepository.java",
+    "methods": [
+      "List<LeaveRequest> findByEmployeeOrderByCreatedAtDesc(Employee employee);",
+      "List<LeaveRequest> findByEmployeeDepartmentIdAndStatus(UUID departmentId, LeaveRequestStatus status);"
+    ]
+  },
+  {
+    "repo": "LeaveTransactionRepository.java",
+    "methods": [
+      "List<LeaveTransaction> findByEmployeeOrderByCreatedAtDesc(Employee employee);"
+    ]
+  },
+  {
+    "repo": "NotificationRepository.java",
+    "methods": [
+      "List<Notification> findByRecipientOrderByCreatedAtDesc(Employee recipient);",
+      "List<Notification> findByRecipientAndIsReadFalseOrderByCreatedAtDesc(Employee recipient);"
+    ]
+  },
+  {
+    "repo": "OffboardingRecordRepository.java",
+    "methods": [
+      "Optional<OffboardingRecord> findByEmployee(Employee employee);",
+      "List<OffboardingRecord> findByStatus(OffboardingStatus status);"
+    ]
+  },
+  {
+    "repo": "OfferLetterRepository.java",
+    "methods": [
+      "OfferLetter findByCandidateId(UUID candidateId);"
+    ]
+  },
+  {
+    "repo": "PasswordResetTokenRepository.java",
+    "methods": [
+      "Optional<PasswordResetToken> findByTokenHash(String tokenHash);"
+    ]
+  },
+  {
+    "repo": "PayrollRecordRepository.java",
+    "methods": [
+      "Optional<PayrollRecord> findByEmployeeAndMonthAndYear(Employee employee, Integer month, Integer year);",
+      "List<PayrollRecord> findByMonthAndYear(Integer month, Integer year);",
+      "List<PayrollRecord> findByMonthAndYearAndStatus(Integer month, Integer year, PayrollStatus status);",
+      "List<PayrollRecord> findByEmployeeOrderByYearDescMonthDesc(Employee employee);"
+    ]
+  },
+  {
+    "repo": "PerformanceAppraisalRepository.java",
+    "methods": [
+      "List<PerformanceAppraisal> findByEmployeeOrderByReviewPeriodEndDesc(Employee employee);",
+      "List<PerformanceAppraisal> findByManagerOrderByReviewPeriodEndDesc(Employee manager);",
+      "List<PerformanceAppraisal> findByStatus(AppraisalStatus status);"
+    ]
+  },
+  {
+    "repo": "ProjectRepository.java",
+    "methods": [
+      "List<Project> findByStatus(ProjectStatus status);",
+      "List<Project> findByDepartment_id(UUID departmentId);"
+    ]
+  },
+  {
+    "repo": "PublicHolidayRepository.java",
+    "methods": [
+      "Optional<PublicHoliday> findByDate(LocalDate date);"
+    ]
+  },
+  {
+    "repo": "RoleRepository.java",
+    "methods": [
+      "Optional<Role> findByRoleName(String roleName);"
+    ]
+  },
+  {
+    "repo": "SalaryStructureRepository.java",
+    "methods": [
+      "Optional<SalaryStructure> findByEmployee(Employee employee);",
+      "List<SalaryStructure> findByJobPosition(JobPosition jobPosition);"
+    ]
+  },
+  {
+    "repo": "TaskHistoryRepository.java",
+    "methods": [
+      "List<TaskHistory> findByTask_IdOrderByTimestampDesc(UUID taskId);"
+    ]
+  },
+  {
+    "repo": "TaskRepository.java",
+    "methods": [
+      "Optional<Task> findByTaskCode(String taskCode);",
+      "List<Task> findByProject_Id(UUID projectId);"
+    ]
+  },
+  {
+    "repo": "TaxSlabConfigRepository.java",
+    "methods": [
+      "List<TaxSlabConfig> findByFinancialYearOrderByMinIncomeAsc(String financialYear);"
+    ]
+  },
+  {
+    "repo": "TicketCommentRepository.java",
+    "methods": [
+      "List<TicketComment> findByTicketOrderByCreatedAtAsc(GrievanceTicket ticket);",
+      "List<TicketComment> findByTicketAndIsInternalFalseOrderByCreatedAtAsc(GrievanceTicket ticket);"
+    ]
+  },
+  {
+    "repo": "TimesheetAuditLogRepository.java",
+    "methods": [
+      "List<TimesheetAuditLog> findByAttendanceIdOrderByChangeTimestampDesc(UUID attendanceId);"
+    ]
+  }
+]

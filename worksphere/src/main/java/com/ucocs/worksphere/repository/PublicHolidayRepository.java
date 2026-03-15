@@ -19,7 +19,8 @@ public interface PublicHolidayRepository extends JpaRepository<PublicHoliday, UU
     List<PublicHoliday> findHolidaysByYear(@Param("year") int year);
 
     // Used by the nightly attendance job to check if today is a holiday
-    Optional<PublicHoliday> findByDate(LocalDate date);
+    @Query("SELECT DISTINCT ph FROM PublicHoliday ph WHERE ph.date = :date")
+    Optional<PublicHoliday> findByDate(@Param("date") LocalDate date);
 
     boolean existsByDate(LocalDate date);
 }

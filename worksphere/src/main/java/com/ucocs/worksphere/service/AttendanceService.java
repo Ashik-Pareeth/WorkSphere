@@ -44,7 +44,8 @@ public class AttendanceService {
         LocalDate today = LocalDate.now();
 
         // Assuming your AttendanceRepository has been updated to use existsBy...
-        Attendance existingAttendance = attendanceRepository.findByEmployeeAndDate(employee, today);
+        Attendance existingAttendance = attendanceRepository.findByEmployeeAndDate(employee, today)
+                .orElse(null);
 
         if (existingAttendance != null) {
             throw new IllegalStateException("You are already clocked in for today.");
@@ -85,7 +86,8 @@ public class AttendanceService {
         Employee employee = getEmployeeByUsername(username);
         LocalDate today = LocalDate.now();
 
-        Attendance attendance = attendanceRepository.findByEmployeeAndDate(employee, today);
+        Attendance attendance = attendanceRepository.findByEmployeeAndDate(employee, today)
+                .orElse(null);
 
         // Check if attendance record exists AND if the user actually clocked in
         if (attendance == null || attendance.getClockIn() == null) {

@@ -169,7 +169,12 @@ const CandidateDrawer = ({ candidate, onClose, onCandidateUpdated }) => {
                                 </Button>
                             )}
                             {candidate.status === 'INTERVIEWING' && (
-                                <Button onClick={() => handleStatusChange('OFFERED')} className="bg-purple-600 hover:bg-purple-700 text-white w-full" disabled={loading}>
+                                <Button 
+                                    onClick={() => handleStatusChange('OFFERED')} 
+                                    className="bg-purple-600 hover:bg-purple-700 text-white w-full" 
+                                    disabled={loading || interviews.length === 0}
+                                    title={interviews.length === 0 ? "Schedule an interview first" : ""}
+                                >
                                     <CheckSquare className="mr-2 h-4 w-4" /> Move to Offer Stage
                                 </Button>
                             )}

@@ -20,7 +20,7 @@ public class JobOpeningService {
     private final CandidateRepository candidateRepository;
 
     public List<JobOpeningStatsDTO> getAllOpeningsWithStats() {
-        return jobOpeningRepository.findAll().stream().map(job -> {
+        return jobOpeningRepository.findAllWithDetails().stream().map(job -> {
             long candidateCount = candidateRepository.countByJobOpeningId(job.getId());
             long interviewCount = candidateRepository.countInterviewsByJobOpeningId(job.getId());
             return new JobOpeningStatsDTO(job, candidateCount, interviewCount);
@@ -28,11 +28,12 @@ public class JobOpeningService {
     }
 
     public List<JobOpening> getActiveOpenings() {
-        return jobOpeningRepository.findByStatus(JobOpeningStatus.OPEN);
+        return jobOpeningRepository.findByStatusWithDetails(JobOpeningStatus.OPEN);
     }
 
     public JobOpening getOpeningById(UUID id) {
-        return jobOpeningRepository.findById(id)
+        // Change findById to findByIdWithDetails
+        return jobOpeningRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Job Opening not found"));
     }
 

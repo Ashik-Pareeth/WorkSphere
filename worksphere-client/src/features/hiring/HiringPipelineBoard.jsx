@@ -8,16 +8,18 @@ import {
   updateCandidateStatus,
 } from '../../api/hiringApi';
 import CandidateDrawer from './CandidateDrawer';
-import {
-  ArrowLeft,
-  Search,
-  PlusCircle,
-  CheckCircle,
-  XCircle,
-} from 'lucide-react';
+import { ArrowLeft, Search, XCircle } from 'lucide-react';
 import { toast } from 'sonner';
 
-const DEPARTMENTS = ['APPLIED', 'SHORTLISTED', 'INTERVIEWING', 'OFFERED', 'ACCEPTED'];
+// 1. Separate the base active columns from the optional ones
+const BASE_DEPARTMENTS = [
+  'APPLIED',
+  'SHORTLISTED',
+  'INTERVIEWING',
+  'OFFERED',
+  'ACCEPTED',
+];
+
 const COLUMNS = {
   APPLIED: {
     id: 'APPLIED',
@@ -44,6 +46,12 @@ const COLUMNS = {
     title: 'Offer Accepted',
     color: 'border-l-4 border-green-500',
   },
+  // 2. Define the Rejected column styling
+  REJECTED: {
+    id: 'REJECTED',
+    title: 'Rejected',
+    color: 'border-l-4 border-red-500',
+  },
 };
 
 const HiringPipelineBoard = () => {
@@ -51,8 +59,10 @@ const HiringPipelineBoard = () => {
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [columns, setColumns] = useState(COLUMNS);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
+
+  // 3. Add state for the toggle
+  const [showRejected, setShowRejected] = useState(false);
 
   useEffect(() => {
     loadCandidates();
@@ -61,6 +71,7 @@ const HiringPipelineBoard = () => {
   const loadCandidates = async () => {
     try {
       const response = await fetchCandidatesByJob(id);
+      console.log('Fetched Candidates from API:', response.data);
       setCandidates(response.data);
     } catch (error) {
       console.error('Failed to load candidates', error);
@@ -79,15 +90,22 @@ const HiringPipelineBoard = () => {
     )
       return;
 
-    // Optimistic UI update
     const candidateId = draggableId;
     const newStatus = destination.droppableId;
+
+    if (newStatus === 'OFFERED' || newStatus === 'ACCEPTED') {
+      toast.error('Status Change Not Allowed', {
+        description: newStatus === 'OFFERED' 
+          ? 'Use the candidate profile to move to Offer Stage (requires interview).'
+          : 'Candidate is automatically moved to Accepted upon offer link visit.'
+      });
+      return;
+    }
 
     setCandidates((prev) =>
       prev.map((c) => (c.id === candidateId ? { ...c, status: newStatus } : c))
     );
 
-    // API Call
     try {
       await updateCandidateStatus(candidateId, newStatus, null);
       toast.success('Candidate moved successfully');
@@ -97,6 +115,27 @@ const HiringPipelineBoard = () => {
         description:
           'There was a problem moving the candidate. Reverting changes.',
       });
+      loadCandidates();
+    }
+  };
+
+  // 4. Quick Reject Handler
+  const handleQuickReject = async (e, candidate) => {
+    e.stopPropagation(); // Prevent opening the CandidateDrawer when clicking the icon
+
+    // Optimistic UI update
+    setCandidates((prev) =>
+      prev.map((c) =>
+        c.id === candidate.id ? { ...c, status: 'REJECTED' } : c
+      )
+    );
+
+    try {
+      await updateCandidateStatus(candidate.id, 'REJECTED', null);
+      toast.success(`${candidate.fullName} has been rejected.`);
+    } catch (error) {
+      console.error('Failed to quick reject', error);
+      toast.error('Failed to reject candidate.');
       loadCandidates(); // Revert on failure
     }
   };
@@ -109,6 +148,12 @@ const HiringPipelineBoard = () => {
     return (
       <div className="p-8 text-center text-gray-500">Loading Pipeline...</div>
     );
+
+  // 5. Calculate derivations for rendering
+  const rejectedCount = getCandidatesByStatus('REJECTED').length;
+  const visibleDepartments = showRejected
+    ? [...BASE_DEPARTMENTS, 'REJECTED']
+    : BASE_DEPARTMENTS;
 
   return (
     <div className="p-6 h-[calc(100vh-6rem)] flex flex-col">
@@ -126,6 +171,18 @@ const HiringPipelineBoard = () => {
           </h1>
         </div>
         <div className="flex items-center gap-3">
+          {/* 6. The Toggle Button */}
+          <Button
+            variant={showRejected ? 'secondary' : 'outline'}
+            onClick={() => setShowRejected(!showRejected)}
+            className={`border-red-200 hover:bg-red-50 ${showRejected ? 'bg-red-50 text-red-700' : 'text-red-600'}`}
+          >
+            <XCircle className="mr-2 h-4 w-4" />
+            {showRejected
+              ? 'Hide Rejected'
+              : `Show Rejected (${rejectedCount})`}
+          </Button>
+
           <Button
             variant="outline"
             onClick={() => window.open(`/jobs/${id}/apply`, '_blank')}
@@ -138,15 +195,16 @@ const HiringPipelineBoard = () => {
 
       <div className="flex-1 overflow-x-auto min-h-0">
         <DragDropContext onDragEnd={handleDragEnd}>
-          <div className="flex gap-6 h-full items-start pb-4">
-            {DEPARTMENTS.map((columnId) => {
-              const column = columns[columnId];
+          {/* 1. Add w-full and reduce the gap slightly to fit more nicely */}
+          <div className="flex gap-4 h-full items-start pb-4 w-full min-w-250">
+            {visibleDepartments.map((columnId) => {
+              const column = COLUMNS[columnId];
               const columnCandidates = getCandidatesByStatus(columnId);
 
               return (
                 <div
                   key={columnId}
-                  className="flex-shrink-0 w-80 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl flex flex-col h-full max-h-full border"
+                  className="flex-1 min-w-50 bg-gray-50/50 dark:bg-gray-900/50 rounded-xl flex flex-col h-full max-h-full border"
                 >
                   <div className="p-4 border-b flex justify-between items-center bg-white dark:bg-gray-800 rounded-t-xl">
                     <h2 className="font-semibold text-gray-700 dark:text-gray-300">
@@ -175,12 +233,28 @@ const HiringPipelineBoard = () => {
                                 ref={provided.innerRef}
                                 {...provided.draggableProps}
                                 {...provided.dragHandleProps}
-                                className={`bg-white dark:bg-gray-800 shadow-sm hover:shadow relative ${column.color} ${snapshot.isDragging ? 'shadow-lg ring-1 ring-blue-400' : ''}`}
+                                className={`bg-white dark:bg-gray-800 shadow-sm hover:shadow relative group ${column.color} ${snapshot.isDragging ? 'shadow-lg ring-1 ring-blue-400' : ''}`}
                                 onClick={() => setSelectedCandidate(candidate)}
                               >
                                 <CardContent className="p-3">
-                                  <div className="font-medium text-gray-900 dark:text-gray-100">
-                                    {candidate.fullName}
+                                  <div className="flex justify-between items-start">
+                                    <div className="font-medium text-gray-900 dark:text-gray-100">
+                                      {candidate.fullName}
+                                    </div>
+
+                                    {/* 8. Quick Reject Icon Button */}
+                                    {candidate.status !== 'REJECTED' &&
+                                      candidate.status !== 'ACCEPTED' && (
+                                        <button
+                                          onClick={(e) =>
+                                            handleQuickReject(e, candidate)
+                                          }
+                                          className="text-gray-300 opacity-0 group-hover:opacity-100 hover:text-red-500 transition-all focus:opacity-100"
+                                          title="Quick Reject"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </button>
+                                      )}
                                   </div>
                                   <div className="text-xs text-gray-500 mt-1">
                                     {candidate.source}

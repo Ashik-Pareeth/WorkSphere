@@ -10,6 +10,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -31,6 +32,7 @@ public class MonthlyPayrollDraftJob {
      * Cron: at 9:00 AM on the 25th of every month.
      */
     @Scheduled(cron = "0 0 9 25 * ?")
+    @Transactional
     public void generateMonthlyDrafts() {
         LocalDate now = LocalDate.now();
         int month = now.getMonthValue();
@@ -51,10 +53,7 @@ public class MonthlyPayrollDraftJob {
                     response.getErrors().size());
 
             // Notify all HR/Admin users
-            List<Employee> hrAdmins = employeeRepository.findAll().stream()
-                    .filter(e -> e.getRoles().stream()
-                            .anyMatch(r -> r.getRoleName().equals("HR") || r.getRoleName().equals("ADMIN")))
-                    .toList();
+            List<Employee> hrAdmins = employeeRepository.findByRoleNamesIn(List.of("HR", "ADMIN"));
 
             for (Employee hr : hrAdmins) {
                 notificationService.send(

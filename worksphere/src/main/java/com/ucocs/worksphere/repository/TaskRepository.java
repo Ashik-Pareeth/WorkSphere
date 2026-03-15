@@ -13,21 +13,43 @@ import java.util.UUID;
 public interface TaskRepository extends JpaRepository<Task, UUID> {
 
         // 1. Search by Code (e.g., "TSK-102")
-        Optional<Task> findByTaskCode(String taskCode);
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.taskCode = :taskCode")
+        Optional<Task> findByTaskCode(@Param("taskCode") String taskCode);
 
         // 2. Fetch My Tasks (Optimized with JOIN FETCH)
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.assignedTo.id = :employeeId")
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.assignedTo.id = :employeeId")
         List<Task> findByAssignedTo_Id(@Param("employeeId") UUID employeeId);
 
         // 3. Fetch Tasks I Assigned (Optimized with JOIN FETCH)
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.assigner.id = :managerId")
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.assigner.id = :managerId")
         List<Task> findByAssigner_Id(@Param("managerId") UUID managerId);
 
         // 4. Fetch Tasks by Project
-        List<Task> findByProject_Id(UUID projectId);
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.project.id = :projectId")
+        List<Task> findByProject_Id(@Param("projectId") UUID projectId);
 
         // 4.5 Fetch Tasks given to direct reports
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.assignedTo.manager.id = :managerId")
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.assignedTo.manager.id = :managerId")
         List<Task> findByAssignedTo_Manager_Id(@Param("managerId") UUID managerId);
 
         // 5. Fetch Overdue Tasks (For Scheduler)
@@ -38,7 +60,11 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         Optional<Task> findTopByOrderByCreatedAtDesc();
 
         // 7. Get Single Task with Details
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.id = :taskId")
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project " +
+               "WHERE t.id = :taskId")
         Optional<Task> findByIdWithRelations(@Param("taskId") UUID taskId);
 
         // --- ARCHITECTURE ADDITION ---
@@ -53,7 +79,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         long countByAssignedTo_IdAndStatus(UUID employeeId, TaskStatus status);
 
         // 10. Fetch ALL Tasks with Relations (For Admin Global View)
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner")
+        @Query("SELECT DISTINCT t FROM Task t " +
+               "LEFT JOIN FETCH t.assignedTo " +
+               "LEFT JOIN FETCH t.assigner " +
+               "LEFT JOIN FETCH t.project")
         List<Task> findAllWithRelations();
 
         // --- APPRAISAL METRICS ---

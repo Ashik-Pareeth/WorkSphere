@@ -30,17 +30,17 @@ public class CandidateService {
     private final JobOpeningRepository jobOpeningRepository;
 
     public List<Candidate> getCandidatesByJobId(UUID jobId) {
-        return candidateRepository.findByJobOpeningId(jobId);
+        return candidateRepository.findByJobOpeningIdWithDetails(jobId);
     }
 
     public Candidate getCandidateById(UUID id) {
-        return candidateRepository.findById(id)
+        return candidateRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new RuntimeException("Candidate not found"));
     }
 
     @Transactional
     public Candidate applyForJob(CandidateApplyRequest request, MultipartFile file) {
-        JobOpening jobOpening = jobOpeningRepository.findById(request.getJobOpeningId())
+        JobOpening jobOpening = jobOpeningRepository.findByIdWithDetails(request.getJobOpeningId())
                 .orElseThrow(() -> new RuntimeException("Job opening not found"));
         Candidate candidate = new Candidate();
         candidate.setJobOpening(jobOpening);

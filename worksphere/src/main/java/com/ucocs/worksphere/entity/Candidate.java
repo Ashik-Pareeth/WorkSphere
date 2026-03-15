@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.ucocs.worksphere.enums.CandidateSource;
 import com.ucocs.worksphere.enums.CandidateStatus;
 import jakarta.persistence.*;
@@ -14,6 +15,7 @@ public class Candidate extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "job_opening_id", nullable = false)
+    @JsonIgnoreProperties({"hibernateLazyInitializer", "handler"})
     private JobOpening jobOpening;
 
     @Column(nullable = false)
