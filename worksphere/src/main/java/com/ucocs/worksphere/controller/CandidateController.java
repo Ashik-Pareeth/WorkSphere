@@ -5,6 +5,9 @@ import com.ucocs.worksphere.entity.Candidate;
 import com.ucocs.worksphere.enums.CandidateStatus;
 import com.ucocs.worksphere.service.CandidateService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
@@ -41,5 +44,19 @@ public class CandidateController {
             @RequestParam CandidateStatus status,
             @RequestParam(required = false) String rejectionReason) {
         return ResponseEntity.ok(candidateService.updateStatus(id, status, rejectionReason));
+    }
+
+    @GetMapping("/{id}/resume")
+    public ResponseEntity<Resource> getResume(@PathVariable UUID id) {
+        Resource resource = candidateService.getCandidateResume(id);
+        String filename = resource.getFilename();
+        String contentType = filename != null && filename.endsWith(".pdf")
+                ? "application/pdf"
+                : "application/octet-stream";
+
+        return ResponseEntity.ok()
+                .contentType(MediaType.parseMediaType(contentType))
+                .header(HttpHeaders.CONTENT_DISPOSITION, "inline; filename=\"" + filename + "\"")
+                .body(resource);
     }
 }

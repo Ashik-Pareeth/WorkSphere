@@ -8,11 +8,14 @@ import com.ucocs.worksphere.enums.CandidateStatus;
 import com.ucocs.worksphere.repository.CandidateRepository;
 import com.ucocs.worksphere.repository.JobOpeningRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.core.io.Resource;
+import org.springframework.core.io.UrlResource;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.MalformedURLException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -75,6 +78,28 @@ public class CandidateService {
         candidate.setSource(CandidateSource.PORTAL);
 
         return candidateRepository.save(candidate);    
+    }
+
+    public Resource getCandidateResume(UUID id) {
+        Candidate candidate = candidateRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+
+        if (candidate.getResumeFileUrl() == null) {
+            throw new RuntimeException("No resume file found for this candidate");
+        }
+
+        try {
+            Path filePath = Paths.get(candidate.getResumeFileUrl());
+            Resource resource = new UrlResource(filePath.toUri());
+
+            if (!resource.exists() || !resource.isReadable()) {
+                throw new RuntimeException("Resume file not found or unreadable");
+            }
+
+            return resource;
+        } catch (MalformedURLException e) {
+            throw new RuntimeException("Could not read resume file", e);
+        }
     }
 
     @Transactional

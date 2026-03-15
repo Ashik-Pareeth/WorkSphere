@@ -25,6 +25,10 @@ export const updateJobStatus = (id, status) => {
   });
 };
 
+export const fetchJobById = (id) => {
+  return axiosInstance.get(`/api/jobs/${id}`);
+};
+
 // ==================== CANDIDATE ENDPOINTS ====================
 
 export const fetchCandidatesByJob = (jobId) => {
@@ -33,7 +37,7 @@ export const fetchCandidatesByJob = (jobId) => {
 
 export const applyForJob = (data, file) => {
   const formData = new FormData();
-  
+
   // Spring Boot @RequestPart requires the JSON string to be clearly identified as application/json
   formData.append(
     'request',
@@ -44,10 +48,20 @@ export const applyForJob = (data, file) => {
     formData.append('file', file);
   }
 
-  return axios.post('http://localhost:8080/api/candidates/public/apply', formData, {
-    headers: { 'Content-Type': 'multipart/form-data' },
-  });
+  return axios.post(
+    'http://localhost:8080/api/candidates/public/apply',
+    formData,
+    {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    }
+  );
 };
+
+export const getCandidateResumeUrl = (id) =>
+  `${axiosInstance.defaults.baseURL}/api/candidates/${id}/resume`;
+
+export const downloadCandidateResume = (id) =>
+  axiosInstance.get(`/api/candidates/${id}/resume`, { responseType: 'blob' });
 
 export const updateCandidateStatus = (id, status, rejectionReason) => {
   return axiosInstance.patch(`/api/candidates/${id}/status`, null, {
