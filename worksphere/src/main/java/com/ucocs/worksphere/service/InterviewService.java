@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.hiring.InterviewScheduleDTO;
 import com.ucocs.worksphere.entity.InterviewSchedule;
 import com.ucocs.worksphere.enums.InterviewStatus;
 import com.ucocs.worksphere.repository.InterviewScheduleRepository;
@@ -16,9 +17,21 @@ import java.util.UUID;
 public class InterviewService {
     private final InterviewScheduleRepository interviewRepository;
 
-    public List<InterviewSchedule> getInterviewsForCandidate(UUID candidateId) {
-        return interviewRepository.findByCandidateId(candidateId);
-    }
+    public List<InterviewScheduleDTO> getInterviewsForCandidate(UUID candidateId) {
+        return interviewRepository
+                .findByCandidateId(candidateId)
+                .stream()
+                .map(i -> new InterviewScheduleDTO(
+                        i.getId(),
+                        i.getRoundNumber(),
+                        i.getMode(),
+                        i.getStatus().name(),
+                        i.getScheduledAt(),
+                        i.getInterviewer().getFirstName(),
+                        i.getScore(),
+                        i.getFeedback()
+                ))
+                .toList();    }
 
     @Transactional
     public InterviewSchedule scheduleInterview(InterviewSchedule interview) {

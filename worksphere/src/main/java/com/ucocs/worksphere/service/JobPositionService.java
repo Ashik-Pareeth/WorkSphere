@@ -3,6 +3,7 @@ package com.ucocs.worksphere.service;
 import com.ucocs.worksphere.entity.JobPosition;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.JobPositionRepository;
+import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -32,12 +33,13 @@ public class JobPositionService {
         return jobPositionRepository.save(jobPosition);
     }
 
-    // ✅ ADD THIS: Delete
     public void deleteJobPosition(UUID id) {
         JobPosition jobPosition = jobPositionRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Job Position not found"));
         jobPositionRepository.delete(jobPosition);
     }
+
+
 
 }
 

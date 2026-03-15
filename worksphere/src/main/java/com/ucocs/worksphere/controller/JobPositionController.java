@@ -44,6 +44,8 @@ public class JobPositionController {
         jobPositionService.deleteJobPosition(id);
         return ResponseEntity.noContent().build();
     }
+
+
 }
 
 

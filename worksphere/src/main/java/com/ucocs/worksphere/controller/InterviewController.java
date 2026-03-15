@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.controller;
 
+import com.ucocs.worksphere.dto.hiring.InterviewScheduleDTO;
 import com.ucocs.worksphere.entity.InterviewSchedule;
 import com.ucocs.worksphere.service.InterviewService;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +20,7 @@ public class InterviewController {
 
     @GetMapping("/candidate/{candidateId}")
     @PreAuthorize("hasAnyRole('MANAGER', 'HR')")
-    public ResponseEntity<List<InterviewSchedule>> getInterviewsForCandidate(@PathVariable UUID candidateId) {
+    public ResponseEntity<List<InterviewScheduleDTO>> getInterviewsForCandidate(@PathVariable UUID candidateId) {
         return ResponseEntity.ok(interviewService.getInterviewsForCandidate(candidateId));
     }
 

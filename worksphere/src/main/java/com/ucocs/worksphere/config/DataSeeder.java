@@ -23,16 +23,20 @@ public class DataSeeder implements CommandLineRunner {
     private final WorkScheduleRepository workScheduleRepository;
     private final TaxSlabConfigRepository taxSlabConfigRepository;
     private final SalaryStructureRepository salaryStructureRepository;
+    private final LeavePolicyRepository leavePolicyRepository;
+    private final PublicHolidayRepository publicHolidayRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(EmployeeRepository employeeRepository,
-            RoleRepository roleRepository,
-            DepartmentRepository departmentRepository,
-            JobPositionRepository jobPositionRepository,
-            WorkScheduleRepository workScheduleRepository,
-            TaxSlabConfigRepository taxSlabConfigRepository,
-            SalaryStructureRepository salaryStructureRepository,
-            PasswordEncoder passwordEncoder) {
+                      RoleRepository roleRepository,
+                      DepartmentRepository departmentRepository,
+                      JobPositionRepository jobPositionRepository,
+                      WorkScheduleRepository workScheduleRepository,
+                      TaxSlabConfigRepository taxSlabConfigRepository,
+                      SalaryStructureRepository salaryStructureRepository,
+                      LeavePolicyRepository leavePolicyRepository,
+                      PublicHolidayRepository publicHolidayRepository,
+                      PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
         this.departmentRepository = departmentRepository;
@@ -40,6 +44,8 @@ public class DataSeeder implements CommandLineRunner {
         this.workScheduleRepository = workScheduleRepository;
         this.taxSlabConfigRepository = taxSlabConfigRepository;
         this.salaryStructureRepository = salaryStructureRepository;
+        this.leavePolicyRepository = leavePolicyRepository;
+        this.publicHolidayRepository = publicHolidayRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -61,7 +67,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // 2. Seed Departments
             Department engDept = new Department();
-            engDept.setName("Engineering"); // Change "setName" to whatever your Department entity uses
+            engDept.setName("Engineering");
             engDept.setCreatedBy("SYSTEM");
             engDept = departmentRepository.save(engDept);
 
@@ -72,8 +78,7 @@ public class DataSeeder implements CommandLineRunner {
 
             // 3. Seed Job Positions
             JobPosition managerPos = new JobPosition();
-            managerPos.setPositionName("Engineering Manager"); // Change "setTitle" to whatever your JobPosition entity
-                                                               // uses
+            managerPos.setPositionName("Engineering Manager");
             managerPos.setCreatedBy("SYSTEM");
             managerPos = jobPositionRepository.save(managerPos);
 
@@ -112,7 +117,7 @@ public class DataSeeder implements CommandLineRunner {
             Employee managerEmp = createEmployee("Mike", "Johnson", "manager", "manager@worksphere.com", "password",
                     engDept, managerPos, managerRole, standardShift);
 
-            // Normal Employee 1 (You!)
+            // Normal Employee 1
             Employee ashikEmp = createEmployee("Ashik", "Dev", "ashik", "ashik@worksphere.com", "password",
                     engDept, devPos, employeeRole, standardShift);
 
@@ -132,6 +137,12 @@ public class DataSeeder implements CommandLineRunner {
             // 7. Seed sample Salary Structures
             seedSalaryStructures(managerPos, devPos);
 
+            // 8. Seed Leave Policies
+            seedLeavePolicies();
+
+            // 9. Seed Public Holidays
+            seedPublicHolidays();
+
             System.out.println("---------------------------------------------");
             System.out.println("DATA SEEDER: Mock Environment Generated");
             System.out.println("---------------------------------------------");
@@ -141,7 +152,7 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("- manager");
             System.out.println("- ashik");
             System.out.println("- johndoe");
-            System.out.println("Tax slabs (FY 2025-26) and salary structures seeded.");
+            System.out.println("Tax slabs, Salary structures, Leave Policies, and Holidays seeded.");
             System.out.println("---------------------------------------------");
         }
     }
@@ -159,7 +170,7 @@ public class DataSeeder implements CommandLineRunner {
 
     // Helper method to easily spin up users
     private Employee createEmployee(String fName, String lName, String uName, String email, String pass,
-            Department dept, JobPosition pos, Role role, WorkSchedule schedule) {
+                                    Department dept, JobPosition pos, Role role, WorkSchedule schedule) {
         Employee emp = new Employee();
         emp.setFirstName(fName);
         emp.setLastName(lName);
@@ -237,5 +248,46 @@ public class DataSeeder implements CommandLineRunner {
         devStructure.setJobPosition(devPos);
         devStructure.setCreatedBy("SYSTEM");
         salaryStructureRepository.save(devStructure);
+    }
+
+    private void seedLeavePolicies() {
+        if (leavePolicyRepository.count() > 0) return;
+
+        createLeavePolicy("Annual PTO 2026", 15.0, true, 5.0, false);
+        createLeavePolicy("Sick Leave 2026", 10.0, false, 0.0, false);
+        createLeavePolicy("Maternity Leave", 180.0, false, 0.0, false);
+        createLeavePolicy("Unpaid Leave", 0.0, false, 0.0, true);
+    }
+
+    private void createLeavePolicy(String name, Double allowance, Boolean carryForward, Double maxCarry, Boolean unpaid) {
+        LeavePolicy policy = new LeavePolicy();
+        policy.setName(name);
+        policy.setDefaultAnnualAllowance(allowance);
+        policy.setAllowsCarryForward(carryForward);
+        policy.setMaxCarryForwardDays(maxCarry);
+        policy.setIsUnpaid(unpaid);
+        policy.setCreatedBy("SYSTEM");
+        leavePolicyRepository.save(policy);
+    }
+
+    private void seedPublicHolidays() {
+        if (publicHolidayRepository.count() > 0) return;
+
+        createHoliday(LocalDate.of(2026, 1, 1), "New Year's Day", "Global");
+        createHoliday(LocalDate.of(2026, 1, 26), "Republic Day", "India");
+        createHoliday(LocalDate.of(2026, 5, 1), "May Day", "Global");
+        createHoliday(LocalDate.of(2026, 8, 15), "Independence Day", "India");
+        createHoliday(LocalDate.of(2026, 8, 27), "Onam", "Kerala");
+        createHoliday(LocalDate.of(2026, 10, 2), "Gandhi Jayanti", "India");
+        createHoliday(LocalDate.of(2026, 12, 25), "Christmas Day", "Global");
+    }
+
+    private void createHoliday(LocalDate date, String name, String region) {
+        PublicHoliday holiday = new PublicHoliday();
+        holiday.setDate(date);
+        holiday.setName(name);
+        holiday.setApplicableRegion(region);
+        holiday.setCreatedBy("SYSTEM");
+        publicHolidayRepository.save(holiday);
     }
 }

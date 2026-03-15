@@ -51,4 +51,9 @@ public class JobController {
             @RequestParam JobOpeningStatus status) {
         return ResponseEntity.ok(jobOpeningService.updateStatus(id, status));
     }
-}
+
+    @GetMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<JobOpening> getJobById(@PathVariable UUID id) {
+        return ResponseEntity.ok(jobOpeningService.getOpeningById(id));
+    }}

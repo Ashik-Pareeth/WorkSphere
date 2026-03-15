@@ -3,6 +3,7 @@ package com.ucocs.worksphere.repository;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.LeaveBalance;
 import com.ucocs.worksphere.entity.LeavePolicy;
+import org.springframework.data.jpa.repository.EntityGraph;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
@@ -12,13 +13,21 @@ import java.util.UUID;
 
 @Repository
 public interface LeaveBalanceRepository extends JpaRepository<LeaveBalance, UUID> {
-    // Finds a specific policy balance for an employee for a specific year
-    Optional<LeaveBalance> findByEmployeeAndLeavePolicyAndValidForYear(Employee employee, LeavePolicy leavePolicy,
-            Integer validForYear);
 
-    // Gets all balances (Sick, PTO, etc.) for an employee for the current year
+    @EntityGraph(attributePaths = {"employee", "leavePolicy"})
+    Optional<LeaveBalance> findByEmployeeAndLeavePolicyAndValidForYear(Employee employee, LeavePolicy leavePolicy, Integer validForYear);
+
+    @EntityGraph(attributePaths = {"employee", "leavePolicy"})
     List<LeaveBalance> findByEmployeeAndValidForYear(Employee employee, Integer validForYear);
 
-    // Gets all balances across all employees for a specific year (for rollover)
+    @EntityGraph(attributePaths = {"employee", "leavePolicy"})
     List<LeaveBalance> findByValidForYear(Integer validForYear);
+
+    @Override
+    @EntityGraph(attributePaths = {"employee", "leavePolicy"})
+    Optional<LeaveBalance> findById(UUID id);
+
+    @Override
+    @EntityGraph(attributePaths = {"employee", "leavePolicy"})
+    List<LeaveBalance> findAll();
 }
