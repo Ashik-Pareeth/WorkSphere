@@ -1,24 +1,33 @@
 import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import AlertMessage from '../../components/common/AlertMessage';
+import '../../styles/admin-ui.css';
+
+import {
+  Building2,
+  Pencil,
+  Trash2,
+  Plus,
+  Search,
+  CheckCircle2,
+  XCircle,
+  X,
+  AlertTriangle,
+} from 'lucide-react';
 
 function DepartmentForm() {
-  // --- State ---
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [editingId, setEditingId] = useState(null);
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [alert, setAlert] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [search, setSearch] = useState('');
 
-  // --- Shared Logic ---
-  // We keep this outside for use in handleSubmit and handleDelete
   const fetchDepartments = useCallback(async (isMounted = true) => {
     try {
-      const response = await axiosInstance.get('/departments');
-      if (isMounted) {
-        setRows(response.data);
-      }
+      const res = await axiosInstance.get('/departments');
+      if (isMounted) setRows(res.data);
     } catch (err) {
       console.error('Failed to fetch', err);
     } finally {
@@ -26,62 +35,56 @@ function DepartmentForm() {
     }
   }, []);
 
+  useEffect(() => {
+    let active = true;
+    fetchDepartments(active);
+    return () => {
+      active = false;
+    };
+  }, [fetchDepartments]);
+
+  useEffect(() => {
+    if (!alert) return;
+    const t = setTimeout(() => setAlert(null), 3500);
+    return () => clearTimeout(t);
+  }, [alert]);
+
   const resetForm = () => {
     setName('');
     setDescription('');
     setEditingId(null);
   };
 
-  // --- Lifecycle (Vite/Strict Best Practice) ---
-  useEffect(() => {
-    let active = true;
-
-    // Initial Load
-    fetchDepartments(active);
-
-    return () => {
-      active = false; // Prevents "setState on unmounted component"
-    };
-  }, [fetchDepartments]);
-
-  // --- Handlers ---
-  const validateForm = () => {
-    if (!name.trim()) {
-      setAlert({ type: 'error', message: 'Department Name cannot be empty.' });
-      return false;
-    }
-    return true;
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!validateForm()) return;
-
-    const payload = { name, description };
-
+    if (!name.trim()) {
+      setAlert({ type: 'error', message: 'Department name cannot be empty.' });
+      return;
+    }
     try {
       if (editingId) {
-        await axiosInstance.put(`/departments/${editingId}`, payload);
+        await axiosInstance.put(`/departments/${editingId}`, {
+          name,
+          description,
+        });
         setAlert({
           type: 'success',
-          message: 'Department updated successfully!',
+          message: 'Department updated successfully.',
         });
       } else {
-        await axiosInstance.post('/departments', payload);
+        await axiosInstance.post('/departments', { name, description });
         setAlert({
           type: 'success',
-          message: 'Department created successfully!',
+          message: 'Department created successfully.',
         });
       }
-
       resetForm();
-      fetchDepartments(); // Refresh list after mutation
-    } catch (err) {
+      fetchDepartments();
+    } catch {
       setAlert({
         type: 'error',
-        message: 'Operation failed. Name might be duplicate.',
+        message: 'Operation failed. Name may already exist.',
       });
-      console.error(err);
     }
   };
 
@@ -89,260 +92,253 @@ function DepartmentForm() {
     setName(dept.name);
     setDescription(dept.description || '');
     setEditingId(dept.id);
-    setAlert(null);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id) => {
-    if (!window.confirm('Are you sure you want to delete this department?'))
-      return;
-
+  const confirmDelete = async () => {
     try {
-      await axiosInstance.delete(`/departments/${id}`);
+      await axiosInstance.delete(`/departments/${deleteTarget}`);
       setAlert({ type: 'success', message: 'Department deleted.' });
       fetchDepartments();
-    } catch (err) {
+    } catch {
       setAlert({
         type: 'error',
-        message: 'Cannot delete. It might be assigned to employees.',
+        message: 'Cannot delete — it may be assigned to employees.',
       });
-      console.error(err);
     }
+    setDeleteTarget(null);
   };
 
-  // --- Render ---
+  const filteredRows = rows.filter((d) =>
+    d.name.toLowerCase().includes(search.toLowerCase())
+  );
+
   return (
-    <div
-      className="container"
-      style={{ maxWidth: '800px', margin: '0 auto', padding: '2rem' }}
-    >
-      <div className="page-header">
-        <h2
-          style={{
-            fontSize: '1.5rem',
-            fontWeight: 'bold',
-            marginBottom: '1rem',
-          }}
-        >
-          Department Management
-        </h2>
+    <div className="ws-page">
+      {/* TOP BAR */}
+      <div className="ws-topbar">
+        <div className="ws-topbar-left">
+          <div className="ws-icon-box">
+            <Building2 size={20} color="#fff" />
+          </div>
+          <div>
+            <div className="ws-page-title">Departments</div>
+            <div className="ws-page-sub">Manage company departments</div>
+          </div>
+        </div>
+        <span className="ws-badge">{rows.length} total</span>
       </div>
 
+      {/* ALERT */}
       {alert && (
-        <AlertMessage
-          error={alert.type === 'error' ? alert.message : null}
-          success={alert.type === 'success' ? alert.message : null}
-          onClose={() => setAlert(null)}
-        />
+        <div className={`ws-alert ws-alert-${alert.type}`}>
+          {alert.type === 'success' ? (
+            <CheckCircle2 size={15} />
+          ) : (
+            <XCircle size={15} />
+          )}
+          {alert.message}
+          <button className="ws-alert-close" onClick={() => setAlert(null)}>
+            <X size={13} />
+          </button>
+        </div>
       )}
 
-      {/* FORM CARD */}
-      <div
-        className="card"
-        style={{
-          background: '#fff',
-          padding: '1.5rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-          marginBottom: '2rem',
-        }}
-      >
-        <h3 style={{ margin: '0 0 1rem 0' }}>
-          {editingId ? 'Edit Department' : 'Add New Department'}
-        </h3>
-        <form onSubmit={handleSubmit}>
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontWeight: 500,
-              }}
-            >
-              Department Name <span style={{ color: 'red' }}>*</span>
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="e.g. Human Resources"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-              }}
-            />
+      {/* GRID */}
+      <div className="ws-grid">
+        {/* FORM PANEL */}
+        <div className="ws-panel">
+          <div className="ws-panel-head">
+            <div className="ws-eyebrow">Configuration</div>
+            <div className="ws-panel-title">
+              {editingId ? (
+                <>
+                  Edit department
+                  <span className="ws-editing-tag">
+                    <Pencil size={9} /> editing
+                  </span>
+                </>
+              ) : (
+                'New department'
+              )}
+            </div>
           </div>
-
-          <div className="form-group" style={{ marginBottom: '1rem' }}>
-            <label
-              style={{
-                display: 'block',
-                marginBottom: '0.5rem',
-                fontWeight: 500,
-              }}
-            >
-              Description
-            </label>
-            <textarea
-              className="form-control"
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description"
-              rows="3"
-              style={{
-                width: '100%',
-                padding: '0.5rem',
-                borderRadius: '4px',
-                border: '1px solid #ddd',
-              }}
-            />
+          <div className="ws-panel-body">
+            <form onSubmit={handleSubmit}>
+              <div className="ws-field">
+                <label className="ws-label">Department name</label>
+                <input
+                  className="ws-input"
+                  value={name}
+                  placeholder="e.g. Human Resources"
+                  onChange={(e) => setName(e.target.value)}
+                />
+              </div>
+              <div className="ws-field">
+                <label className="ws-label">
+                  Description <span className="ws-label-muted">(optional)</span>
+                </label>
+                <textarea
+                  className="ws-textarea"
+                  value={description}
+                  placeholder="What does this department do?"
+                  onChange={(e) => setDescription(e.target.value)}
+                />
+              </div>
+              <div className="ws-btn-row">
+                <button type="submit" className="ws-btn ws-btn-primary">
+                  {editingId ? (
+                    <>
+                      <Pencil size={13} /> Save changes
+                    </>
+                  ) : (
+                    <>
+                      <Plus size={13} /> Create department
+                    </>
+                  )}
+                </button>
+                {editingId && (
+                  <button
+                    type="button"
+                    className="ws-btn ws-btn-secondary"
+                    onClick={resetForm}
+                  >
+                    Cancel
+                  </button>
+                )}
+              </div>
+            </form>
           </div>
+        </div>
 
-          <div style={{ display: 'flex', gap: '1rem' }}>
-            <button
-              type="submit"
-              style={{
-                background: '#2563eb',
-                color: '#fff',
-                border: 'none',
-                padding: '0.6rem 1.2rem',
-                borderRadius: '4px',
-                cursor: 'pointer',
-              }}
-            >
-              {editingId ? 'Update Department' : 'Save Department'}
-            </button>
-            {editingId && (
-              <button
-                type="button"
-                onClick={resetForm}
-                style={{
-                  background: '#64748b',
-                  color: '#fff',
-                  border: 'none',
-                  padding: '0.6rem 1.2rem',
-                  borderRadius: '4px',
-                  cursor: 'pointer',
-                }}
-              >
-                Cancel Edit
-              </button>
-            )}
+        {/* TABLE PANEL */}
+        <div className="ws-panel">
+          <div className="ws-search-row">
+            <div className="ws-search-wrap">
+              <span className="ws-search-icon">
+                <Search size={14} />
+              </span>
+              <input
+                className="ws-search-input"
+                placeholder="Search departments…"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+            </div>
           </div>
-        </form>
-      </div>
-
-      {/* LIST CARD */}
-      <div
-        className="card"
-        style={{
-          background: '#fff',
-          padding: '1.5rem',
-          borderRadius: '8px',
-          boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        }}
-      >
-        <h3 style={{ margin: '0 0 1rem 0' }}>Department List</h3>
-        <table style={{ width: '100%', borderCollapse: 'collapse' }}>
-          <thead>
-            <tr style={{ background: '#f8fafc', textAlign: 'left' }}>
-              <th
-                style={{
-                  padding: '0.75rem',
-                  borderBottom: '2px solid #e2e8f0',
-                }}
-              >
-                Name
-              </th>
-              <th
-                style={{
-                  padding: '0.75rem',
-                  borderBottom: '2px solid #e2e8f0',
-                }}
-              >
-                Description
-              </th>
-              <th
-                style={{
-                  padding: '0.75rem',
-                  borderBottom: '2px solid #e2e8f0',
-                  width: '100px',
-                }}
-              >
-                Actions
-              </th>
-            </tr>
-          </thead>
-          <tbody>
-            {loading ? (
+          <table className="ws-table">
+            <thead>
               <tr>
-                <td
-                  colSpan="3"
-                  style={{
-                    padding: '2rem',
-                    textAlign: 'center',
-                    color: '#666',
-                  }}
-                >
-                  Loading departments...
-                </td>
+                <th className="ws-th">Name</th>
+                <th className="ws-th">Description</th>
+                <th className="ws-th" style={{ width: 90 }}></th>
               </tr>
-            ) : rows.length === 0 ? (
-              <tr>
-                <td
-                  colSpan="3"
-                  style={{
-                    padding: '1rem',
-                    textAlign: 'center',
-                    color: '#888',
-                  }}
-                >
-                  No departments found.
-                </td>
-              </tr>
-            ) : (
-              rows.map((row) => (
-                <tr key={row.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                  <td style={{ padding: '0.75rem', fontWeight: 500 }}>
-                    {row.name}
-                  </td>
-                  <td style={{ padding: '0.75rem', color: '#64748b' }}>
-                    {row.description}
-                  </td>
-                  <td style={{ padding: '0.75rem' }}>
-                    <button
-                      onClick={() => handleEdit(row)}
-                      style={{
-                        marginRight: '0.5rem',
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '1.1rem',
-                      }}
-                    >
-                      ✏️
-                    </button>
-                    <button
-                      onClick={() => handleDelete(row.id)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        fontSize: '1.1rem',
-                      }}
-                    >
-                      🗑️
-                    </button>
+            </thead>
+            <tbody>
+              {loading ? (
+                [...Array(4)].map((_, i) => (
+                  <tr key={i} className="ws-tr">
+                    <td className="ws-td">
+                      <div className="ws-skeleton" style={{ width: 140 }} />
+                    </td>
+                    <td className="ws-td">
+                      <div className="ws-skeleton" style={{ width: 240 }} />
+                    </td>
+                    <td className="ws-td">
+                      <div className="ws-skeleton" style={{ width: 60 }} />
+                    </td>
+                  </tr>
+                ))
+              ) : filteredRows.length === 0 ? (
+                <tr>
+                  <td colSpan={3}>
+                    <div className="ws-empty">
+                      <div className="ws-empty-icon">
+                        <Building2 size={18} color="var(--ws-ink3)" />
+                      </div>
+                      {search
+                        ? 'No departments match your search'
+                        : 'No departments yet'}
+                    </div>
                   </td>
                 </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+              ) : (
+                filteredRows.map((row, i) => (
+                  <tr
+                    key={row.id}
+                    className="ws-tr"
+                    style={{ animationDelay: `${i * 40}ms` }}
+                  >
+                    <td className="ws-td">
+                      <div className="ws-cell-name">
+                        <span className="ws-cell-dot" />
+                        {row.name}
+                      </div>
+                    </td>
+                    <td className="ws-td">
+                      <span className="ws-cell-muted">
+                        {row.description || (
+                          <span style={{ color: 'var(--ws-ink3)' }}>—</span>
+                        )}
+                      </span>
+                    </td>
+                    <td className="ws-td ws-cell-actions">
+                      <button
+                        className="ws-icon-btn"
+                        title="Edit"
+                        onClick={() => handleEdit(row)}
+                      >
+                        <Pencil size={14} />
+                      </button>
+                      <button
+                        className="ws-icon-btn ws-icon-btn-danger"
+                        title="Delete"
+                        onClick={() => setDeleteTarget(row.id)}
+                        style={{ marginLeft: 2 }}
+                      >
+                        <Trash2 size={14} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
       </div>
+
+      {/* DELETE MODAL */}
+      {deleteTarget && (
+        <div
+          className="ws-modal-backdrop"
+          onClick={() => setDeleteTarget(null)}
+        >
+          <div className="ws-modal" onClick={(e) => e.stopPropagation()}>
+            <div className="ws-modal-icon ws-modal-icon-danger">
+              <AlertTriangle size={20} color="var(--ws-red)" />
+            </div>
+            <h2>Delete department?</h2>
+            <p>
+              This action is permanent and cannot be undone. The department will
+              be removed from all associated records.
+            </p>
+            <div className="ws-modal-actions">
+              <button
+                className="ws-btn ws-btn-secondary"
+                onClick={() => setDeleteTarget(null)}
+              >
+                Cancel
+              </button>
+              <button
+                className="ws-btn ws-btn-destructive"
+                onClick={confirmDelete}
+              >
+                Delete department
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

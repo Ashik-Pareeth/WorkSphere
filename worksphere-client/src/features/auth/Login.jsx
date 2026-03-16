@@ -11,6 +11,22 @@ import { Button } from '@/components/ui/button';
 
 import { KeyRound, Eye, EyeOff, Loader2 } from 'lucide-react';
 
+const ROLE_PRIORITY = {
+  SUPER_ADMIN: 5,
+  HR: 4,
+  MANAGER: 3,
+  EMPLOYEE: 2,
+  AUDITOR: 1,
+};
+
+const getHighestRole = (roles = []) => {
+  return roles.reduce((highest, current) => {
+    if (!highest) return current;
+
+    return ROLE_PRIORITY[current] > ROLE_PRIORITY[highest] ? current : highest;
+  }, null);
+};
+
 export default function Login() {
   const [userName, setUserName] = useState('');
   const [password, setPassword] = useState('');
@@ -55,7 +71,11 @@ export default function Login() {
         status: response.data.employeeStatus,
       });
 
-      localStorage.setItem('role', roles[0]);
+      const highestRole = getHighestRole(roles);
+
+      if (highestRole) {
+        localStorage.setItem('role', highestRole);
+      }
 
       if (response.data.employeeStatus === 'PENDING') {
         navigate('/onBoarding');

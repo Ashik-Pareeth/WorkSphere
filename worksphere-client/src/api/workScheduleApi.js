@@ -23,3 +23,8 @@ export const updateWorkSchedule = async (id, scheduleData) => {
   );
   return response.data;
 };
+
+// HR/Admin: Delete a schedule
+export const deleteWorkSchedule = async (id) => {
+  await axiosInstance.delete(`/api/work-schedules/${id}`);
+};

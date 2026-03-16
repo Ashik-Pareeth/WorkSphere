@@ -83,33 +83,22 @@ public class AttendanceService {
     @Transactional
     public void clockOut(String username) {
         Employee employee = getEmployeeByUsername(username);
-        LocalDate today = LocalDate.now();
 
-        Attendance attendance = attendanceRepository.findByEmployeeAndDate(employee, today);
-
-        // Check if attendance record exists AND if the user actually clocked in
-        if (attendance == null || attendance.getClockIn() == null) {
-            throw new IllegalStateException("You cannot clock out because you haven't clocked in today.");
-        }
+        // Find latest open session instead of today's date
+        Attendance attendance = attendanceRepository.findLatestOpenSession(employee)
+                .orElseThrow(() -> new IllegalStateException("You cannot clock out because you haven't clocked in."));
 
         if (attendance.getClockOut() != null) {
-            throw new IllegalStateException("You have already clocked out for today.");
+            throw new IllegalStateException("You have already clocked out.");
         }
 
         LocalDateTime now = LocalDateTime.now();
         attendance.setClockOut(now);
 
-        // 3. Work Calculation with Break Deduction
         WorkSchedule schedule = attendance.getWorkSchedule();
-
-        // This line is now safe because of the null check above
         long totalMinutes = Duration.between(attendance.getClockIn(), now).toMinutes();
-
         int breakMin = (schedule != null) ? schedule.getBreakDurationMin() : 0;
-        int finalWorkMinutes = (int) (totalMinutes - breakMin);
-
-        // Ensure we don't save negative minutes if someone clocks out immediately
-        attendance.setTotalWorkMinutes(Math.max(0, finalWorkMinutes));
+        attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
 
         attendanceRepository.save(attendance);
     }

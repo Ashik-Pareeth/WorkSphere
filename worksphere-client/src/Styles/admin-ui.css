@@ -1,0 +1,546 @@
+@import url('https://fonts.googleapis.com/css2?family=Sora:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+/* ─────────────────────────────────────────────
+   WorkSphere Design System
+   Import once in your app root or per-page.
+   All component classes are prefixed (ws-)
+   to avoid collisions with Tailwind / shadcn.
+───────────────────────────────────────────── */
+
+/* ── Tokens ── */
+:root {
+  --ws-font-sans: 'Sora', sans-serif;
+  --ws-font-mono: 'JetBrains Mono', monospace;
+
+  --ws-ink: #0f1117;
+  --ws-ink2: #3d4152;
+  --ws-ink3: #8b90a0;
+
+  --ws-surface: #ffffff;
+  --ws-surface2: #f5f6f8;
+  --ws-surface3: #eceef2;
+
+  --ws-border: #e2e4ea;
+  --ws-border2: #c8cad4;
+
+  --ws-amber: #e8890c;
+  --ws-amber-bg: #fef3e0;
+  --ws-amber-bdr: #f5c96a;
+
+  --ws-red: #d03838;
+  --ws-red-bg: #fdf0f0;
+  --ws-red-bdr: #f5a9a9;
+
+  --ws-green: #1a8f5a;
+  --ws-green-bg: #edfaf3;
+  --ws-green-bdr: #7dd5ae;
+}
+
+/* ── Page shell ── */
+.ws-page {
+  font-family: var(--ws-font-sans);
+  background: var(--ws-surface2);
+  min-height: 100vh;
+  padding: 2.5rem 2rem;
+}
+.ws-page * {
+  box-sizing: border-box;
+}
+
+/* ── Top bar ── */
+.ws-topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+  border-bottom: 1px solid var(--ws-border);
+}
+.ws-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ws-icon-box {
+  width: 44px;
+  height: 44px;
+  background: var(--ws-ink);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.ws-page-title {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  letter-spacing: -0.4px;
+}
+.ws-page-sub {
+  font-size: 12px;
+  color: var(--ws-ink3);
+  margin-top: 2px;
+}
+.ws-badge {
+  font-family: var(--ws-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  background: var(--ws-ink);
+  color: #fff;
+  border-radius: 20px;
+  padding: 4px 14px;
+}
+
+/* ── Alert ── */
+.ws-alert {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  font-size: 13px;
+  font-family: var(--ws-font-sans);
+  border: 1px solid;
+  margin-bottom: 1.5rem;
+  animation: ws-slide-down 0.18s ease;
+}
+.ws-alert-success {
+  background: var(--ws-green-bg);
+  border-color: var(--ws-green-bdr);
+  color: var(--ws-green);
+}
+.ws-alert-error {
+  background: var(--ws-red-bg);
+  border-color: var(--ws-red-bdr);
+  color: var(--ws-red);
+}
+.ws-alert-close {
+  margin-left: auto;
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: inherit;
+  opacity: 0.6;
+  display: flex;
+  align-items: center;
+  padding: 2px;
+}
+.ws-alert-close:hover {
+  opacity: 1;
+}
+
+/* ── Layout grid ── */
+.ws-grid {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 1.25rem;
+  align-items: start;
+}
+@media (max-width: 860px) {
+  .ws-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* ── Panel ── */
+.ws-panel {
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-border);
+  border-radius: 16px;
+  overflow: hidden;
+}
+.ws-panel-head {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--ws-border);
+}
+.ws-eyebrow {
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--ws-ink3);
+  margin-bottom: 3px;
+}
+.ws-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ws-ink);
+}
+.ws-panel-body {
+  padding: 20px;
+}
+
+/* ── Editing tag (inline badge) ── */
+.ws-editing-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 500;
+  background: var(--ws-amber-bg);
+  color: var(--ws-amber);
+  border: 1px solid var(--ws-amber-bdr);
+  border-radius: 5px;
+  padding: 2px 7px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+/* ── Form fields ── */
+.ws-field {
+  margin-bottom: 16px;
+}
+.ws-label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--ws-ink2);
+  margin-bottom: 6px;
+}
+.ws-label-muted {
+  color: var(--ws-ink3);
+  font-weight: 400;
+}
+.ws-input,
+.ws-textarea {
+  width: 100%;
+  background: var(--ws-surface2);
+  border: 1px solid var(--ws-border);
+  border-radius: 9px;
+  padding: 9px 12px;
+  font-family: var(--ws-font-sans);
+  font-size: 13px;
+  color: var(--ws-ink);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+}
+.ws-input::placeholder,
+.ws-textarea::placeholder {
+  color: var(--ws-ink3);
+}
+.ws-input:focus,
+.ws-textarea:focus {
+  border-color: var(--ws-amber);
+  box-shadow: 0 0 0 3px var(--ws-amber-bg);
+  background: var(--ws-surface);
+}
+.ws-textarea {
+  resize: vertical;
+  min-height: 80px;
+}
+
+/* ── Search input ── */
+.ws-search-row {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--ws-border);
+}
+.ws-search-wrap {
+  position: relative;
+}
+.ws-search-icon {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--ws-ink3);
+  pointer-events: none;
+  display: flex;
+}
+.ws-search-input {
+  width: 100%;
+  background: var(--ws-surface2);
+  border: 1px solid var(--ws-border);
+  border-radius: 9px;
+  padding: 8px 12px 8px 32px;
+  font-family: var(--ws-font-sans);
+  font-size: 13px;
+  color: var(--ws-ink);
+  outline: none;
+  transition:
+    border-color 0.15s,
+    box-shadow 0.15s,
+    background 0.15s;
+}
+.ws-search-input::placeholder {
+  color: var(--ws-ink3);
+}
+.ws-search-input:focus {
+  border-color: var(--ws-amber);
+  box-shadow: 0 0 0 3px var(--ws-amber-bg);
+  background: var(--ws-surface);
+}
+
+/* ── Buttons ── */
+.ws-btn {
+  font-family: var(--ws-font-sans);
+  font-size: 13px;
+  font-weight: 500;
+  border-radius: 9px;
+  border: 1px solid;
+  cursor: pointer;
+  padding: 9px 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.14s;
+  line-height: 1;
+}
+.ws-btn-primary {
+  background: var(--ws-ink);
+  color: #fff;
+  border-color: var(--ws-ink);
+}
+.ws-btn-primary:hover {
+  background: #1e2130;
+}
+
+.ws-btn-secondary {
+  background: transparent;
+  color: var(--ws-ink2);
+  border-color: var(--ws-border2);
+}
+.ws-btn-secondary:hover {
+  background: var(--ws-surface2);
+}
+
+.ws-btn-destructive {
+  background: var(--ws-red);
+  color: #fff;
+  border-color: var(--ws-red);
+}
+.ws-btn-destructive:hover {
+  opacity: 0.87;
+}
+
+.ws-icon-btn {
+  background: none;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  padding: 6px;
+  cursor: pointer;
+  color: var(--ws-ink3);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.13s;
+}
+.ws-icon-btn:hover {
+  background: var(--ws-surface2);
+  border-color: var(--ws-border);
+  color: var(--ws-ink);
+}
+.ws-icon-btn-danger:hover {
+  background: var(--ws-red-bg);
+  border-color: var(--ws-red-bdr);
+  color: var(--ws-red);
+}
+
+.ws-btn-row {
+  display: flex;
+  gap: 8px;
+  padding-top: 4px;
+}
+
+.ws-btn:hover {
+  cursor: pointer;
+  opacity: 0.9;
+}
+
+/* ── Table ── */
+.ws-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.ws-th {
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--ws-ink3);
+  text-align: left;
+  padding: 10px 18px;
+  border-bottom: 1px solid var(--ws-border);
+  background: var(--ws-surface2);
+}
+.ws-td {
+  padding: 13px 18px;
+  border-bottom: 1px solid var(--ws-border);
+  font-size: 13px;
+  vertical-align: middle;
+}
+.ws-tr:last-child .ws-td {
+  border-bottom: none;
+}
+.ws-tr {
+  transition: background 0.12s;
+  animation: ws-row-in 0.2s ease both;
+}
+.ws-tr:hover .ws-td {
+  background: #f9f9fb;
+}
+
+/* Table cell helpers */
+.ws-cell-name {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--ws-ink);
+}
+.ws-cell-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--ws-amber);
+  flex-shrink: 0;
+}
+.ws-cell-muted {
+  color: var(--ws-ink3);
+  max-width: 300px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ws-cell-mono {
+  font-family: var(--ws-font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--ws-ink3);
+}
+.ws-cell-actions {
+  text-align: right;
+  white-space: nowrap;
+}
+
+/* ── Empty state ── */
+.ws-empty {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--ws-ink3);
+  font-size: 13px;
+}
+.ws-empty-icon {
+  width: 40px;
+  height: 40px;
+  background: var(--ws-surface3);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 10px;
+}
+
+/* ── Skeleton loader ── */
+.ws-skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--ws-surface3) 25%,
+    var(--ws-border) 50%,
+    var(--ws-surface3) 75%
+  );
+  background-size: 200% 100%;
+  border-radius: 6px;
+  height: 14px;
+  animation: ws-shimmer 1.4s infinite;
+}
+
+/* ── Modal ── */
+.ws-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(10, 12, 20, 0.45);
+  backdrop-filter: blur(3px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  animation: ws-fade-in 0.15s ease;
+}
+.ws-modal {
+  background: var(--ws-surface);
+  border: 1px solid var(--ws-border);
+  border-radius: 18px;
+  padding: 28px;
+  width: 380px;
+  max-width: 90vw;
+  animation: ws-scale-in 0.16s ease;
+}
+.ws-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 14px;
+}
+.ws-modal-icon-danger {
+  background: var(--ws-red-bg);
+}
+.ws-modal h2 {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ws-ink);
+  margin-bottom: 6px;
+}
+.ws-modal p {
+  font-size: 13px;
+  color: var(--ws-ink2);
+  line-height: 1.6;
+  margin-bottom: 20px;
+}
+.ws-modal-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+/* ── Keyframes ── */
+@keyframes ws-slide-down {
+  from {
+    opacity: 0;
+    transform: translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ws-row-in {
+  from {
+    opacity: 0;
+    transform: translateX(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ws-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes ws-scale-in {
+  from {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@keyframes ws-shimmer {
+  to {
+    background-position: -200% 0;
+  }
+}

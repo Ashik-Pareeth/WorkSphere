@@ -96,14 +96,14 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeService.finalizeHire(request));
     }
 
-    // In worksphere/controller/EmployeeController.java
 
     @GetMapping("/{id}")
-    @PreAuthorize("hasRole('MANAGER')") // Adjust roles as needed
     public ResponseEntity<EmployeeResponseDTO> getEmployeeById(@PathVariable UUID id) {
         EmployeeResponseDTO employeeDTO = employeeService.getEmployeeById(id);
         return ResponseEntity.ok(employeeDTO);
     }
+
+
 
 }
 

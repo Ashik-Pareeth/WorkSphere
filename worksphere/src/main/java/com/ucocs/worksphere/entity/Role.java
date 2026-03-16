@@ -2,8 +2,10 @@ package com.ucocs.worksphere.entity;
 
 import jakarta.persistence.*;
 import lombok.Getter;
+import lombok.Setter;
 
 @Getter
+@Setter
 @Entity
 @Table(name = "roles")
 public class Role extends BaseEntity {
@@ -11,16 +13,8 @@ public class Role extends BaseEntity {
     @Column(nullable = false, unique = true)
     private String roleName;
 
-    @Column(nullable = false)
-    private boolean isExclusive = false;
-
-    public boolean isExclusive() {
-        return isExclusive;
-    }
-
-    public void setExclusive(boolean exclusive) {
-        isExclusive = exclusive;
-    }
+    @Column(name = "is_exclusive", nullable = false)
+    private boolean exclusive = false;
 
     public void setRoleName(String roleName) {
         if (roleName != null) {
@@ -29,5 +23,4 @@ public class Role extends BaseEntity {
             this.roleName = null;
         }
     }
-
 }

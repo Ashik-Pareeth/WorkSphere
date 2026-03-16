@@ -7,12 +7,12 @@ const LeaveApprovalsPage = () => {
   const [pendingRequests, setPendingRequests] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Modal State
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [actionType, setActionType] = useState(null); // 'approve' or 'reject'
+  const [actionType, setActionType] = useState(null);
 
   const fetchRequests = async () => {
     setIsLoading(true);
+
     try {
       const data = await getPendingLeaveRequests();
       setPendingRequests(data);
@@ -39,31 +39,45 @@ const LeaveApprovalsPage = () => {
 
   const handleActionSuccess = () => {
     closeModal();
-    fetchRequests(); // Refetch the table so the approved/rejected request disappears
+    fetchRequests();
   };
 
   return (
-    <div className="max-w-7xl mx-auto p-6 font-sans">
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* HEADER */}
+      <div>
+        <h1 className="text-2xl font-semibold text-slate-900">
           Team Leave Approvals
         </h1>
-        <p className="text-gray-500 mt-1">
-          Review and manage time-off requests from your team.
+
+        <p className="text-sm text-slate-500 mt-1">
+          Review and approve or reject leave requests from your team.
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="p-10 flex justify-center text-gray-500">
-          Loading requests...
+      {/* TABLE CARD */}
+      <section className="bg-white border rounded-xl shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-slate-800">
+            Pending Requests
+          </h2>
         </div>
-      ) : (
-        <PendingLeaveTable
-          requests={pendingRequests}
-          onActionClick={openModal}
-        />
-      )}
 
+        <div className="p-6">
+          {isLoading ? (
+            <div className="text-center text-slate-500 py-10">
+              Loading requests...
+            </div>
+          ) : (
+            <PendingLeaveTable
+              requests={pendingRequests}
+              onActionClick={openModal}
+            />
+          )}
+        </div>
+      </section>
+
+      {/* ACTION MODAL */}
       {selectedRequest && (
         <LeaveActionModal
           request={selectedRequest}

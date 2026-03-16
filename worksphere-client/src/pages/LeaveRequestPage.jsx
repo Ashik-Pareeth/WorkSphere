@@ -17,8 +17,11 @@ const LeaveRequestPage = () => {
         getMyBalances(),
         getMyLedger(),
       ]);
+
       setBalances(balData);
       setLedger(ledgerData);
+      console.log('Fetched balances:', balData);
+      console.log('Fetched ledger:', ledgerData);
     } catch (error) {
       console.error('Failed to load leave data', error);
     } finally {
@@ -32,74 +35,90 @@ const LeaveRequestPage = () => {
 
   const handleRequestSuccess = () => {
     setIsModalOpen(false);
-    fetchData(); // Automatically refetch balances and ledger after a successful request!
+    fetchData();
   };
 
   if (isLoading) {
     return (
-      <div className="p-10 flex justify-center text-gray-500">
+      <div className="flex justify-center items-center h-[50vh] text-gray-500">
         Loading your Time Off profile...
       </div>
     );
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-6 font-sans">
-      {/* Header Section */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+    <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      {/* PAGE HEADER */}
+      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">Time Off</h1>
-          <p className="text-gray-500 mt-1">
-            Manage your balances, view history, and request time away.
+          <h1 className="text-2xl font-semibold text-slate-900">Time Off</h1>
+          <p className="text-sm text-slate-500 mt-1">
+            Manage your balances, view leave history, and request time away.
           </p>
         </div>
+
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg font-semibold shadow-md transition-all active:scale-95"
+          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm transition"
         >
-          + Request Time Off
+          Request Time Off
         </button>
       </div>
 
-      {/* Balances Widget */}
-      <section className="mb-10">
-        <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-          Current Balances{' '}
-          <span className="text-sm font-normal text-gray-400 bg-gray-100 px-2 py-0.5 rounded-full">
+      {/* BALANCE SECTION */}
+      <section className="bg-white border rounded-xl shadow-sm">
+        <div className="px-6 py-4 border-b flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-slate-800">
+            Current Balances
+          </h2>
+
+          <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
             {new Date().getFullYear()}
           </span>
-        </h2>
-        <LeaveBalanceCard balances={balances} />
+        </div>
+
+        <div className="p-6">
+          <LeaveBalanceCard balances={balances} />
+        </div>
       </section>
 
-      {/* Ledger Widget */}
-      <section>
-        <h2 className="text-xl font-bold text-gray-800 mb-4">
-          Transaction Ledger
-        </h2>
-        <MyLeaveRequestsTable ledger={ledger} />
+      {/* LEDGER SECTION */}
+      <section className="bg-white border rounded-xl shadow-sm">
+        <div className="px-6 py-4 border-b">
+          <h2 className="text-lg font-semibold text-slate-800">
+            Transaction Ledger
+          </h2>
+        </div>
+
+        <div className="p-6">
+          <MyLeaveRequestsTable ledger={ledger} />
+        </div>
       </section>
 
-      {/* Modal Overlay */}
+      {/* REQUEST MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-gray-900 bg-opacity-50 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-fade-in-up">
-            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
-              <h3 className="text-lg font-bold text-gray-900">
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50">
+          <div className="bg-white w-full max-w-lg rounded-xl shadow-xl">
+            <div className="flex items-center justify-between px-6 py-4 border-b">
+              <h3 className="font-semibold text-slate-800">
                 New Time Off Request
               </h3>
+
               <button
                 onClick={() => setIsModalOpen(false)}
-                className="text-gray-400 hover:text-red-500 transition-colors text-xl font-bold"
+                className="text-slate-400 hover:text-red-500 text-lg"
               >
-                &times;
+                ×
               </button>
             </div>
-            <LeaveRequestForm
-              balances={balances}
-              onSuccess={handleRequestSuccess}
-              onCancel={() => setIsModalOpen(false)}
-            />
+
+            <div className="p-6">
+              <LeaveRequestForm
+                balances={balances}
+                onSuccess={handleRequestSuccess}
+                onCancel={() => setIsModalOpen(false)}
+              />
+            </div>
           </div>
         </div>
       )}
