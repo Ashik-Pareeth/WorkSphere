@@ -1,6 +1,8 @@
 package com.ucocs.worksphere.controller;
 
+import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Role;
+import com.ucocs.worksphere.service.EmployeeService;
 import com.ucocs.worksphere.service.RoleService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -14,9 +16,11 @@ import java.util.UUID;
 public class RoleController {
 
     private final RoleService roleService;
+    private final EmployeeService employeeService;
 
-    public RoleController(RoleService roleService) {
+    public RoleController(RoleService roleService, EmployeeService employeeService) {
         this.roleService = roleService;
+        this.employeeService = employeeService;
     }
 
     // CREATE
@@ -29,7 +33,7 @@ public class RoleController {
 
     // GET ALL
     @GetMapping
-    @PreAuthorize("hasRole('SUPER_ADMIN')")
+    @PreAuthorize("hasRole('HR')")
     public ResponseEntity<List<Role>> getAllRoles() {
         return ResponseEntity.ok(roleService.findAll());
     }
@@ -59,5 +63,7 @@ public class RoleController {
         roleService.deleteRole(id);
         return ResponseEntity.noContent().build();
     }
+
+
 }
 

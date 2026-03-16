@@ -41,4 +41,12 @@ public class WorkScheduleService {
 
         return workScheduleRepository.save(existing);
     }
+
+    public void deleteSchedule(UUID id) {
+
+        WorkSchedule schedule = workScheduleRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+
+        workScheduleRepository.delete(schedule);
+    }
 }

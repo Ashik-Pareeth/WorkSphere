@@ -35,5 +35,12 @@ public class WorkScheduleController {
             @PathVariable UUID id, @RequestBody WorkSchedule schedule) {
         return ResponseEntity.ok(scheduleService.updateSchedule(id, schedule));
     }
+
+    @DeleteMapping("/{id}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<Void> deleteSchedule(@PathVariable UUID id) {
+        scheduleService.deleteSchedule(id);
+        return ResponseEntity.noContent().build();
+    }
 }
 

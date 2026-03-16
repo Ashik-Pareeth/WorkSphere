@@ -1,173 +1,106 @@
 package com.ucocs.worksphere.exception;
 
 import com.ucocs.worksphere.dto.ApiErrorResponse;
-
 import jakarta.servlet.http.HttpServletRequest;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.authorization.AuthorizationDeniedException;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.time.LocalDateTime;
+import java.util.List;
 
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
         @ExceptionHandler(ResourceNotFoundException.class)
         public ResponseEntity<ApiErrorResponse> handleResourceNotFoundException(
-                        ResourceNotFoundException ex, HttpServletRequest request) {
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.NOT_FOUND.value(),
-                                "Not Found",
-                                ex.getMessage(),
-                                request.getRequestURI());
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.NOT_FOUND);
-        }
-
-        @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
-        public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
-                        Exception ex, HttpServletRequest request) {
-
-                ApiErrorResponse response = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Invalid Parameter",
-                                "Invalid parameter format.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                ResourceNotFoundException ex, HttpServletRequest request) {
+                return build(HttpStatus.NOT_FOUND, "Not Found", ex.getMessage(), request);
         }
 
         @ExceptionHandler(IllegalArgumentException.class)
         public ResponseEntity<ApiErrorResponse> handleIllegalArgument(
-                        IllegalArgumentException ex, HttpServletRequest request) {
-
-                ApiErrorResponse response = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Bad Request",
-                                ex.getMessage(),
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                IllegalArgumentException ex, HttpServletRequest request) {
+                return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
         }
 
-        @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
-        public ResponseEntity<ApiErrorResponse> handleDatabaseConflict(
-                        Exception ex, HttpServletRequest request) {
-
-                ApiErrorResponse response = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.CONFLICT.value(),
-                                "Database Conflict",
-                                "Operation violates database constraints.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(response, HttpStatus.CONFLICT);
-        }
-
-        @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-        public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(
-                        org.springframework.http.converter.HttpMessageNotReadableException ex,
-                        HttpServletRequest request) {
-
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Malformed JSON Request",
-                                "The request body is missing required fields or contains invalid data formats.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.BAD_REQUEST);
+        @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
+        public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
+                Exception ex, HttpServletRequest request) {
+                return build(HttpStatus.BAD_REQUEST, "Invalid Parameter", "Invalid parameter format.", request);
         }
 
         @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
         public ResponseEntity<ApiErrorResponse> handleMissingParams(
-                        org.springframework.web.bind.MissingServletRequestParameterException ex,
-                        HttpServletRequest request) {
-
-                ApiErrorResponse response = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Missing Parameter",
-                                "Required parameter '" + ex.getParameterName() + "' is missing.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                org.springframework.web.bind.MissingServletRequestParameterException ex,
+                HttpServletRequest request) {
+                return build(HttpStatus.BAD_REQUEST, "Missing Parameter",
+                        "Required parameter '" + ex.getParameterName() + "' is missing.", request);
         }
 
-        @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
-        public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(
-                        org.springframework.web.HttpRequestMethodNotSupportedException ex, HttpServletRequest request) {
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.METHOD_NOT_ALLOWED.value(),
-                                "Method Not Allowed",
-                                ex.getMessage(),
-                                request.getRequestURI());
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.METHOD_NOT_ALLOWED);
+        @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
+        public ResponseEntity<ApiErrorResponse> handleHttpMessageNotReadable(
+                org.springframework.http.converter.HttpMessageNotReadableException ex,
+                HttpServletRequest request) {
+                return build(HttpStatus.BAD_REQUEST, "Malformed JSON Request",
+                        "The request body is missing required fields or contains invalid data formats.", request);
         }
 
         @ExceptionHandler(org.springframework.web.bind.MethodArgumentNotValidException.class)
         public ResponseEntity<ApiErrorResponse> handleValidationException(
-                        org.springframework.web.bind.MethodArgumentNotValidException ex,
-                        HttpServletRequest request) {
+                org.springframework.web.bind.MethodArgumentNotValidException ex,
+                HttpServletRequest request) {
 
-                String errorMessage = ex.getBindingResult()
-                                .getFieldErrors()
-                                .getFirst()
-                                .getDefaultMessage();
+                List<String> errors = ex.getBindingResult()
+                        .getFieldErrors()
+                        .stream()
+                        .map(FieldError::getDefaultMessage)
+                        .toList();
 
-                ApiErrorResponse response = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.BAD_REQUEST.value(),
-                                "Validation Failed",
-                                errorMessage,
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(response, HttpStatus.BAD_REQUEST);
+                return ResponseEntity.badRequest().body(
+                        ApiErrorResponse.ofErrors(HttpStatus.BAD_REQUEST.value(), "Validation Failed", errors, request.getRequestURI())
+                );
         }
 
-        @ExceptionHandler(AuthorizationDeniedException.class)
-        public ResponseEntity<ApiErrorResponse> handleAccessDeniedException(
-                        AuthorizationDeniedException ex, HttpServletRequest request) {
-
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.FORBIDDEN.value(), // Returns proper 403!
-                                "Forbidden",
-                                "You do not have permission to access this resource.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.FORBIDDEN);
+        @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
+        public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(
+                org.springframework.web.HttpRequestMethodNotSupportedException ex,
+                HttpServletRequest request) {
+                return build(HttpStatus.METHOD_NOT_ALLOWED, "Method Not Allowed", ex.getMessage(), request);
         }
 
-        @ExceptionHandler(org.springframework.security.access.AccessDeniedException.class)
-        public ResponseEntity<ApiErrorResponse> handleSpringSecurityAccessDenied(
-                        org.springframework.security.access.AccessDeniedException ex, HttpServletRequest request) {
+        @ExceptionHandler(org.springframework.dao.DataIntegrityViolationException.class)
+        public ResponseEntity<ApiErrorResponse> handleDatabaseConflict(
+                Exception ex, HttpServletRequest request) {
+                return build(HttpStatus.CONFLICT, "Database Conflict", "Operation violates database constraints.", request);
+        }
 
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.FORBIDDEN.value(),
-                                "Forbidden",
-                                "You do not have permission to access this resource.",
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.FORBIDDEN);
+        @ExceptionHandler({
+                AuthorizationDeniedException.class,
+                org.springframework.security.access.AccessDeniedException.class
+        })
+        public ResponseEntity<ApiErrorResponse> handleAccessDenied(
+                Exception ex, HttpServletRequest request) {
+                return build(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource.", request);
         }
 
         @ExceptionHandler(Exception.class)
-        public ResponseEntity<ApiErrorResponse> handleGeneralException(Exception ex, HttpServletRequest request) {
-                ex.printStackTrace();
+        public ResponseEntity<ApiErrorResponse> handleGeneralException(
+                Exception ex, HttpServletRequest request) {
+                log.error("Unhandled exception at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+                return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error",
+                        "An unexpected error occurred. Please try again later.", request);
+        }
 
-                ApiErrorResponse apiErrorResponse = new ApiErrorResponse(
-                                LocalDateTime.now(),
-                                HttpStatus.INTERNAL_SERVER_ERROR.value(),
-                                "Internal Server Error",
-                                ex.getMessage(), // <--- This sends the REAL error message to Frontend
-                                request.getRequestURI());
-
-                return new ResponseEntity<>(apiErrorResponse, HttpStatus.INTERNAL_SERVER_ERROR);
+        // --- Helper ---
+        private ResponseEntity<ApiErrorResponse> build(
+                HttpStatus status, String error, String message, HttpServletRequest request) {
+                return ResponseEntity.status(status).body(
+                        ApiErrorResponse.of(status.value(), error, message, request.getRequestURI())
+                );
         }
 }

@@ -67,16 +67,14 @@ public class EmployeeService {
 
         boolean hasExclusiveRole = roleEntities.stream().anyMatch(Role::isExclusive);
 
-        if (hasExclusiveRole && roleEntities.size() > 1) {
-            throw new IllegalArgumentException(
-                    "Exclusive roles (like SUPER_ADMIN) cannot be combined with any other roles.");
+        if (hasExclusiveRole) {
+            roleEntities.removeIf(r -> !r.isExclusive());
         }
 
-        // Retain existing security context logic preventing HR from creating
-        // SUPER_ADMINs
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         if (auth != null) {
-            boolean isHr = auth.getAuthorities().stream().anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
+            boolean isHr = auth.getAuthorities().stream()
+                    .anyMatch(a -> a.getAuthority().equals("ROLE_HR"));
             boolean isSuperAdmin = auth.getAuthorities().stream()
                     .anyMatch(a -> a.getAuthority().equals("ROLE_SUPER_ADMIN"));
 
@@ -343,6 +341,16 @@ public class EmployeeService {
         });
 
         employee.setEmployeeStatus(EmployeeStatus.PENDING);
+        return employeeRepository.save(employee);
+    }
+
+    public Employee updateRoles(UUID employeeId, List<UUID> roleIds) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new RuntimeException("Employee not found"));
+
+        List<Role> roles = roleRepository.findAllById(roleIds);
+        employee.setRoles(new HashSet<>(roles));
+
         return employeeRepository.save(employee);
     }
 }

@@ -42,7 +42,7 @@ public class JobOpening extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "hr_owner_id", nullable = false)
-    @com.fasterxml.jackson.annotation.JsonIgnore
+    @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
     private Employee hrOwner;
 
     // Overridable min salary (defaults to JobPosition band eventually)
