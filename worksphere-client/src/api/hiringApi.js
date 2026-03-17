@@ -92,6 +92,12 @@ export const fetchOffer = (id) => {
   return axiosInstance.get(`/api/offers/${id}`);
 };
 
+export const fetchPublicOffer = (id, token) => {
+  return axiosInstance.get(`/api/offers/public/${id}`, {
+    params: { token },
+  });
+};
+
 export const generateOffer = (data) => {
   return axiosInstance.post('/api/offers', data);
 };
