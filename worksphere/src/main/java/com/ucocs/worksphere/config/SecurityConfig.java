@@ -48,6 +48,7 @@ public class SecurityConfig {
                         auth -> auth.requestMatchers(
                                 "/login", "/forgot-password", "/reset-password", "/auth/**", "/public/**", "/error",
                                 "/api/candidates/public/**", "/api/jobs/public/**", "/api/offers/*/respond",
+                                "/api/offers/public/**",
                                 "/dev/**",
                                 "/v3/api-docs/**", "/v3/api-docs.yaml",
                                 "/swagger-ui/**", "/swagger-ui.html").permitAll()

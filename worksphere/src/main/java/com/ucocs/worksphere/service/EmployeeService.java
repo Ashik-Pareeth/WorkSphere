@@ -300,9 +300,7 @@ public class EmployeeService {
         return savedEmployee;
     }
 
-    // In worksphere/service/EmployeeService.java
 
-    // Inside EmployeeService.java
     public EmployeeResponseDTO getEmployeeById(UUID id) {
         Employee employee = employeeRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));

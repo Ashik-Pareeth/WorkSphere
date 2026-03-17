@@ -7,6 +7,7 @@ import {
   fetchCandidatesByJob,
   fetchJobById,
   updateCandidateStatus,
+  fetchInterviewsForCandidate, // <-- Added import
 } from '../../api/hiringApi';
 import CandidateDrawer from './CandidateDrawer';
 import RejectionModal from './RejectionModal';
@@ -84,7 +85,8 @@ const HiringPipelineBoard = () => {
     }
   };
 
-  const handleDragEnd = (result) => {
+  // Convert handleDragEnd to async to allow API validation before optimistic update
+  const handleDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
     if (!destination) return;
     if (
@@ -94,16 +96,67 @@ const HiringPipelineBoard = () => {
       return;
 
     const newStatus = destination.droppableId;
+    const currentStatus = source.droppableId;
+
+    // RULE: Prevent manual move to ACCEPTED
+    if (newStatus === 'ACCEPTED') {
+      toast.error('Action Not Allowed', {
+        description:
+          'The Accepted status is updated automatically when the candidate accepts the offer via email.',
+      });
+      return;
+    }
+
+    // RULE: Prevent move to OFFERED without validating interview completion
+    if (newStatus === 'OFFERED') {
+      if (currentStatus !== 'INTERVIEWING') {
+        toast.error('Invalid Transition', {
+          description:
+            'Candidates must be in the "Interviewing" stage before moving to "Offered".',
+        });
+        return;
+      }
+
+      // API Validation: Check if the candidate actually has a COMPLETED interview
+      try {
+        const interviewRes = await fetchInterviewsForCandidate(draggableId);
+        const interviews = interviewRes.data;
+
+        // Check if there is at least one COMPLETED interview
+        // (You can also add `&& interview.score >= 3` if you want a strict approval rating)
+        const hasPassedInterview = interviews.some(
+          (interview) => interview.status === 'COMPLETED'
+        );
+
+        if (!hasPassedInterview) {
+          toast.error('Incomplete Interview Process', {
+            description:
+              'The candidate must have at least one completed and evaluated interview before an offer can be generated.',
+          });
+          // By returning here, we skip the state update and the dragged card snaps back to its origin.
+          return;
+        }
+      } catch (error) {
+        console.error('Validation failed', error);
+        toast.error('Validation Error', {
+          description:
+            'Could not verify candidate interview status. Please check your connection and try again.',
+        });
+        return;
+      }
+    }
 
     if (newStatus === 'REJECTED') {
       setPendingRejection({ candidateId: draggableId });
       return;
     }
 
+    // Perform optimistic UI update
     setCandidates((prev) =>
       prev.map((c) => (c.id === draggableId ? { ...c, status: newStatus } : c))
     );
 
+    // Persist changes to backend
     updateCandidateStatus(draggableId, newStatus, null)
       .then(() => toast.success('Candidate moved successfully'))
       .catch((error) => {
@@ -245,22 +298,34 @@ const HiringPipelineBoard = () => {
             {activeColumns.map((columnId) => {
               const column = COLUMNS[columnId];
               const columnCandidates = getCandidatesByStatus(columnId);
+              // Disable drop into ACCEPTED column entirely
+              const isDropDisabled = columnId === 'ACCEPTED';
 
               return (
                 <div
                   key={columnId}
-                  className="bg-gray-50/50 dark:bg-gray-900/50 rounded-xl flex flex-col h-full max-h-full border min-w-0"
+                  className={`bg-gray-50/50 dark:bg-gray-900/50 rounded-xl flex flex-col h-full max-h-full border min-w-0 ${
+                    isDropDisabled ? 'opacity-80' : ''
+                  }`}
                 >
                   <div className="p-3 border-b flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-xl">
-                    <h2 className="font-semibold text-gray-700 dark:text-gray-300 text-sm truncate">
+                    <h2 className="font-semibold text-gray-700 dark:text-gray-300 text-sm truncate flex items-center">
                       {column.title}
-                      <span className="ml-2 bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs px-2 py-0.5 rounded-full">
+                      {isDropDisabled && (
+                        <span className="ml-2 text-[10px] uppercase text-gray-400 font-normal">
+                          (Automated)
+                        </span>
+                      )}
+                      <span className="ml-auto bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs px-2 py-0.5 rounded-full">
                         {columnCandidates.length}
                       </span>
                     </h2>
                   </div>
 
-                  <Droppable droppableId={columnId}>
+                  <Droppable
+                    droppableId={columnId}
+                    isDropDisabled={isDropDisabled}
+                  >
                     {(provided, snapshot) => (
                       <div
                         {...provided.droppableProps}
@@ -271,7 +336,7 @@ const HiringPipelineBoard = () => {
                               ? 'bg-red-50/60 dark:bg-red-900/20'
                               : 'bg-blue-50/50 dark:bg-blue-900/20'
                             : ''
-                        }`}
+                        } ${isDropDisabled ? 'bg-gray-100/50 dark:bg-gray-900/30' : ''}`}
                       >
                         {columnCandidates.map((candidate, index) => (
                           <Draggable
@@ -286,9 +351,9 @@ const HiringPipelineBoard = () => {
                                 {...provided.dragHandleProps}
                                 className={`bg-white dark:bg-gray-800 shadow-sm hover:shadow relative ${column.color} ${
                                   snapshot.isDragging
-                                    ? 'shadow-lg ring-1 ring-blue-400'
+                                    ? 'shadow-lg ring-1 ring-blue-400 z-50'
                                     : ''
-                                }`}
+                                } ${isDropDisabled ? 'cursor-default' : ''}`}
                                 onClick={() => setSelectedCandidate(candidate)}
                               >
                                 <CardContent className="p-2.5">
@@ -301,18 +366,19 @@ const HiringPipelineBoard = () => {
                                         {candidate.source}
                                       </div>
                                     </div>
-                                    {columnId !== 'REJECTED' && (
-                                      <button
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleRejectClick(candidate.id);
-                                        }}
-                                        className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors mt-0.5"
-                                        title="Reject candidate"
-                                      >
-                                        <XCircle className="h-4 w-4" />
-                                      </button>
-                                    )}
+                                    {columnId !== 'REJECTED' &&
+                                      columnId !== 'ACCEPTED' && (
+                                        <button
+                                          onClick={(e) => {
+                                            e.stopPropagation();
+                                            handleRejectClick(candidate.id);
+                                          }}
+                                          className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors mt-0.5"
+                                          title="Reject candidate"
+                                        >
+                                          <XCircle className="h-4 w-4" />
+                                        </button>
+                                      )}
                                   </div>
                                 </CardContent>
                               </Card>

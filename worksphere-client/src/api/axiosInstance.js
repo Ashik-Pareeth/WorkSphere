@@ -12,26 +12,30 @@ axiosInstance.interceptors.request.use((config) => {
   return config;
 });
 
-// 2. Response Interceptor: Catch 401 Unauthorized errors globally
 axiosInstance.interceptors.response.use(
-  (response) => {
-    // If the request succeeds, just return the response
-    return response;
-  },
+  (response) => response,
   (error) => {
-    // If the error is a 401 (Unauthorized / Token Expired)
     if (error.response) {
-      if (error.response.status === 401) {
+      const status = error.response.status;
+      const url = error.config?.url || '';
+
+      const isPublicOfferRequest =
+        url.includes('/api/offers') && url.includes('token');
+
+      // 🔐 Handle 401 globally (valid case)
+      if (status === 401) {
         console.warn('Session expired. Redirecting to login...');
         localStorage.clear();
         window.location.href = '/';
-      } else if (error.response.status === 403) {
+      }
+
+      // 🚨 Handle 403 ONLY for protected routes
+      else if (status === 403 && !isPublicOfferRequest) {
         console.warn('Forbidden access. Redirecting to Unauthorized...');
         window.location.href = '/unauthorized';
       }
     }
 
-    // Always reject the promise so the component calling it can also handle the error if needed
     return Promise.reject(error);
   }
 );
