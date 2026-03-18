@@ -1,160 +1,236 @@
 import React, { useState, useEffect } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogDescription } from '@/components/ui/dialog';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogDescription,
+} from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import axiosInstance from '../../api/axiosInstance';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { CheckCircle2 } from 'lucide-react';
 
 const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
-    const [loading, setLoading] = useState(false);
-    
-    // Form State
-    const [selectedRole, setSelectedRole] = useState('');
-    const [selectedManager, setSelectedManager] = useState('');
-    
-    // Data Lists
-    const [availableRoles, setAvailableRoles] = useState([]);
-    const [managers, setManagers] = useState([]);
-    // Note: Work Schedule would go here, omitting for brevity/matching existing data model right now
+  const [loading, setLoading] = useState(false);
 
-    useEffect(() => {
-        if (isOpen && candidate) {
-            fetchFormData();
-        }
-    }, [isOpen, candidate]);
+  // Form State
+  const [salary, setSalary] = useState('');
+  const [username, setUsername] = useState(''); // ← NEW
+  const [selectedRole, setSelectedRole] = useState('');
+  const [selectedManager, setSelectedManager] = useState('');
+  const [selectedDept, setSelectedDept] = useState('');
+  const [selectedPos, setSelectedPos] = useState('');
 
-    const fetchFormData = async () => {
-        try {
-            // Fetch roles and active employees (potential managers)
-            const [rolesRes, empRes] = await Promise.all([
-                axiosInstance.get('/roles'),
-                axiosInstance.get('/employees')
-            ]);
-            
-            // Filter out SUPER_ADMIN for HR
-            const filteredRoles = rolesRes.data.filter(r => !r.roleName.includes('SUPER_ADMIN'));
-            setAvailableRoles(filteredRoles);
-            
-            // Managers are usually people with a MANAGER role, or just anyone active
-            const managerList = empRes.data.filter(e => e.employeeStatus === 'ACTIVE');
-            setManagers(managerList);
-            
-            // Try to pre-select EMPLOYEE role if it exists
-            const employeeRole = filteredRoles.find(r => r.roleName === 'ROLE_EMPLOYEE' || r.roleName === 'EMPLOYEE');
-            if (employeeRole) setSelectedRole(employeeRole.id);
+  // Data Lists
+  const [availableRoles, setAvailableRoles] = useState([]);
+  const [managers, setManagers] = useState([]);
+  const [departments, setDepartments] = useState([]);
+  const [positions, setPositions] = useState([]);
 
-        } catch (error) {
-            console.error("Failed to load form data", error);
-            toast.error("Failed to load roles and managers.");
-        }
-    };
+  useEffect(() => {
+    if (isOpen && candidate) {
+      const emp = candidate.convertedEmployee;
+      if (emp) {
+        setSalary(emp.salary || '');
+        setSelectedDept(emp.departmentId || '');
+        setSelectedPos(emp.jobPositionId || '');
+        setUsername(emp.userName || ''); // ← pre-fill auto-generated username
+      }
+      fetchFormData();
+    }
+  }, [isOpen, candidate]);
 
-    const handleFinalize = async () => {
-        if (!selectedRole || !selectedManager) {
-            toast.error("Please select a Role and a Line Manager.");
-            return;
-        }
+  const fetchFormData = async () => {
+    try {
+      const [rolesRes, empRes, deptRes, posRes] = await Promise.all([
+        axiosInstance.get('/roles'),
+        axiosInstance.get('/employees'),
+        axiosInstance.get('/departments'),
+        axiosInstance.get('/jobPositions'),
+      ]);
 
-        setLoading(true);
-        try {
-            // The candidate object has a reference to the convertedEmployee id
-            const employeeId = candidate.convertedEmployee?.id;
-            
-            if (!employeeId) {
-                toast.error("Employee profile not found for this candidate.");
-                setLoading(false);
-                return;
-            }
+      setAvailableRoles(
+        rolesRes.data.filter((r) => !r.roleName.includes('SUPER_ADMIN'))
+      );
+      setManagers(empRes.data.filter((e) => e.employeeStatus === 'ACTIVE'));
+      setDepartments(deptRes.data);
+      setPositions(posRes.data);
 
-            const payload = {
-                employeeId: employeeId,
-                roleIds: [selectedRole],
-                managerId: selectedManager,
-                // workScheduleId: null 
-            };
+      const employeeRole = rolesRes.data.find(
+        (r) => r.roleName === 'ROLE_EMPLOYEE' || r.roleName === 'EMPLOYEE'
+      );
+      if (employeeRole) setSelectedRole(employeeRole.id);
+    } catch (error) {
+      toast.error('Failed to load form data.');
+      console.error(error.response || error);
+    }
+  };
 
-            await axiosInstance.post('/employees/finalize-hire', payload);
-            
-            toast.success("Hire Finalized! Invitation email sent.");
-            onHireFinalized();
-            onClose();
-        } catch (error) {
-            console.error("Failed to finalize hire", error);
-            toast.error(error.response?.data?.message || "Something went wrong finalizing the hire.");
-        } finally {
-            setLoading(false);
-        }
-    };
+  const handleFinalize = async () => {
+    if (!selectedRole || !selectedManager || !selectedDept || !selectedPos) {
+      toast.error('Please fill all required fields.');
+      return;
+    }
 
-    if (!candidate) return null;
+    setLoading(true);
+    try {
+      const payload = {
+        employeeId: candidate.convertedEmployee.id,
+        salary: parseFloat(salary),
+        departmentId: selectedDept,
+        jobPositionId: selectedPos,
+        roleIds: [selectedRole],
+        managerId: selectedManager,
+        username: username.trim() || undefined, // ← send only if HR changed it
+      };
 
-    return (
-        <Dialog open={isOpen} onOpenChange={onClose}>
-            <DialogContent className="sm:max-w-[425px]">
-                <DialogHeader>
-                    <DialogTitle className="flex items-center gap-2">
-                        <CheckCircle2 className="h-5 w-5 text-green-500" />
-                        Finalize Hire: {candidate.fullName}
-                    </DialogTitle>
-                    <DialogDescription>
-                        Assign their final role and line manager to trigger the official Onboarding invite.
-                    </DialogDescription>
-                </DialogHeader>
+      await axiosInstance.post('/employees/finalize-hire', payload);
+      toast.success('Hire Finalized! Invitation email sent.');
+      onHireFinalized();
+      onClose();
+    } catch (error) {
+      toast.error(error.response?.data?.message || 'Failed to finalize hire.');
+    } finally {
+      setLoading(false);
+    }
+  };
 
-                <div className="grid gap-4 py-4">
-                    <div className="grid gap-2">
-                        <Label htmlFor="role">Primary Role <span className="text-red-500">*</span></Label>
-                        <Select value={selectedRole} onValueChange={setSelectedRole}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a role" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {availableRoles.map(role => (
-                                    <SelectItem key={role.id} value={role.id}>
-                                        {role.roleName.replace('ROLE_', '')}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
+  if (!candidate) return null;
 
-                    <div className="grid gap-2">
-                        <Label htmlFor="manager">Line Manager <span className="text-red-500">*</span></Label>
-                        <Select value={selectedManager} onValueChange={setSelectedManager}>
-                            <SelectTrigger>
-                                <SelectValue placeholder="Select a manager" />
-                            </SelectTrigger>
-                            <SelectContent>
-                                {managers.map(mgr => (
-                                    <SelectItem key={mgr.id} value={mgr.id}>
-                                        {mgr.firstName} {mgr.lastName}
-                                    </SelectItem>
-                                ))}
-                            </SelectContent>
-                        </Select>
-                    </div>
-                </div>
+  return (
+    <Dialog open={isOpen} onOpenChange={onClose}>
+      <DialogContent className="sm:max-w-[500px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center gap-2">
+            <CheckCircle2 className="h-5 w-5 text-green-500" />
+            Verify & Finalize: {candidate.fullName}
+          </DialogTitle>
+          <DialogDescription>
+            Review details before sending onboarding invite.
+          </DialogDescription>
+        </DialogHeader>
 
-                <div className="bg-blue-50 dark:bg-blue-900/20 p-3 rounded-lg flex gap-3 text-blue-800 dark:text-blue-300">
-                    <AlertCircle className="h-5 w-5 shrink-0" />
-                    <p className="text-xs">
-                        Clicking "Finalize & Send Invite" will email {candidate.email} their temporary login credentials so they can complete the self-serve onboarding.
-                    </p>
-                </div>
+        <div className="grid grid-cols-2 gap-4 py-4">
+          <div className="grid gap-2">
+            <Label>Salary</Label>
+            <Input
+              type="number"
+              value={salary}
+              onChange={(e) => setSalary(e.target.value)}
+            />
+          </div>
 
-                <DialogFooter className="mt-4">
-                    <Button variant="outline" onClick={onClose} disabled={loading}>
-                        Cancel
-                    </Button>
-                    <Button onClick={handleFinalize} disabled={loading} className="bg-blue-600 hover:bg-blue-700">
-                        {loading ? 'Processing...' : 'Finalize & Send Invite'}
-                    </Button>
-                </DialogFooter>
-            </DialogContent>
-        </Dialog>
-    );
+          {/* ── USERNAME FIELD ── */}
+          <div className="grid gap-2">
+            <Label>
+              Username
+              <span className="ml-1 text-xs text-muted-foreground">
+                (auto-generated)
+              </span>
+            </Label>
+            <Input
+              type="text"
+              value={username}
+              onChange={(e) =>
+                setUsername(
+                  e.target.value.toLowerCase().replace(/[^a-z0-9.]/g, '')
+                )
+              }
+              placeholder="e.g. john.doe"
+            />
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Primary Role *</Label>
+            <Select value={selectedRole} onValueChange={setSelectedRole}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select role" />
+              </SelectTrigger>
+              <SelectContent>
+                {availableRoles.map((r) => (
+                  <SelectItem key={r.id} value={r.id}>
+                    {r.roleName.replace('ROLE_', '')}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Department *</Label>
+            <Select value={selectedDept} onValueChange={setSelectedDept}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select dept" />
+              </SelectTrigger>
+              <SelectContent>
+                {departments.map((d) => (
+                  <SelectItem key={d.id} value={d.id}>
+                    {d.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>Job Position *</Label>
+            <Select value={selectedPos} onValueChange={setSelectedPos}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select position" />
+              </SelectTrigger>
+              <SelectContent>
+                {positions.map((p) => (
+                  <SelectItem key={p.id} value={p.id}>
+                    {p.positionName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2 col-span-2">
+            <Label>Line Manager *</Label>
+            <Select value={selectedManager} onValueChange={setSelectedManager}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select manager" />
+              </SelectTrigger>
+              <SelectContent>
+                {managers.map((m) => (
+                  <SelectItem key={m.id} value={m.id}>
+                    {m.firstName} {m.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={onClose} disabled={loading}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleFinalize}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {loading ? 'Processing...' : 'Verify & Send Invite'}
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
 };
 
 export default FinalizeHireModal;

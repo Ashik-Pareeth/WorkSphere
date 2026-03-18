@@ -1,8 +1,10 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.hiring.JobOpeningRequest;
+import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.JobOpening;
 import com.ucocs.worksphere.enums.JobOpeningStatus;
-import com.ucocs.worksphere.repository.JobOpeningRepository;
+import com.ucocs.worksphere.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -10,7 +12,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.UUID;
 
-import com.ucocs.worksphere.repository.CandidateRepository;
 import com.ucocs.worksphere.dto.JobOpeningStatsDTO;
 
 @Service
@@ -18,6 +19,9 @@ import com.ucocs.worksphere.dto.JobOpeningStatsDTO;
 public class JobOpeningService {
     private final JobOpeningRepository jobOpeningRepository;
     private final CandidateRepository candidateRepository;
+    private final DepartmentRepository departmentRepository;
+    private final JobPositionRepository jobPositionRepository;
+    private final EmployeeRepository employeeRepository;
 
     public List<JobOpeningStatsDTO> getAllOpeningsWithStats() {
         return jobOpeningRepository.findAll().stream().map(job -> {
@@ -37,14 +41,59 @@ public class JobOpeningService {
     }
 
     @Transactional
-    public JobOpening createOpening(JobOpening opening) {
-        return jobOpeningRepository.save(opening);
+    public JobOpening createOpening(JobOpeningRequest openingRequest,String hrUsername) {
+        JobOpening jobOpening = new JobOpening();
+        jobOpening.setTitle(openingRequest.getTitle());
+        jobOpening.setDescription(openingRequest.getDescription());
+        jobOpening.setClosingDate(openingRequest.getClosingDate());
+        jobOpening.setSalaryMin(openingRequest.getSalaryMin());
+        jobOpening.setSalaryMax(openingRequest.getSalaryMax());
+
+        if (openingRequest.getOpenSlots() != null) {
+            jobOpening.setOpenSlots(openingRequest.getOpenSlots());
+        }
+
+        jobOpening.setStatus(JobOpeningStatus.OPEN);
+
+        jobOpening.setDepartment(departmentRepository.findById(openingRequest.getDepartmentId())
+                .orElseThrow(() -> new RuntimeException("Department not found")));
+
+        jobOpening.setJobPosition(jobPositionRepository.findById(openingRequest.getJobPositionId())
+                .orElseThrow(() -> new RuntimeException("Job Position not found")));
+
+        Employee hrOwner = employeeRepository.findByUserName(hrUsername)
+                .orElseThrow(() -> new RuntimeException("HR User not found"));
+        jobOpening.setHrOwner(hrOwner);
+
+        return jobOpeningRepository.save(jobOpening);
     }
 
     @Transactional
     public JobOpening updateStatus(UUID id, JobOpeningStatus status) {
         JobOpening opening = getOpeningById(id);
         opening.setStatus(status);
+        return jobOpeningRepository.save(opening);
+    }
+
+    // Inside JobOpeningService.java
+
+    // Inside JobOpeningService.java
+
+    @Transactional
+    public JobOpening updateOpenSlots(UUID id, Integer newSlots) {
+        JobOpening opening = getOpeningById(id);
+        opening.setOpenSlots(newSlots);
+
+        // Automatically reopen the job if HR adds slots to a CLOSED job
+        if (newSlots > 0 && opening.getStatus() == JobOpeningStatus.CLOSED) {
+            opening.setStatus(JobOpeningStatus.OPEN);
+        }
+        // Automatically close the job if HR manually sets slots to 0 (and it isn't already closed/cancelled)
+        else if (newSlots <= 0 && opening.getStatus() == JobOpeningStatus.OPEN) {
+            opening.setStatus(JobOpeningStatus.CLOSED);
+            opening.setOpenSlots(0); // Ensure it doesn't go negative
+        }
+
         return jobOpeningRepository.save(opening);
     }
 }

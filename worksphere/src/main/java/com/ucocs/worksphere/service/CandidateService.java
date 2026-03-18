@@ -5,6 +5,7 @@ import com.ucocs.worksphere.entity.Candidate;
 import com.ucocs.worksphere.entity.JobOpening;
 import com.ucocs.worksphere.enums.CandidateSource;
 import com.ucocs.worksphere.enums.CandidateStatus;
+import com.ucocs.worksphere.enums.JobOpeningStatus;
 import com.ucocs.worksphere.repository.CandidateRepository;
 import com.ucocs.worksphere.repository.JobOpeningRepository;
 import lombok.RequiredArgsConstructor;
@@ -106,9 +107,30 @@ public class CandidateService {
     public Candidate updateStatus(UUID id, CandidateStatus newStatus, String rejectionReason) {
         Candidate candidate = getCandidateById(id);
         candidate.setStatus(newStatus);
+
         if (newStatus == CandidateStatus.REJECTED && rejectionReason != null) {
             candidate.setRejectionReason(rejectionReason);
         }
+
+        // --- Automated Slot Deduction using your ACCEPTED status ---
+        if (newStatus == CandidateStatus.ACCEPTED) {
+            JobOpening jobOpening = candidate.getJobOpening();
+
+            // Decrement the slot
+            if (jobOpening.getOpenSlots() > 0) {
+                jobOpening.setOpenSlots(jobOpening.getOpenSlots() - 1);
+            }
+
+            // Auto-close if slots are filled
+            if (jobOpening.getOpenSlots() == 0) {
+                jobOpening.setStatus(JobOpeningStatus.CLOSED); // Assuming JobOpeningStatus has CLOSED
+            }
+
+            jobOpeningRepository.save(jobOpening);
+        }
+
         return candidateRepository.save(candidate);
     }
+
+
 }

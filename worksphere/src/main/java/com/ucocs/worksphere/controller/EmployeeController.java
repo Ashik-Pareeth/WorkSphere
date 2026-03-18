@@ -3,6 +3,7 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.dto.ActivateAccountRequest;
 import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
+import com.ucocs.worksphere.dto.UpdateStatusRequest;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -57,7 +58,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'SUPER_ADMIN')")
     public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }
@@ -103,7 +104,21 @@ public class EmployeeController {
         return ResponseEntity.ok(employeeDTO);
     }
 
+    @GetMapping("/me")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<EmployeeResponseDTO> getCurrentUser(Principal principal) {
+        EmployeeResponseDTO currentEmployee = employeeService.getCurrentEmployee(principal.getName());
+        return ResponseEntity.ok(currentEmployee);
+    }
 
+    @PatchMapping("/{id}/status")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<Void> updateEmployeeStatus(
+            @PathVariable UUID id,
+            @RequestBody UpdateStatusRequest request) {
+        employeeService.updateEmployeeStatus(id, request.status());
+        return ResponseEntity.noContent().build();
+    }
 
 }
 

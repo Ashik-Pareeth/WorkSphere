@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.dto.hiring;
 
+import jakarta.validation.constraints.AssertTrue;
 import lombok.Data;
 
 import java.math.BigDecimal;
@@ -16,4 +17,10 @@ public class JobOpeningRequest {
     private LocalDate closingDate;
     private BigDecimal salaryMin;
     private BigDecimal salaryMax;
+
+    @AssertTrue(message = "salaryMin must be <= salaryMax")
+    public boolean isSalaryValid() {
+        if (salaryMin == null || salaryMax == null) return true;
+        return salaryMin.compareTo(salaryMax) <= 0;
+    }
 }

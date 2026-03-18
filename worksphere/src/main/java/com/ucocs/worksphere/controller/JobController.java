@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.controller;
 
+import com.ucocs.worksphere.dto.hiring.JobOpeningRequest;
 import com.ucocs.worksphere.entity.JobOpening;
 import com.ucocs.worksphere.enums.JobOpeningStatus;
 import com.ucocs.worksphere.dto.JobOpeningStatsDTO;
@@ -39,10 +40,8 @@ public class JobController {
     // if HR is used)
     @PostMapping
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<JobOpening> createJob(@RequestBody JobOpening opening) {
-        // In a real scenario, map DTO -> Entity and set createdBy
-        return ResponseEntity.ok(jobOpeningService.createOpening(opening));
-    }
+    public ResponseEntity<JobOpening> createJob(@RequestBody JobOpeningRequest openingRequest,java.security.Principal principal) {
+        return ResponseEntity.ok(jobOpeningService.createOpening(openingRequest, principal.getName()));    }
 
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('HR')")
@@ -56,4 +55,15 @@ public class JobController {
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<JobOpening> getJobById(@PathVariable UUID id) {
         return ResponseEntity.ok(jobOpeningService.getOpeningById(id));
-    }}
+    }
+
+    @PutMapping("/{id}/slots")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<JobOpening> updateOpenSlots(
+            @PathVariable UUID id,
+            @RequestParam Integer slots) {
+        return ResponseEntity.ok(jobOpeningService.updateOpenSlots(id, slots));
+    }
+
+}
+
