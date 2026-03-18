@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import NotificationBell from './NotificationBell';
 
 // Role hierarchy: higher index = lower priority
 const ROLE_PRIORITY = ['SUPER_ADMIN', 'HR', 'MANAGER', 'EMPLOYEE'];
@@ -228,6 +229,8 @@ export default function NavBar() {
                 )}
               </div>
             )}
+
+            <NotificationBell />
 
             <NavLink to="/profile" className={linkClass}>
               Profile

@@ -44,6 +44,10 @@ public class Task extends BaseEntity {
     @Column(nullable = false)
     private TaskPriority priority = TaskPriority.MEDIUM;
 
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "source_ticket_id")
+    private GrievanceTicket sourceTicket;
+
     private boolean requiresEvidence = true;
     private LocalDateTime startDate;
     private LocalDateTime dueDate;
@@ -164,6 +168,10 @@ public class Task extends BaseEntity {
         }
         this.isFlagged = true;
         this.flagReason = reason;
+    }
+
+    public void setSourceTicket(GrievanceTicket sourceTicket) {
+        this.sourceTicket = sourceTicket;
     }
 
     public void resolveFlag() {

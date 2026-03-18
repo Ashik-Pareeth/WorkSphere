@@ -99,6 +99,7 @@ const TaskBoard = () => {
         const data =
           viewMode === 'TEAM_TASKS' ? await getTeamTasks() : await getMyTasks();
         setTasks(data);
+        console.log('Loaded tasks:', data);
       } catch (err) {
         console.error('Load failed', err);
         if (!silent) setError(err);
@@ -526,4 +527,3 @@ const TaskBoard = () => {
 };
 
 export default TaskBoard;
-

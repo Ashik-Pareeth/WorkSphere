@@ -38,7 +38,7 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         Optional<Task> findTopByOrderByCreatedAtDesc();
 
         // 7. Get Single Task with Details
-        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.id = :taskId")
+        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner LEFT JOIN FETCH t.sourceTicket WHERE t.id = :taskId")
         Optional<Task> findByIdWithRelations(@Param("taskId") UUID taskId);
 
         // --- ARCHITECTURE ADDITION ---
