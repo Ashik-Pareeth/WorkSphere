@@ -29,6 +29,12 @@ export const fetchJobById = (id) => {
   return axiosInstance.get(`/api/jobs/${id}`);
 };
 
+export const updateJobSlots = (id, slots) => {
+  return axiosInstance.put(`/api/jobs/${id}/slots`, null, {
+    params: { slots },
+  });
+};
+
 // ==================== CANDIDATE ENDPOINTS ====================
 
 export const fetchCandidatesByJob = (jobId) => {

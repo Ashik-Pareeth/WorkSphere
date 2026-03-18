@@ -31,3 +31,12 @@ Offer Link: http://localhost:5173/offers/3ad23335-d2dd-4a21-a268-2a76108a7d51/re
 To: ridengo@gmail.com
 Login: http://localhost:5173/login Username: ridengo@gmail.com TempPassword: Welcome123!
 
+To: rahul.sharma@example.com
+Offer Link: http://localhost:5173/offers/8fc4864c-c71e-4cf2-9350-3501cdb7bb21/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiOGZjNDg2NGMtYzcxZS00Y2YyLTkzNTAtMzUwMWNkYjdiYjIxIiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoicmFodWwuc2hhcm1hQGV4YW1wbGUuY29tIiwiaWF0IjoxNzczODIwODA1LCJleHAiOjE3NzQ0MjU2MDV9.U86-0XqXLqT50iYE1XfpMzJ6uGnh9L1IumU0KC_NnqQ
+
+To: rahul.sharma@example.com
+Login: http://localhost:5173/login Username: rahul.sharma@example.com TempPassword: Welcome123!
+
+To: rahul.sharma@example.com
+Reset Link: http://localhost:5173/reset-password?token=642459b2-a14f-4afd-99bb-cbd1896d0223
+

@@ -33,6 +33,7 @@ import TeamAppraisals from './features/hr/TeamAppraisals';
 import MyAppraisals from './features/hr/MyAppraisals';
 import PayrollDashboard from './features/hr/PayrollDashboard';
 import MyCompensation from './features/hr/MyCompensation';
+import EmployeeList from './features/hr/EmployeeList';
 import Unauthorized from './pages/Unauthorized';
 
 // Hiring Pipeline
@@ -68,10 +69,7 @@ function App() {
         <div className="app">
           <Routes>
             {/* PUBLIC ROUTES */}
-            <Route
-              path="/"
-              element={<LandingPage />}
-            />
+            <Route path="/" element={<LandingPage />} />
             <Route
               path="/login"
               element={
@@ -98,14 +96,8 @@ function App() {
             />
 
             {/* PUBLIC HIRING ROUTES (No Auth checking wrapper) */}
-            <Route
-              path="/careers"
-              element={<PublicCareersList />}
-            />
-            <Route
-              path="/careers/:id"
-              element={<PublicJobDetails />}
-            />
+            <Route path="/careers" element={<PublicCareersList />} />
+            <Route path="/careers/:id" element={<PublicJobDetails />} />
             <Route
               path="/jobs/:openingId/apply"
               element={<PublicApplyForm />}
@@ -153,18 +145,19 @@ function App() {
 
             {/* --- TIER 1.8: SUPER_ADMINS ONLY (Core System Config) --- */}
             <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
-              <Route path="/departments" element={<DepartmentForm />} />
-              <Route path="/jobPosition" element={<JobPositionForm />} />
               <Route path="/roles" element={<RoleForm />} />
               <Route path="/role-management" element={<RoleManagement />} />
+              <Route path="/register" element={<AddEmployee />} />
             </Route>
 
             {/* --- TIER 2: HR & SUPER_ADMINS ONLY (System Config) --- */}
             <Route
               element={<PrivateRoute allowedRoles={['HR', 'SUPER_ADMIN']} />}
             >
-              <Route path="/register" element={<AddEmployee />} />
+              <Route path="/departments" element={<DepartmentForm />} />
+              <Route path="/jobPosition" element={<JobPositionForm />} />
               <Route path="/leave-policies" element={<LeavePolicyPage />} />
+              <Route path="/employee-list" element={<EmployeeList />} />
               <Route
                 path="/leave-override"
                 element={<LeaveBalanceOverridePage />}

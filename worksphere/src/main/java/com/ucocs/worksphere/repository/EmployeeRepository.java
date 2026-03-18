@@ -23,4 +23,8 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     Optional<Employee> findByIdWithDetails(@Param("id") UUID id);
 
     List<Employee> findByEmployeeStatus(EmployeeStatus status);
+
+    boolean existsByUserName(String userName);
+    boolean existsByUserNameAndIdNot(String userName, UUID id);
+
 }

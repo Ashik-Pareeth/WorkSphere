@@ -36,22 +36,24 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(
             HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http.cors(cors -> cors.configurationSource(
-                request -> {
-                    CorsConfiguration config = new CorsConfiguration();
-                    config.setAllowedOrigins(List.of("http://localhost:5173"));
-                    config.setAllowedMethods(List.of("*"));
-                    config.setAllowedHeaders(List.of("*"));
-                    return config;
-                })).csrf(AbstractHttpConfigurer::disable)
+                        request -> {
+                            CorsConfiguration config = new CorsConfiguration();
+                            config.setAllowedOrigins(List.of("http://localhost:5173"));
+                            config.setAllowedMethods(List.of("*"));
+                            config.setAllowedHeaders(List.of("*"));
+                            config.setAllowCredentials(true);
+                            return config;
+                        })).csrf(AbstractHttpConfigurer::disable)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(
                         auth -> auth.requestMatchers(
-                                "/login", "/forgot-password", "/reset-password", "/auth/**", "/public/**", "/error",
-                                "/api/candidates/public/**", "/api/jobs/public/**", "/api/offers/*/respond",
-                                "/api/offers/public/**",
-                                "/dev/**",
-                                "/v3/api-docs/**", "/v3/api-docs.yaml",
-                                "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                                        "/login", "/forgot-password", "/reset-password", "/auth/**", "/public/**", "/error",
+                                        "/api/candidates/public/**", "/api/jobs/public/**", "/api/offers/*/respond",
+                                        "/api/offers/public/**",
+                                        "/dev/**",
+                                        "/uploads/**",                          // ← profile pics
+                                        "/v3/api-docs/**", "/v3/api-docs.yaml",
+                                        "/swagger-ui/**", "/swagger-ui.html").permitAll()
                                 .requestMatchers("/work-session/**").authenticated()
                                 .anyRequest().authenticated())
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
