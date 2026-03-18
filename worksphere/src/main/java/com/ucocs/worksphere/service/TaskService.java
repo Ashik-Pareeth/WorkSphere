@@ -2,12 +2,15 @@ package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.dto.TaskCreateRequest;
 import com.ucocs.worksphere.dto.TaskStatusUpdate;
+import com.ucocs.worksphere.dto.hr.TicketCommentResponse;
 import com.ucocs.worksphere.entity.*;
 import com.ucocs.worksphere.enums.EvidenceStatus;
+import com.ucocs.worksphere.enums.GrievanceStatus;
 import com.ucocs.worksphere.enums.TaskPriority;
 import com.ucocs.worksphere.enums.TaskStatus;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.*;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -21,7 +24,9 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @Transactional
 public class TaskService {
@@ -31,15 +36,21 @@ public class TaskService {
     private final TaskEvidenceRepository taskEvidenceRepository;
     private final TaskHistoryRepository taskHistoryRepository;
     private final TaskCommentRepository taskCommentRepository;
+    private final GrievanceTicketRepository grievanceTicketRepository;
+    private final TicketCommentRepository ticketCommentRepository;
+
 
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
             TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
-            TaskCommentRepository taskCommentRepository) {
+            TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
+                       TicketCommentRepository ticketCommentRepository) {
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceRepository = taskEvidenceRepository;
         this.taskHistoryRepository = taskHistoryRepository;
         this.taskCommentRepository = taskCommentRepository;
+        this.grievanceTicketRepository = grievanceTicketRepository;
+        this.ticketCommentRepository = ticketCommentRepository;
     }
 
     public Task createTask(TaskCreateRequest request, UUID managerId) {
@@ -150,6 +161,29 @@ public class TaskService {
 
         Task savedTask = taskRepository.save(task);
 
+        // HELPDESK AUTO-SYNC LOGIC
+        if (savedTask.getSourceTicket() != null) {
+            GrievanceTicket ticket = savedTask.getSourceTicket();
+            boolean statusChanged = false;
+
+            if (newStatus == TaskStatus.COMPLETED) {
+                ticket.setStatus(GrievanceStatus.RESOLVED);
+                ticket.setResolution("Automatically resolved via linked Helpdesk Task completion.");
+                ticket.setResolvedAt(LocalDateTime.now());
+                statusChanged = true;
+            } else if (newStatus == TaskStatus.IN_REVIEW) {
+                ticket.setStatus(GrievanceStatus.PENDING_INFO);
+                statusChanged = true;
+            } else if (newStatus == TaskStatus.IN_PROGRESS) {
+                ticket.setStatus(GrievanceStatus.IN_PROGRESS);
+                statusChanged = true;
+            }
+
+            if (statusChanged) {
+                grievanceTicketRepository.save(ticket);
+                log.info("Auto-synced Ticket {} status to {}", ticket.getTicketNumber(), ticket.getStatus());
+            }
+        }
         String roleSnapshot = isAdmin ? "ROLE_ADMIN" : "ROLE_EMPLOYEE";
         logHistory(savedTask, currentUser, updateDTO.comment(), roleSnapshot, oldStatus, newStatus);
 
@@ -279,5 +313,31 @@ public class TaskService {
         employee.getRoles().forEach(r -> System.out.println("DB ROLE = " + r.getRoleName()));
         return employee.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().equals(roleName));
+    }
+
+    public Task getTaskById(UUID taskId) {
+        return  taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+    }
+
+    // TaskService.java
+    @Transactional(readOnly = true)
+    public List<TicketCommentResponse> getSourceTicketComments(UUID taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
+
+        if (task.getSourceTicket() == null) return List.of();
+
+        return ticketCommentRepository
+                .findByTicketAndIsInternalFalseOrderByCreatedAtAsc(task.getSourceTicket())
+                .stream()
+                .map(c -> TicketCommentResponse.builder()
+                        .id(c.getId())
+                        .content(c.getContent())
+                        .authorName(c.getAuthor().getFirstName() + " " + c.getAuthor().getLastName())
+                        .authorId(c.getAuthor().getId())
+                        .createdAt(c.getCreatedAt())
+                        .build())
+                .collect(Collectors.toList());
     }
 }

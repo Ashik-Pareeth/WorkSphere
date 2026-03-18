@@ -38,6 +38,9 @@ public class Employee extends BaseEntity {
     @Column(nullable = false)
     private double salary;
 
+    @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
+    private SalaryStructure salaryStructure;
+
     private String profilePic;
 
     @ManyToOne(fetch = FetchType.LAZY)

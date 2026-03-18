@@ -20,7 +20,8 @@ public record TaskResponseDTO(
         String flagReason,
         String assignerName,
         String assignedToName,
-        UUID assignedToId // <--- NEW: Add this!
+        UUID assignedToId,
+        UUID sourceTicketId
 ) {
     public static TaskResponseDTO fromEntity(Task task) {
         return new TaskResponseDTO(
@@ -39,7 +40,8 @@ public record TaskResponseDTO(
                 task.getFlagReason(),
                 task.getAssigner() != null ? task.getAssigner().getUserName() : null,
                 task.getAssignedTo() != null ? task.getAssignedTo().getUserName() : null,
-                task.getAssignedTo() != null ? task.getAssignedTo().getId() : null // <--- NEW: Pull the ID!
+                task.getAssignedTo() != null ? task.getAssignedTo().getId() : null,
+                task.getSourceTicket() != null ? task.getSourceTicket().getId() : null
         );
     }
 }

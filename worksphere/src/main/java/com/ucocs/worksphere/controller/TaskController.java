@@ -1,6 +1,7 @@
 package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.dto.*;
+import com.ucocs.worksphere.dto.hr.TicketCommentResponse;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TaskComment;
@@ -160,4 +161,11 @@ public class TaskController {
                 .map(TaskResponseDTO::fromEntity)
                 .collect(Collectors.toList());
     }
-}
+
+
+    @GetMapping("/{taskId}/source-ticket/comments")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<TicketCommentResponse>> getSourceTicketComments(
+            @PathVariable UUID taskId) {
+        return ResponseEntity.ok(taskService.getSourceTicketComments(taskId));
+    }}

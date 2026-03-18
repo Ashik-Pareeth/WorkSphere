@@ -3,10 +3,12 @@ package com.ucocs.worksphere.service;
 import com.ucocs.worksphere.dto.hr.*;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.GrievanceTicket;
+import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TicketComment;
 import com.ucocs.worksphere.enums.*;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.GrievanceTicketRepository;
+import com.ucocs.worksphere.repository.TaskRepository;
 import com.ucocs.worksphere.repository.TicketCommentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class GrievanceService {
         private final EmployeeRepository employeeRepository;
         private final AuditService auditService;
         private final NotificationService notificationService;
+        private final TaskRepository taskRepository; // <-- Add this
 
         /**
          * Submit a new grievance ticket.
@@ -95,31 +98,67 @@ public class GrievanceService {
                 Employee performer = resolveEmployee(performedByUsername);
 
                 GrievanceTicket ticket = ticketRepository.findById(ticketId)
-                                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+                        .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
 
-                employeeRepository.findById(assignToId)
-                                .orElseThrow(() -> new RuntimeException("Handler not found: " + assignToId));
+                Employee assignee = employeeRepository.findById(assignToId)
+                        .orElseThrow(() -> new RuntimeException("Handler not found: " + assignToId));
 
                 ticket.setAssignedTo(assignToId);
                 ticket.setStatus(GrievanceStatus.IN_PROGRESS);
 
                 GrievanceTicket saved = ticketRepository.save(ticket);
 
+               // TICKET-TO-TASK CONVERSION LOGIC
+
+                boolean isNormalEmployee = assignee.getRoles().stream()
+                        .noneMatch(r -> r.getRoleName().equals("ADMIN") || r.getRoleName().equals("HR"));
+
+                if (isNormalEmployee) {
+                        String taskCode   = "HD-" + ticket.getTicketNumber();
+                        String title      = "Helpdesk: " + ticket.getSubject();
+                        String description = "Original Ticket: " + ticket.getTicketNumber()
+                                + "\n\n**Issue Details:**\n" + ticket.getDescription();
+                        LocalDateTime defaultDueDate = LocalDateTime.now().plusDays(3);
+
+                        Task helpdeskTask = new Task(
+                                taskCode,
+                                title,
+                                description,
+                                performer,
+                                assignee,
+                                defaultDueDate,
+                                mapToTaskPriority(ticket.getPriority())
+                        );
+                        helpdeskTask.setRequiresEvidence(false);
+                        helpdeskTask.setSourceTicket(ticket);
+                        taskRepository.save(helpdeskTask);
+                        log.info("Converted Ticket {} into a Task for standard employee {}",
+                                ticket.getTicketNumber(), assignee.getUserName());
+                }
+                // ==========================================
+
                 auditService.log("GrievanceTicket", saved.getId(), AuditAction.ASSIGNED,
-                                performer.getId(), null, "Assigned to: " + assignToId);
+                        performer.getId(), null, "Assigned to: " + assignToId);
 
                 notificationService.send(
-                                ticket.getRaisedBy().getId(),
-                                NotificationType.TICKET_UPDATE,
-                                "Ticket " + ticket.getTicketNumber() + " is now being handled",
-                                "Your ticket has been assigned and is being worked on.",
-                                ticket.getId(),
-                                "GrievanceTicket");
+                        ticket.getRaisedBy().getId(),
+                        NotificationType.TICKET_UPDATE,
+                        "Ticket " + ticket.getTicketNumber() + " is now being handled",
+                        "Your ticket has been assigned and is being worked on.",
+                        ticket.getId(),
+                        "GrievanceTicket");
+
+                notificationService.send(
+                        assignee.getId(),
+                        NotificationType.TICKET_UPDATE,
+                        "New Helpdesk Task Assigned",
+                        "You have been assigned to handle ticket: " + ticket.getTicketNumber(),
+                        ticket.getId(), // This deep-links them to the ticket if they want to see original comments
+                        "GrievanceTicket");
 
                 log.info("Ticket {} assigned to {}", saved.getTicketNumber(), assignToId);
                 return toResponse(saved, true);
         }
-
         /**
          * Add a comment to a ticket thread.
          */
@@ -251,5 +290,14 @@ public class GrievanceService {
                                 .authorId(comment.getAuthor().getId())
                                 .createdAt(comment.getCreatedAt())
                                 .build();
+        }
+        private TaskPriority mapToTaskPriority(GrievancePriority gPriority) {
+                if (gPriority == null) return TaskPriority.LOW;
+
+            return switch (gPriority) {
+                case URGENT, HIGH -> TaskPriority.HIGH;
+                case MEDIUM -> TaskPriority.MEDIUM;
+                default -> TaskPriority.LOW;
+            };
         }
 }

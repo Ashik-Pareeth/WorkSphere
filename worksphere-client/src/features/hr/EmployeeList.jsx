@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { Card, CardContent } from '@/components/ui/card';
 import {
@@ -18,7 +18,74 @@ import {
   Save,
   Loader2,
   AlertTriangle,
+  Search,
+  SlidersHorizontal,
+  Lock,
 } from 'lucide-react';
+
+/* ═══════════════════════════════════════════════════════════════
+   ROLE HIERARCHY
+═══════════════════════════════════════════════════════════════ */
+const ROLE_HIERARCHY = {
+  SUPER_ADMIN: 4,
+  HR: 3,
+  MANAGER: 2,
+  EMPLOYEE: 1,
+  AUDITOR: 0,
+};
+
+/**
+ * Returns the single highest-ranked role name from a roles array.
+ * Roles can be either strings or { roleName } objects.
+ */
+function getHighestRole(roles = []) {
+  const names = roles.map((r) => (typeof r === 'string' ? r : r.roleName));
+  return names.reduce((best, r) => {
+    if (!best) return r;
+    return (ROLE_HIERARCHY[r] ?? -1) > (ROLE_HIERARCHY[best] ?? -1) ? r : best;
+  }, null);
+}
+
+/**
+ * Convenience flags derived from a roles array.
+ */
+const buildRoleFlags = (roles = []) => ({
+  isGlobalAdmin: roles.includes('SUPER_ADMIN'),
+  isHR: roles.includes('HR'),
+  isManager: roles.includes('MANAGER'),
+  isEmployee: roles.includes('EMPLOYEE'),
+  isAuditor: roles.includes('AUDITOR'),
+});
+
+/**
+ * Read the viewer's role from localStorage and build their flags + rank.
+ */
+function useViewerRole() {
+  const rawRole = localStorage.getItem('role') ?? 'EMPLOYEE';
+  const rank = ROLE_HIERARCHY[rawRole] ?? 1;
+  const flags = buildRoleFlags([rawRole]);
+  return { rawRole, rank, flags };
+}
+
+/**
+ * Returns true if the viewer can edit/manage the target employee.
+ * The viewer must outrank (strictly greater) the target's highest role.
+ */
+function canManage(viewerRank, targetRoles = []) {
+  const targetHighest = getHighestRole(targetRoles);
+  const targetRank = ROLE_HIERARCHY[targetHighest] ?? 1;
+  return viewerRank > targetRank;
+}
+
+/**
+ * Filter the assignable roles to only those the viewer can grant
+ * (viewer rank must be strictly greater than the role's rank).
+ */
+function assignableRoles(allRoles = [], viewerRank) {
+  return allRoles.filter(
+    (r) => (ROLE_HIERARCHY[r.roleName] ?? -1) < viewerRank
+  );
+}
 
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
@@ -181,6 +248,21 @@ function Toast({ msg, type }) {
   );
 }
 
+/** Shown when the viewer lacks permission to perform an action */
+function PermissionBanner({ message }) {
+  return (
+    <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
+      <div className="p-3 rounded-full bg-gray-100">
+        <Lock size={20} className="text-gray-400" />
+      </div>
+      <p className="text-sm font-semibold text-gray-500">{message}</p>
+      <p className="text-xs text-gray-400">
+        You do not have sufficient permissions to perform this action.
+      </p>
+    </div>
+  );
+}
+
 /* ═══════════════════════════════════════════════════════════════
    TAB: VIEW
 ═══════════════════════════════════════════════════════════════ */
@@ -214,9 +296,15 @@ function ViewTab({ emp }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: EDIT
+   TAB: EDIT  (role-hierarchy aware)
 ═══════════════════════════════════════════════════════════════ */
-function EditTab({ emp, onSaved }) {
+function EditTab({ emp, onSaved, viewerRank }) {
+  const allowed = canManage(viewerRank, emp.roles);
+  if (!allowed)
+    return (
+      <PermissionBanner message="You cannot edit this employee's profile." />
+    );
+
   const [form, setForm] = useState({
     firstName: emp.firstName ?? '',
     lastName: emp.lastName ?? '',
@@ -242,8 +330,8 @@ function EditTab({ emp, onSaved }) {
   useEffect(() => {
     Promise.all([
       axiosInstance.get('/departments'),
-      axiosInstance.get('/job-positions'),
-      axiosInstance.get('/work-schedules'),
+      axiosInstance.get('/jobPositions'),
+      axiosInstance.get('/api/work-schedules'),
       axiosInstance.get('/employees'),
       axiosInstance.get('/roles'),
     ])
@@ -252,12 +340,13 @@ function EditTab({ emp, onSaved }) {
         setPositions(p.data);
         setSchedules(s.data);
         setManagers(e.data.filter((x) => x.id !== emp.id));
-        setAllRoles(r.data);
+        // Only expose roles the viewer is allowed to assign
+        setAllRoles(assignableRoles(r.data, viewerRank));
       })
       .catch(() =>
         setToast({ msg: 'Failed to load form data', type: 'error' })
       );
-  }, [emp.id]);
+  }, [emp.id, viewerRank]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
 
@@ -417,27 +506,38 @@ function EditTab({ emp, onSaved }) {
       </div>
 
       <div>
-        <FieldLabel>Roles</FieldLabel>
-        <div className="flex flex-wrap gap-2">
-          {allRoles.map((r) => {
-            const active = form.roles.includes(r.id);
-            return (
-              <button
-                key={r.id}
-                type="button"
-                onClick={() => toggleRole(r.id)}
-                className={`px-3 py-1 rounded-full text-xs font-semibold ring-1 transition ${
-                  active
-                    ? (ROLE_COLOR[r.roleName] ??
-                      'bg-blue-100 text-blue-700 ring-blue-200')
-                    : 'bg-gray-100 text-gray-400 ring-gray-200 hover:ring-gray-300'
-                }`}
-              >
-                {r.roleName}
-              </button>
-            );
-          })}
-        </div>
+        <FieldLabel>
+          Roles
+          <span className="ml-2 text-[10px] normal-case font-normal text-gray-400">
+            (only roles below your level)
+          </span>
+        </FieldLabel>
+        {allRoles.length === 0 ? (
+          <p className="text-xs text-gray-400 italic">
+            No assignable roles at your permission level.
+          </p>
+        ) : (
+          <div className="flex flex-wrap gap-2">
+            {allRoles.map((r) => {
+              const active = form.roles.includes(r.id);
+              return (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => toggleRole(r.id)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ring-1 transition ${
+                    active
+                      ? (ROLE_COLOR[r.roleName] ??
+                        'bg-blue-100 text-blue-700 ring-blue-200')
+                      : 'bg-gray-100 text-gray-400 ring-gray-200 hover:ring-gray-300'
+                  }`}
+                >
+                  {r.roleName}
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       <SaveBtn loading={loading} color="blue" />
@@ -446,9 +546,13 @@ function EditTab({ emp, onSaved }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: PROMOTE
+   TAB: PROMOTE  (role-hierarchy aware)
 ═══════════════════════════════════════════════════════════════ */
-function PromoteTab({ emp, onSaved }) {
+function PromoteTab({ emp, onSaved, viewerRank }) {
+  const allowed = canManage(viewerRank, emp.roles);
+  if (!allowed)
+    return <PermissionBanner message="You cannot promote this employee." />;
+
   const [form, setForm] = useState({
     jobPositionId: emp.jobPositionId ?? '',
     salary: emp.salary ?? '',
@@ -461,7 +565,7 @@ function PromoteTab({ emp, onSaved }) {
 
   useEffect(() => {
     Promise.all([
-      axiosInstance.get('/job-positions'),
+      axiosInstance.get('/jobPositions'),
       axiosInstance.get('/employees'),
     ])
       .then(([p, e]) => {
@@ -573,9 +677,15 @@ function PromoteTab({ emp, onSaved }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: STATUS
+   TAB: STATUS  (role-hierarchy aware)
 ═══════════════════════════════════════════════════════════════ */
-function StatusTab({ emp, onSaved }) {
+function StatusTab({ emp, onSaved, viewerRank }) {
+  const allowed = canManage(viewerRank, emp.roles);
+  if (!allowed)
+    return (
+      <PermissionBanner message="You cannot change this employee's status." />
+    );
+
   const [status, setStatus] = useState(emp.employeeStatus);
   const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState(null);
@@ -661,7 +771,7 @@ const TABS = [
   { key: 'status', label: 'Status', Icon: ShieldOff },
 ];
 
-function EmployeeModal({ emp: initialEmp, onClose, onUpdated }) {
+function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
   const [emp, setEmp] = useState(initialEmp);
   const [tab, setTab] = useState('view');
   const [refreshing, setRefreshing] = useState(false);
@@ -671,13 +781,17 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated }) {
     ? `${API_BASE}/uploads/profilePhoto/${emp.profilePic}`
     : null;
 
+  // Determine if the viewer can manage this employee at all
+  const canEdit = canManage(viewerRank, emp.roles);
+
   const handleSaved = useCallback(async () => {
     setRefreshing(true);
     try {
       const res = await axiosInstance.get(`/employees/${emp.id}`);
       setEmp(res.data);
       onUpdated(res.data);
-    } catch (_) {
+    } catch (err) {
+      console.error('Error fetching updated employee data:', err);
     } finally {
       setRefreshing(false);
     }
@@ -756,6 +870,13 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated }) {
             {emp.employeeStatus}
           </span>
 
+          {/* Read-only badge if viewer cannot manage */}
+          {!canEdit && (
+            <span className="absolute top-3 left-28 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/20 text-white ring-1 ring-white/30">
+              <Lock size={10} /> Read-only
+            </span>
+          )}
+
           {/* Avatar */}
           <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
             {profileSrc ? (
@@ -798,20 +919,27 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated }) {
 
         {/* Tab bar */}
         <div className="flex border-b border-gray-100 px-4 gap-0.5">
-          {TABS.map(({ key, label, Icon }) => (
-            <button
-              key={key}
-              onClick={() => setTab(key)}
-              className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px ${
-                tab === key
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-400 hover:text-gray-600'
-              }`}
-            >
-              <Icon size={13} />
-              {label}
-            </button>
-          ))}
+          {TABS.map(({ key, label, Icon }) => {
+            const isActionTab = key !== 'view';
+            const dimmed = isActionTab && !canEdit;
+            return (
+              <button
+                key={key}
+                onClick={() => setTab(key)}
+                className={`flex items-center gap-1.5 px-3 py-2.5 text-xs font-semibold rounded-t-lg transition border-b-2 -mb-px ${
+                  tab === key
+                    ? 'border-blue-500 text-blue-600'
+                    : dimmed
+                      ? 'border-transparent text-gray-300 cursor-default'
+                      : 'border-transparent text-gray-400 hover:text-gray-600'
+                }`}
+              >
+                <Icon size={13} />
+                {label}
+                {dimmed && <Lock size={10} className="ml-0.5 opacity-60" />}
+              </button>
+            );
+          })}
           {refreshing && (
             <div className="ml-auto flex items-center gap-1 text-[11px] text-gray-400 pr-1">
               <Loader2 size={11} className="animate-spin" /> Refreshing…
@@ -822,11 +950,124 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated }) {
         {/* Tab body */}
         <div className="px-6 py-5">
           {tab === 'view' && <ViewTab emp={emp} />}
-          {tab === 'edit' && <EditTab emp={emp} onSaved={handleSaved} />}
-          {tab === 'promote' && <PromoteTab emp={emp} onSaved={handleSaved} />}
-          {tab === 'status' && <StatusTab emp={emp} onSaved={handleSaved} />}
+          {tab === 'edit' && (
+            <EditTab emp={emp} onSaved={handleSaved} viewerRank={viewerRank} />
+          )}
+          {tab === 'promote' && (
+            <PromoteTab
+              emp={emp}
+              onSaved={handleSaved}
+              viewerRank={viewerRank}
+            />
+          )}
+          {tab === 'status' && (
+            <StatusTab
+              emp={emp}
+              onSaved={handleSaved}
+              viewerRank={viewerRank}
+            />
+          )}
         </div>
       </div>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   SEARCH + FILTER BAR
+═══════════════════════════════════════════════════════════════ */
+function SearchFilterBar({
+  search,
+  setSearch,
+  department,
+  setDepartment,
+  jobTitle,
+  setJobTitle,
+  departments,
+  jobTitles,
+}) {
+  const [open, setOpen] = useState(false);
+  const hasFilter = department || jobTitle;
+  const activeCount = [department, jobTitle].filter(Boolean).length;
+
+  return (
+    <div className="flex flex-col sm:flex-row gap-3">
+      {/* Search input */}
+      <div className="relative flex-1">
+        <Search
+          size={15}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+        <input
+          type="text"
+          placeholder="Search by name, email, department…"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-9 pr-8 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm"
+        />
+        {search && (
+          <button
+            onClick={() => setSearch('')}
+            className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-300 hover:text-gray-500 transition"
+          >
+            <X size={13} />
+          </button>
+        )}
+      </div>
+
+      {/* Department dropdown (always visible) */}
+      <div className="relative w-full sm:w-48">
+        <Building2
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+        <select
+          value={department}
+          onChange={(e) => setDepartment(e.target.value)}
+          className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none"
+        >
+          <option value="">All Departments</option>
+          {departments.map((d) => (
+            <option key={d} value={d}>
+              {d}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Job Title dropdown (always visible) */}
+      <div className="relative w-full sm:w-48">
+        <User
+          size={14}
+          className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 pointer-events-none"
+        />
+        <select
+          value={jobTitle}
+          onChange={(e) => setJobTitle(e.target.value)}
+          className="w-full pl-8 pr-3 py-2.5 rounded-xl border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition shadow-sm appearance-none"
+        >
+          <option value="">All Job Titles</option>
+          {jobTitles.map((t) => (
+            <option key={t} value={t}>
+              {t}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Clear filters button */}
+      {hasFilter && (
+        <button
+          onClick={() => {
+            setDepartment('');
+            setJobTitle('');
+          }}
+          className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition shadow-sm whitespace-nowrap"
+        >
+          <X size={12} />
+          Clear ({activeCount})
+        </button>
+      )}
     </div>
   );
 }
@@ -839,10 +1080,29 @@ const EmployeeList = () => {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
 
+  // Search & filter state
+  const [search, setSearch] = useState('');
+  const [department, setDepartment] = useState('');
+  const [jobTitle, setJobTitle] = useState('');
+
+  // Viewer's role from localStorage
+  const { rawRole, rank: viewerRank } = useViewerRole();
+
   useEffect(() => {
     axiosInstance
       .get('/employees')
-      .then((res) => setEmployees(res.data))
+      .then((res) => {
+        const data = res.data;
+        setEmployees(data);
+
+        // Sync the highest role to localStorage based on own employee record
+        const myId = localStorage.getItem('employeeId');
+        const me = data.find((e) => e.id === myId);
+        if (me?.roles) {
+          const highest = getHighestRole(me.roles);
+          if (highest) localStorage.setItem('role', highest);
+        }
+      })
       .catch((err) => console.error('Failed to load employees', err))
       .finally(() => setLoading(false));
   }, []);
@@ -854,6 +1114,37 @@ const EmployeeList = () => {
     setSelected(updated);
   }, []);
 
+  // Derive unique filter options from employee data
+  const departments = useMemo(
+    () =>
+      [
+        ...new Set(employees.map((e) => e.departmentName).filter(Boolean)),
+      ].sort(),
+    [employees]
+  );
+  const jobTitles = useMemo(
+    () => [...new Set(employees.map((e) => e.jobTitle).filter(Boolean))].sort(),
+    [employees]
+  );
+
+  // Filtered list
+  const filtered = useMemo(() => {
+    const q = search.toLowerCase();
+    return employees.filter((emp) => {
+      const matchesSearch =
+        !q ||
+        `${emp.firstName} ${emp.lastName}`.toLowerCase().includes(q) ||
+        emp.email?.toLowerCase().includes(q) ||
+        emp.departmentName?.toLowerCase().includes(q) ||
+        emp.jobTitle?.toLowerCase().includes(q);
+
+      const matchesDept = !department || emp.departmentName === department;
+      const matchesTitle = !jobTitle || emp.jobTitle === jobTitle;
+
+      return matchesSearch && matchesDept && matchesTitle;
+    });
+  }, [employees, search, department, jobTitle]);
+
   if (loading)
     return (
       <div className="p-8 text-center text-gray-500">Loading directory…</div>
@@ -861,13 +1152,39 @@ const EmployeeList = () => {
 
   return (
     <>
-      <div className="p-6 space-y-6 max-w-7xl mx-auto">
-        <div className="flex items-center gap-2">
-          <Users className="h-8 w-8 text-blue-500" />
-          <h1 className="text-3xl font-bold text-gray-900">
-            Employee Directory
-          </h1>
+      <div className="p-6 space-y-5 max-w-7xl mx-auto">
+        {/* Page header */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Users className="h-8 w-8 text-blue-500" />
+            <h1 className="text-3xl font-bold text-gray-900">
+              Employee Directory
+            </h1>
+          </div>
+          {/* Current viewer's role badge */}
+          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 ring-1 ring-gray-200">
+            {rawRole.replace('_', ' ')}
+          </span>
         </div>
+
+        {/* Search + filter bar */}
+        <SearchFilterBar
+          search={search}
+          setSearch={setSearch}
+          department={department}
+          setDepartment={setDepartment}
+          jobTitle={jobTitle}
+          setJobTitle={setJobTitle}
+          departments={departments}
+          jobTitles={jobTitles}
+        />
+
+        {/* Result count */}
+        <p className="text-xs text-gray-400">
+          {filtered.length === employees.length
+            ? `${employees.length} employees`
+            : `${filtered.length} of ${employees.length} employees`}
+        </p>
 
         <Card>
           <CardContent className="p-0">
@@ -884,56 +1201,77 @@ const EmployeeList = () => {
                   </tr>
                 </thead>
                 <tbody className="divide-y">
-                  {employees.map((emp) => (
-                    <tr
-                      key={emp.id}
-                      className="hover:bg-blue-50/60 cursor-pointer transition-colors group"
-                      onClick={() => setSelected(emp)}
-                    >
-                      <td className="px-6 py-4 font-medium">
-                        <div className="flex items-center gap-3">
-                          {emp.profilePic ? (
-                            <img
-                              src={`${API_BASE}/uploads/profilePhoto/${emp.profilePic}`}
-                              alt={emp.firstName}
-                              className="w-8 h-8 rounded-lg object-cover shrink-0"
-                            />
-                          ) : (
-                            <div
-                              className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getGradient(emp.id)} flex items-center justify-center shrink-0`}
-                            >
-                              <span className="text-white text-xs font-bold">
-                                {getInitials(emp.firstName, emp.lastName)}
-                              </span>
-                            </div>
-                          )}
-                          <span>
-                            {emp.firstName} {emp.lastName}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">{emp.email}</td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {emp.departmentName || '—'}
-                      </td>
-                      <td className="px-6 py-4 text-gray-600">
-                        {emp.jobTitle || '—'}
-                      </td>
-                      <td className="px-6 py-4">
-                        <span
-                          className={`px-2 py-1 rounded-full text-xs font-medium ring-1 ${STATUS_STYLE[emp.employeeStatus] ?? 'bg-gray-100 text-gray-500 ring-gray-200'}`}
-                        >
-                          {emp.employeeStatus}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-right">
-                        <ChevronRight
-                          size={16}
-                          className="text-gray-300 group-hover:text-blue-500 transition-colors ml-auto"
-                        />
+                  {filtered.length === 0 && (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        className="px-6 py-12 text-center text-gray-400 text-sm"
+                      >
+                        No employees match your search or filters.
                       </td>
                     </tr>
-                  ))}
+                  )}
+                  {filtered.map((emp) => {
+                    const manageable = canManage(viewerRank, emp.roles);
+                    return (
+                      <tr
+                        key={emp.id}
+                        className="hover:bg-blue-50/60 cursor-pointer transition-colors group"
+                        onClick={() => setSelected(emp)}
+                      >
+                        <td className="px-6 py-4 font-medium">
+                          <div className="flex items-center gap-3">
+                            {emp.profilePic ? (
+                              <img
+                                src={`${API_BASE}/uploads/profilePhoto/${emp.profilePic}`}
+                                alt={emp.firstName}
+                                className="w-8 h-8 rounded-lg object-cover shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className={`w-8 h-8 rounded-lg bg-gradient-to-br ${getGradient(emp.id)} flex items-center justify-center shrink-0`}
+                              >
+                                <span className="text-white text-xs font-bold">
+                                  {getInitials(emp.firstName, emp.lastName)}
+                                </span>
+                              </div>
+                            )}
+                            <span>
+                              {emp.firstName} {emp.lastName}
+                            </span>
+                            {/* Small lock on rows the viewer cannot manage */}
+                            {!manageable && (
+                              <Lock
+                                size={11}
+                                className="text-gray-300 ml-0.5 shrink-0"
+                                title="You cannot manage this employee"
+                              />
+                            )}
+                          </div>
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">{emp.email}</td>
+                        <td className="px-6 py-4 text-gray-600">
+                          {emp.departmentName || '—'}
+                        </td>
+                        <td className="px-6 py-4 text-gray-600">
+                          {emp.jobTitle || '—'}
+                        </td>
+                        <td className="px-6 py-4">
+                          <span
+                            className={`px-2 py-1 rounded-full text-xs font-medium ring-1 ${STATUS_STYLE[emp.employeeStatus] ?? 'bg-gray-100 text-gray-500 ring-gray-200'}`}
+                          >
+                            {emp.employeeStatus}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <ChevronRight
+                            size={16}
+                            className="text-gray-300 group-hover:text-blue-500 transition-colors ml-auto"
+                          />
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
@@ -946,6 +1284,7 @@ const EmployeeList = () => {
           emp={selected}
           onClose={() => setSelected(null)}
           onUpdated={handleUpdated}
+          viewerRank={viewerRank}
         />
       )}
     </>

@@ -22,4 +22,6 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
 
     // AttendanceRepository.java
     @Query("SELECT a FROM Attendance a WHERE a.employee = :employee AND a.clockOut IS NULL ORDER BY a.clockIn DESC")
-    Optional<Attendance> findLatestOpenSession(@Param("employee") Employee employee);}
+    List<Attendance> findOpenSessionsForEmployee(@Param("employee") Employee employee);
+
+}

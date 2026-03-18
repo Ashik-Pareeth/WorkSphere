@@ -85,9 +85,11 @@ public class AttendanceService {
         Employee employee = getEmployeeByUsername(username);
 
         // Find latest open session instead of today's date
-        Attendance attendance = attendanceRepository.findLatestOpenSession(employee)
-                .orElseThrow(() -> new IllegalStateException("You cannot clock out because you haven't clocked in."));
-
+        List<Attendance> openSessions = attendanceRepository.findOpenSessionsForEmployee(employee);
+        if (openSessions.isEmpty()) {
+            throw new IllegalStateException("You cannot clock out because you haven't clocked in.");
+        }
+        Attendance attendance = openSessions.get(0); // Most recent open session
         if (attendance.getClockOut() != null) {
             throw new IllegalStateException("You have already clocked out.");
         }
