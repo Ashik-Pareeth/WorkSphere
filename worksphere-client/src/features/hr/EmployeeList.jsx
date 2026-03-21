@@ -21,6 +21,7 @@ import {
   Search,
   SlidersHorizontal,
   Lock,
+  ClipboardList,
 } from 'lucide-react';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -762,6 +763,117 @@ function StatusTab({ emp, onSaved, viewerRank }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
+   TAB: ATTENDANCE LOG
+═══════════════════════════════════════════════════════════════ */
+const DAILY_STATUS_STYLE = {
+  PRESENT: 'bg-emerald-100 text-emerald-700',
+  LATE: 'bg-amber-100 text-amber-700',
+  ABSENT: 'bg-red-100 text-red-700',
+  HALF_DAY: 'bg-blue-100 text-blue-700',
+};
+
+function AttendanceTab({ emp, viewerRank }) {
+  const canView = viewerRank >= 2; // MANAGER and above
+  if (!canView)
+    return (
+      <PermissionBanner message="You cannot view this employee's attendance log." />
+    );
+
+  const [records, setRecords] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    axiosInstance
+      .get(`/attendance/employee/${emp.id}`)
+      .then((res) => setRecords(res.data))
+      .catch(() => setError('Failed to load attendance records.'))
+      .finally(() => setLoading(false));
+  }, [emp.id]);
+
+  const fmt = (dt) => {
+    if (!dt) return '—';
+    return new Date(dt).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+  };
+
+  if (loading)
+    return (
+      <div className="flex items-center justify-center py-10 gap-2 text-gray-400 text-sm">
+        <Loader2 size={16} className="animate-spin" /> Loading attendance…
+      </div>
+    );
+
+  if (error)
+    return (
+      <div className="flex items-center gap-2 text-red-500 text-sm py-4">
+        <AlertTriangle size={14} /> {error}
+      </div>
+    );
+
+  if (records.length === 0)
+    return (
+      <p className="text-center text-gray-400 text-sm py-8 italic">
+        No attendance records found.
+      </p>
+    );
+
+  return (
+    <div className="overflow-x-auto -mx-1">
+      <table className="w-full text-xs border-collapse">
+        <thead>
+          <tr className="bg-gray-50 text-gray-500 uppercase tracking-wider">
+            <th className="px-2 py-2 text-left font-semibold">Date</th>
+            <th className="px-2 py-2 text-left font-semibold">In</th>
+            <th className="px-2 py-2 text-left font-semibold">Out</th>
+            <th className="px-2 py-2 text-left font-semibold">Mins</th>
+            <th className="px-2 py-2 text-left font-semibold">Status</th>
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {records.map((r) => (
+            <tr key={r.id} className="hover:bg-gray-50">
+              <td className="px-2 py-2 font-medium text-gray-700">{r.date}</td>
+              <td className="px-2 py-2 text-gray-600">{fmt(r.clockIn)}</td>
+              <td className="px-2 py-2 text-gray-600">{fmt(r.clockOut)}</td>
+              <td className="px-2 py-2 text-gray-600">
+                {r.totalWorkMinutes ?? '—'}
+                {r.isManuallyAdjusted && (
+                  <span
+                    className="ml-1 text-[9px] text-orange-500 font-bold"
+                    title="Manually adjusted"
+                  >
+                    ✎
+                  </span>
+                )}
+              </td>
+              <td className="px-2 py-2">
+                {r.dailyStatus ? (
+                  <span
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
+                      DAILY_STATUS_STYLE[r.dailyStatus] ??
+                      'bg-gray-100 text-gray-500'
+                    }`}
+                  >
+                    {r.dailyStatus}
+                  </span>
+                ) : (
+                  '—'
+                )}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════
    MAIN MODAL
 ═══════════════════════════════════════════════════════════════ */
 const TABS = [
@@ -769,6 +881,7 @@ const TABS = [
   { key: 'edit', label: 'Edit', Icon: Pencil },
   { key: 'promote', label: 'Promote', Icon: TrendingUp },
   { key: 'status', label: 'Status', Icon: ShieldOff },
+  { key: 'attendance', label: 'Attendance', Icon: ClipboardList },
 ];
 
 function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
@@ -966,6 +1079,9 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
               onSaved={handleSaved}
               viewerRank={viewerRank}
             />
+          )}
+          {tab === 'attendance' && (
+            <AttendanceTab emp={emp} viewerRank={viewerRank} />
           )}
         </div>
       </div>

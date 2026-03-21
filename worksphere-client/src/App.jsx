@@ -35,6 +35,7 @@ import PayrollDashboard from './features/hr/PayrollDashboard';
 import MyCompensation from './features/hr/MyCompensation';
 import EmployeeList from './features/hr/EmployeeList';
 import Unauthorized from './pages/Unauthorized';
+import MyAttendanceLog from './features/attendance/MyAttendanceLog';
 
 // Hiring Pipeline
 import JobOpeningsList from './features/hiring/JobOpeningsList';
@@ -125,6 +126,7 @@ function App() {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/profile" element={<Profile />} />
               <Route path="/tasks" element={<TaskBoard />} />
+              <Route path="/attendance-log" element={<MyAttendanceLog />} />
               <Route path="/leave" element={<LeaveRequestPage />} />
               <Route path="/my-assets" element={<MyAssets />} />
               <Route path="/helpdesk" element={<Helpdesk />} />

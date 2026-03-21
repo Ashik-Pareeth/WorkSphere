@@ -70,6 +70,9 @@ export default function NavBar() {
                 <NavLink to="/tasks" className={linkClass}>
                   My Tasks
                 </NavLink>
+                <NavLink to="/attendance-log" className={linkClass}>
+                  Attendance
+                </NavLink>
                 <NavLink to="/leave" className={linkClass}>
                   Leave
                 </NavLink>

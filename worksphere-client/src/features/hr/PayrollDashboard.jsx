@@ -55,7 +55,7 @@ const PayrollDashboard = () => {
       const res = await fetchPayrollSummary(month, year);
       setRecords(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load payroll summary");
+      setError(err.response?.data?.message || err.response?.data?.error || "Failed to load payroll summary");
     } finally {
       setLoading(false);
     }
@@ -70,7 +70,7 @@ const PayrollDashboard = () => {
       setSuccess(`Generated ${res.data.length} payroll records.`);
       setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to generate payroll");
+      setError(err.response?.data?.message || err.response?.data?.error || "Failed to generate payroll");
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ const PayrollDashboard = () => {
       setTimeout(() => setSuccess(null), 4000);
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to process payroll");
+      setError(err.response?.data?.message || err.response?.data?.error || "Failed to process payroll");
     }
   };
 
@@ -94,7 +94,7 @@ const PayrollDashboard = () => {
       setTimeout(() => setSuccess(null), 4000);
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to mark as paid");
+      setError(err.response?.data?.message || err.response?.data?.error || "Failed to mark as paid");
     }
   };
 
@@ -144,7 +144,7 @@ const PayrollDashboard = () => {
       setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       setError(
-        err.response?.data?.message || "Failed to save salary structure"
+        err.response?.data?.message || err.response?.data?.error || "Failed to save salary structure"
       );
     }
   };

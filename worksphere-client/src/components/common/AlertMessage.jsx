@@ -29,8 +29,12 @@ const AlertMessage = ({ error, success, type = 'error', onClose }) => {
       );
     }
     // Case B: Standard API Error (e.g. "User not found")
+    // Case B: Standard API Error
     else {
-      messageContent = data.message || 'An unexpected error occurred.';
+      messageContent =
+        data.message ||
+        data.error ||
+        (typeof data === 'string' ? data : 'An unexpected error occurred.');
     }
   } else {
     // Fallback for network errors (server down)

@@ -17,23 +17,18 @@ axiosInstance.interceptors.response.use(
   (error) => {
     if (error.response) {
       const status = error.response.status;
-      const url = error.config?.url || '';
 
-      const isPublicOfferRequest =
-        url.includes('/api/offers') && url.includes('token');
-
-      // 🔐 Handle 401 globally (valid case)
+      // 🔐 Handle 401 globally — session expired, force re-login
       if (status === 401) {
         console.warn('Session expired. Redirecting to login...');
         localStorage.clear();
         window.location.href = '/';
       }
 
-      // 🚨 Handle 403 ONLY for protected routes
-      else if (status === 403 && !isPublicOfferRequest) {
-        console.warn('Forbidden access. Redirecting to Unauthorized...');
-        window.location.href = '/unauthorized';
-      }
+      // ⚠️  403 is intentionally NOT redirected here.
+      // Components receive the full error object so they can display
+      // the specific backend message (e.g. "Managers can only modify
+      // timesheets for employees within their own department.").
     }
 
     return Promise.reject(error);

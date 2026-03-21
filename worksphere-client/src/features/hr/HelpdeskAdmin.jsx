@@ -53,7 +53,7 @@ const HelpdeskAdmin = () => {
       const res = await fetchAllTickets();
       setTickets(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load tickets');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load tickets');
     } finally {
       setLoading(false);
     }
@@ -89,7 +89,7 @@ const HelpdeskAdmin = () => {
         if (updated) setSelectedTicket(updated);
       }
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to assign ticket');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to assign ticket');
     }
   };
 
@@ -101,7 +101,7 @@ const HelpdeskAdmin = () => {
       setSelectedTicket(null);
       loadTickets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to resolve ticket');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to resolve ticket');
     }
   };
 
@@ -117,7 +117,7 @@ const HelpdeskAdmin = () => {
       const updated = res.data.find((t) => t.id === ticketId);
       if (updated) setSelectedTicket(updated);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add comment');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to add comment');
     }
   };
 

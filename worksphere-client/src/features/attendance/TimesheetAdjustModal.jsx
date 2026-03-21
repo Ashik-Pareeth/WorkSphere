@@ -44,6 +44,7 @@ const TimesheetAdjustModal = ({
     } catch (err) {
       setError(
         err.response?.data?.message ||
+          err.response?.data?.error ||
           'Failed to update timesheet. Please try again.'
       );
     } finally {
