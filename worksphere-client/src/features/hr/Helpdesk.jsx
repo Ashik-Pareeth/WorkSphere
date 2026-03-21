@@ -41,7 +41,7 @@ const Helpdesk = () => {
       const res = await fetchMyTickets();
       setTickets(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load tickets');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load tickets');
     } finally {
       setLoading(false);
     }
@@ -57,7 +57,7 @@ const Helpdesk = () => {
       setNewTicket({ category: 'IT_SUPPORT', priority: 'MEDIUM', subject: '', description: '' });
       loadTickets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to submit ticket');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to submit ticket');
     }
   };
 
@@ -71,7 +71,7 @@ const Helpdesk = () => {
       const updated = res.data.find(t => t.id === ticketId);
       if (updated) setSelectedTicket(updated);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to add comment');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to add comment');
     }
   };
 

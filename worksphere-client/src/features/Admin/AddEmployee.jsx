@@ -25,6 +25,7 @@ function AddEmployee() {
   const [departmentId, setDepartmentId] = useState('');
   const [jobPositionId, setJobPositionId] = useState('');
   const [managerId, setManagerId] = useState('');
+  const [workScheduleId, setWorkScheduleId] = useState('');
 
   // EDIT STATE (Null = Create Mode)
   const [editingId, setEditingId] = useState(null);
@@ -34,6 +35,7 @@ function AddEmployee() {
   const [availableRoles, setAvailableRoles] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
+  const [schedules, setSchedules] = useState([]);
 
   // --- UI STATE ---
   const [loading, setLoading] = useState(false);
@@ -44,16 +46,18 @@ function AddEmployee() {
   const fetchAllData = useCallback(async () => {
     try {
       setLoading(true);
-      const [empRes, roleRes, depRes, posRes] = await Promise.all([
+      const [empRes, roleRes, depRes, posRes, schedRes] = await Promise.all([
         axiosInstance.get('/employees'),
         axiosInstance.get('/roles'),
         axiosInstance.get('/departments'),
         axiosInstance.get('/jobPositions'),
+        axiosInstance.get('/api/work-schedules'),
       ]);
 
       setEmployees(empRes.data);
       setDepartments(depRes.data);
       setPositions(posRes.data);
+      setSchedules(schedRes.data);
 
       // Filter roles securely based on logged-in user's authority
       let fetchedRoles = roleRes.data;
@@ -89,6 +93,7 @@ function AddEmployee() {
     setDepartmentId('');
     setJobPositionId('');
     setManagerId('');
+    setWorkScheduleId('');
 
     setEditingId(null);
     setSuccess(null);
@@ -142,6 +147,7 @@ function AddEmployee() {
     setDepartmentId(emp.departmentId || '');
     setJobPositionId(emp.jobPositionId || '');
     setManagerId(emp.managerId || '');
+    setWorkScheduleId(emp.workScheduleId || '');
 
     // Map the existing roles of the employee into our array
     const empRoleIds = emp.roles ? emp.roles.map((r) => r.id) : [];
@@ -164,10 +170,7 @@ function AddEmployee() {
       setSuccess('Employee deleted successfully.');
       fetchAllData(); // Refresh list
     } catch (err) {
-      setError(
-        'Failed to delete employee. They might be assigned to active tasks.',
-        err
-      );
+      setError(err);
     }
   };
 
@@ -185,6 +188,7 @@ function AddEmployee() {
       Id: departmentId, // Map to department Id
       jobPositionId: jobPositionId,
       managerId: managerId || null,
+      workScheduleId: workScheduleId || null,
     };
 
     // Only attach password if user typed one
@@ -206,7 +210,7 @@ function AddEmployee() {
       fetchAllData();
     } catch (err) {
       console.error(err);
-      setError(err.response?.data?.message || 'Operation failed.');
+      setError(err);
     }
   };
 
@@ -375,6 +379,23 @@ function AddEmployee() {
                       {mgr.firstName} {mgr.lastName}
                     </option>
                   ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium mb-1">
+                Work Schedule
+              </label>
+              <select
+                className={inputStyle}
+                value={workScheduleId}
+                onChange={(e) => setWorkScheduleId(e.target.value)}
+              >
+                <option value="">-- No Schedule --</option>
+                {schedules.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.scheduleName}
+                  </option>
+                ))}
               </select>
             </div>
           </div>

@@ -43,7 +43,7 @@ const AssetDirectory = () => {
       const res = await fetchAllAssets(type);
       setAssets(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to load assets');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to load assets');
     } finally {
       setLoading(false);
     }
@@ -71,7 +71,7 @@ const AssetDirectory = () => {
       setNewAsset({ type: 'LAPTOP', makeModel: '', serialNumber: '', purchaseDate: '', warrantyExpiry: '', condition: 'NEW', notes: '' });
       loadAssets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to create asset');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to create asset');
     }
   };
 
@@ -83,7 +83,7 @@ const AssetDirectory = () => {
       setAssignData({ employeeId: '', notes: '' });
       loadAssets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to assign asset');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to assign asset');
     }
   };
 
@@ -95,7 +95,7 @@ const AssetDirectory = () => {
       setReturnData({ condition: 'GOOD', notes: '' });
       loadAssets();
     } catch (err) {
-      setError(err.response?.data?.message || 'Failed to return asset');
+      setError(err.response?.data?.message || err.response?.data?.error || 'Failed to return asset');
     }
   };
 

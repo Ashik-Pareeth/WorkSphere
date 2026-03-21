@@ -31,12 +31,14 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
   const [selectedManager, setSelectedManager] = useState('');
   const [selectedDept, setSelectedDept] = useState('');
   const [selectedPos, setSelectedPos] = useState('');
+  const [selectedSchedule, setSelectedSchedule] = useState('');
 
   // Data Lists
   const [availableRoles, setAvailableRoles] = useState([]);
   const [managers, setManagers] = useState([]);
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
+  const [schedules, setSchedules] = useState([]);
 
   useEffect(() => {
     if (isOpen && candidate) {
@@ -53,11 +55,12 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
 
   const fetchFormData = async () => {
     try {
-      const [rolesRes, empRes, deptRes, posRes] = await Promise.all([
+      const [rolesRes, empRes, deptRes, posRes, schedRes] = await Promise.all([
         axiosInstance.get('/roles'),
         axiosInstance.get('/employees'),
         axiosInstance.get('/departments'),
         axiosInstance.get('/jobPositions'),
+        axiosInstance.get('/api/work-schedules'),
       ]);
 
       setAvailableRoles(
@@ -66,6 +69,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
       setManagers(empRes.data.filter((e) => e.employeeStatus === 'ACTIVE'));
       setDepartments(deptRes.data);
       setPositions(posRes.data);
+      setSchedules(schedRes.data);
 
       const employeeRole = rolesRes.data.find(
         (r) => r.roleName === 'ROLE_EMPLOYEE' || r.roleName === 'EMPLOYEE'
@@ -93,6 +97,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
         roleIds: [selectedRole],
         managerId: selectedManager,
         username: username.trim() || undefined, // ← send only if HR changed it
+        workScheduleId: selectedSchedule || undefined,
       };
 
       await axiosInstance.post('/employees/finalize-hire', payload);
@@ -209,6 +214,25 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
                 {managers.map((m) => (
                   <SelectItem key={m.id} value={m.id}>
                     {m.firstName} {m.lastName}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="grid gap-2 col-span-2">
+            <Label>
+              Work Schedule
+              <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+            </Label>
+            <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select schedule" />
+              </SelectTrigger>
+              <SelectContent>
+                {schedules.map((s) => (
+                  <SelectItem key={s.id} value={s.id}>
+                    {s.scheduleName}
                   </SelectItem>
                 ))}
               </SelectContent>
