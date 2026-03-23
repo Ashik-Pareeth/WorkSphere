@@ -26,6 +26,12 @@ public class JobController {
         return ResponseEntity.ok(jobOpeningService.getAllOpeningsWithStats());
     }
 
+    @GetMapping("/stats")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<com.ucocs.worksphere.dto.hiring.JobStatsResponse> getJobStats() {
+        return ResponseEntity.ok(jobOpeningService.getJobStats());
+    }
+
     @GetMapping("/public")
     public ResponseEntity<List<JobOpening>> getActiveOpeningsPublic() {
         return ResponseEntity.ok(jobOpeningService.getActiveOpenings());

@@ -147,7 +147,7 @@ function AddEmployee() {
     setDepartmentId(emp.departmentId || '');
     setJobPositionId(emp.jobPositionId || '');
     setManagerId(emp.managerId || '');
-    setWorkScheduleId(emp.workScheduleId || '');
+    setWorkScheduleId(emp.workSchedule?.id || '');
 
     // Map the existing roles of the employee into our array
     const empRoleIds = emp.roles ? emp.roles.map((r) => r.id) : [];
@@ -533,4 +533,3 @@ function AddEmployee() {
 }
 
 export default AddEmployee;
-

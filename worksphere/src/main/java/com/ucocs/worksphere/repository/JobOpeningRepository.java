@@ -15,6 +15,8 @@ import java.util.UUID;
 @Repository
 public interface JobOpeningRepository extends JpaRepository<JobOpening, UUID> {
 
+    long countByStatus(JobOpeningStatus status);
+
     @EntityGraph(attributePaths = {"department", "jobPosition", "hrOwner"})
     List<JobOpening> findByStatus(JobOpeningStatus status);
 

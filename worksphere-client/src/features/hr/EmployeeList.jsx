@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useCallback, useMemo } from 'react';
 import axiosInstance from '../../api/axiosInstance';
+import { useAuth } from '../../hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import {
   Users,
@@ -19,10 +20,10 @@ import {
   Loader2,
   AlertTriangle,
   Search,
-  SlidersHorizontal,
   Lock,
   ClipboardList,
 } from 'lucide-react';
+import { Skeleton } from '@/components/ui/skeleton';
 
 /* ═══════════════════════════════════════════════════════════════
    ROLE HIERARCHY
@@ -35,10 +36,6 @@ const ROLE_HIERARCHY = {
   AUDITOR: 0,
 };
 
-/**
- * Returns the single highest-ranked role name from a roles array.
- * Roles can be either strings or { roleName } objects.
- */
 function getHighestRole(roles = []) {
   const names = roles.map((r) => (typeof r === 'string' ? r : r.roleName));
   return names.reduce((best, r) => {
@@ -47,41 +44,12 @@ function getHighestRole(roles = []) {
   }, null);
 }
 
-/**
- * Convenience flags derived from a roles array.
- */
-const buildRoleFlags = (roles = []) => ({
-  isGlobalAdmin: roles.includes('SUPER_ADMIN'),
-  isHR: roles.includes('HR'),
-  isManager: roles.includes('MANAGER'),
-  isEmployee: roles.includes('EMPLOYEE'),
-  isAuditor: roles.includes('AUDITOR'),
-});
-
-/**
- * Read the viewer's role from localStorage and build their flags + rank.
- */
-function useViewerRole() {
-  const rawRole = localStorage.getItem('role') ?? 'EMPLOYEE';
-  const rank = ROLE_HIERARCHY[rawRole] ?? 1;
-  const flags = buildRoleFlags([rawRole]);
-  return { rawRole, rank, flags };
-}
-
-/**
- * Returns true if the viewer can edit/manage the target employee.
- * The viewer must outrank (strictly greater) the target's highest role.
- */
 function canManage(viewerRank, targetRoles = []) {
   const targetHighest = getHighestRole(targetRoles);
   const targetRank = ROLE_HIERARCHY[targetHighest] ?? 1;
   return viewerRank > targetRank;
 }
 
-/**
- * Filter the assignable roles to only those the viewer can grant
- * (viewer rank must be strictly greater than the role's rank).
- */
 function assignableRoles(allRoles = [], viewerRank) {
   return allRoles.filter(
     (r) => (ROLE_HIERARCHY[r.roleName] ?? -1) < viewerRank
@@ -91,11 +59,6 @@ function assignableRoles(allRoles = [], viewerRank) {
 /* ═══════════════════════════════════════════════════════════════
    HELPERS
 ═══════════════════════════════════════════════════════════════ */
-const API_BASE =
-  import.meta.env.VITE_API_BASE_URL ||
-  axiosInstance.defaults.baseURL?.replace(/\/+$/, '') ||
-  '';
-
 const STATUSES = [
   'ACTIVE',
   'PENDING',
@@ -157,6 +120,9 @@ function formatSalary(n) {
   }).format(n);
 }
 
+// Single source of truth for API base — matches axiosInstance
+const API_BASE = axiosInstance.defaults.baseURL?.replace(/\/+$/, '') ?? '';
+
 /* ═══════════════════════════════════════════════════════════════
    SHARED UI ATOMS
 ═══════════════════════════════════════════════════════════════ */
@@ -195,7 +161,7 @@ function Input({ className = '', ...props }) {
   );
 }
 
-function Select({ children, className = '', ...props }) {
+function FormSelect({ children, className = '', ...props }) {
   return (
     <select
       className={`w-full px-3 py-2 rounded-lg border border-gray-200 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition ${className}`}
@@ -249,7 +215,6 @@ function Toast({ msg, type }) {
   );
 }
 
-/** Shown when the viewer lacks permission to perform an action */
 function PermissionBanner({ message }) {
   return (
     <div className="flex flex-col items-center justify-center gap-3 py-10 text-center">
@@ -285,7 +250,7 @@ function ViewTab({ emp }) {
       <DetailRow
         icon={Clock}
         label="Work Schedule"
-        value={emp.workScheduleName}
+        value={emp.workSchedule?.scheduleName}
       />
       <DetailRow
         icon={Calendar}
@@ -297,7 +262,7 @@ function ViewTab({ emp }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: EDIT  (role-hierarchy aware)
+   TAB: EDIT
 ═══════════════════════════════════════════════════════════════ */
 function EditTab({ emp, onSaved, viewerRank }) {
   const allowed = canManage(viewerRank, emp.roles);
@@ -316,10 +281,9 @@ function EditTab({ emp, onSaved, viewerRank }) {
     Id: emp.departmentId ?? '',
     jobPositionId: emp.jobPositionId ?? '',
     managerId: emp.managerId ?? '',
-    workScheduleId: emp.workScheduleId ?? '',
+    workScheduleId: emp.workSchedule?.id ?? '',
     roles: emp.roles?.map((r) => r.id) ?? [],
   });
-
   const [depts, setDepts] = useState([]);
   const [positions, setPositions] = useState([]);
   const [schedules, setSchedules] = useState([]);
@@ -341,7 +305,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
         setPositions(p.data);
         setSchedules(s.data);
         setManagers(e.data.filter((x) => x.id !== emp.id));
-        // Only expose roles the viewer is allowed to assign
         setAllRoles(assignableRoles(r.data, viewerRank));
       })
       .catch(() =>
@@ -350,7 +313,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
   }, [emp.id, viewerRank]);
 
   const set = (k, v) => setForm((f) => ({ ...f, [k]: v }));
-
   const toggleRole = (id) =>
     setForm((f) => ({
       ...f,
@@ -389,7 +351,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Toast msg={toast?.msg} type={toast?.type} />
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>First Name</FieldLabel>
@@ -408,7 +369,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
           />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Email</FieldLabel>
@@ -427,7 +387,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
           />
         </div>
       </div>
-
       <div className="grid grid-cols-2 gap-3">
         <div>
           <FieldLabel>Salary</FieldLabel>
@@ -448,22 +407,20 @@ function EditTab({ emp, onSaved, viewerRank }) {
           />
         </div>
       </div>
-
       <div>
         <FieldLabel>Department</FieldLabel>
-        <Select value={form.Id} onChange={(e) => set('Id', e.target.value)}>
+        <FormSelect value={form.Id} onChange={(e) => set('Id', e.target.value)}>
           <option value="">— None —</option>
           {depts.map((d) => (
             <option key={d.id} value={d.id}>
               {d.name}
             </option>
           ))}
-        </Select>
+        </FormSelect>
       </div>
-
       <div>
         <FieldLabel>Job Position</FieldLabel>
-        <Select
+        <FormSelect
           value={form.jobPositionId}
           onChange={(e) => set('jobPositionId', e.target.value)}
         >
@@ -473,12 +430,11 @@ function EditTab({ emp, onSaved, viewerRank }) {
               {p.positionName}
             </option>
           ))}
-        </Select>
+        </FormSelect>
       </div>
-
       <div>
         <FieldLabel>Manager</FieldLabel>
-        <Select
+        <FormSelect
           value={form.managerId}
           onChange={(e) => set('managerId', e.target.value)}
         >
@@ -488,12 +444,11 @@ function EditTab({ emp, onSaved, viewerRank }) {
               {m.firstName} {m.lastName}
             </option>
           ))}
-        </Select>
+        </FormSelect>
       </div>
-
       <div>
         <FieldLabel>Work Schedule</FieldLabel>
-        <Select
+        <FormSelect
           value={form.workScheduleId}
           onChange={(e) => set('workScheduleId', e.target.value)}
         >
@@ -503,12 +458,11 @@ function EditTab({ emp, onSaved, viewerRank }) {
               {s.scheduleName}
             </option>
           ))}
-        </Select>
+        </FormSelect>
       </div>
-
       <div>
         <FieldLabel>
-          Roles
+          Roles{' '}
           <span className="ml-2 text-[10px] normal-case font-normal text-gray-400">
             (only roles below your level)
           </span>
@@ -526,12 +480,7 @@ function EditTab({ emp, onSaved, viewerRank }) {
                   key={r.id}
                   type="button"
                   onClick={() => toggleRole(r.id)}
-                  className={`px-3 py-1 rounded-full text-xs font-semibold ring-1 transition ${
-                    active
-                      ? (ROLE_COLOR[r.roleName] ??
-                        'bg-blue-100 text-blue-700 ring-blue-200')
-                      : 'bg-gray-100 text-gray-400 ring-gray-200 hover:ring-gray-300'
-                  }`}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold ring-1 transition ${active ? (ROLE_COLOR[r.roleName] ?? 'bg-blue-100 text-blue-700 ring-blue-200') : 'bg-gray-100 text-gray-400 ring-gray-200 hover:ring-gray-300'}`}
                 >
                   {r.roleName}
                 </button>
@@ -540,14 +489,13 @@ function EditTab({ emp, onSaved, viewerRank }) {
           </div>
         )}
       </div>
-
       <SaveBtn loading={loading} color="blue" />
     </form>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: PROMOTE  (role-hierarchy aware)
+   TAB: PROMOTE
 ═══════════════════════════════════════════════════════════════ */
 function PromoteTab({ emp, onSaved, viewerRank }) {
   const allowed = canManage(viewerRank, emp.roles);
@@ -592,7 +540,7 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
         Id: emp.departmentId ?? null,
         jobPositionId: form.jobPositionId || null,
         managerId: form.managerId || null,
-        workScheduleId: emp.workScheduleId ?? null,
+        workScheduleId: emp.workSchedule?.id ?? null,
         roles: emp.roles?.map((r) => r.id),
       });
       setToast({ msg: 'Promotion saved successfully', type: 'success' });
@@ -610,7 +558,6 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Toast msg={toast?.msg} type={toast?.type} />
-
       <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-700 font-medium flex gap-2">
         <TrendingUp size={14} className="shrink-0 mt-0.5" />
         Updating job position, salary, and reporting line for {
@@ -618,10 +565,9 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
         }{' '}
         {emp.lastName}.
       </div>
-
       <div>
         <FieldLabel>New Job Position</FieldLabel>
-        <Select
+        <FormSelect
           value={form.jobPositionId}
           onChange={(e) => set('jobPositionId', e.target.value)}
         >
@@ -631,14 +577,13 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
               {p.positionName}
             </option>
           ))}
-        </Select>
+        </FormSelect>
         {emp.jobTitle && (
           <p className="text-[11px] text-gray-400 mt-1">
             Current: {emp.jobTitle}
           </p>
         )}
       </div>
-
       <div>
         <FieldLabel>New Salary</FieldLabel>
         <Input
@@ -651,10 +596,9 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
           Current: {formatSalary(emp.salary)}
         </p>
       </div>
-
       <div>
         <FieldLabel>New Manager</FieldLabel>
-        <Select
+        <FormSelect
           value={form.managerId}
           onChange={(e) => set('managerId', e.target.value)}
         >
@@ -664,21 +608,20 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
               {m.firstName} {m.lastName}
             </option>
           ))}
-        </Select>
+        </FormSelect>
         {emp.managerName && (
           <p className="text-[11px] text-gray-400 mt-1">
             Current: {emp.managerName}
           </p>
         )}
       </div>
-
       <SaveBtn loading={loading} label="Confirm Promotion" color="amber" />
     </form>
   );
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   TAB: STATUS  (role-hierarchy aware)
+   TAB: STATUS
 ═══════════════════════════════════════════════════════════════ */
 function StatusTab({ emp, onSaved, viewerRank }) {
   const allowed = canManage(viewerRank, emp.roles);
@@ -714,13 +657,8 @@ function StatusTab({ emp, onSaved, viewerRank }) {
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
       <Toast msg={toast?.msg} type={toast?.type} />
-
       <div
-        className={`rounded-xl p-3 text-xs font-medium flex gap-2 border ${
-          emp.employeeStatus === 'SUSPENDED'
-            ? 'bg-emerald-50 border-emerald-200 text-emerald-700'
-            : 'bg-red-50 border-red-200 text-red-700'
-        }`}
+        className={`rounded-xl p-3 text-xs font-medium flex gap-2 border ${emp.employeeStatus === 'SUSPENDED' ? 'bg-emerald-50 border-emerald-200 text-emerald-700' : 'bg-red-50 border-red-200 text-red-700'}`}
       >
         {emp.employeeStatus === 'SUSPENDED' ? (
           <ShieldCheck size={14} className="shrink-0 mt-0.5" />
@@ -731,7 +669,6 @@ function StatusTab({ emp, onSaved, viewerRank }) {
           ? `${emp.firstName} is currently suspended. Select a new status to restore access.`
           : `Changing status will affect ${emp.firstName}'s access. Choose carefully.`}
       </div>
-
       <div>
         <FieldLabel>Set Status</FieldLabel>
         <div className="grid grid-cols-2 gap-2">
@@ -740,19 +677,13 @@ function StatusTab({ emp, onSaved, viewerRank }) {
               key={s}
               type="button"
               onClick={() => setStatus(s)}
-              className={`px-3 py-2 rounded-lg text-xs font-semibold ring-1 text-left transition ${
-                status === s
-                  ? (STATUS_STYLE[s] ??
-                    'bg-gray-100 text-gray-600 ring-gray-200')
-                  : 'bg-white text-gray-400 ring-gray-200 hover:ring-gray-300'
-              }`}
+              className={`px-3 py-2 rounded-lg text-xs font-semibold ring-1 text-left transition ${status === s ? (STATUS_STYLE[s] ?? 'bg-gray-100 text-gray-600 ring-gray-200') : 'bg-white text-gray-400 ring-gray-200 hover:ring-gray-300'}`}
             >
               {s}
             </button>
           ))}
         </div>
       </div>
-
       <SaveBtn
         loading={loading}
         label={status === 'SUSPENDED' ? 'Suspend Employee' : `Set to ${status}`}
@@ -773,7 +704,7 @@ const DAILY_STATUS_STYLE = {
 };
 
 function AttendanceTab({ emp, viewerRank }) {
-  const canView = viewerRank >= 2; // MANAGER and above
+  const canView = viewerRank >= 2;
   if (!canView)
     return (
       <PermissionBanner message="You cannot view this employee's attendance log." />
@@ -793,13 +724,13 @@ function AttendanceTab({ emp, viewerRank }) {
       .finally(() => setLoading(false));
   }, [emp.id]);
 
-  const fmt = (dt) => {
-    if (!dt) return '—';
-    return new Date(dt).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-    });
-  };
+  const fmt = (dt) =>
+    !dt
+      ? '—'
+      : new Date(dt).toLocaleTimeString('en-US', {
+          hour: '2-digit',
+          minute: '2-digit',
+        });
 
   if (loading)
     return (
@@ -807,14 +738,12 @@ function AttendanceTab({ emp, viewerRank }) {
         <Loader2 size={16} className="animate-spin" /> Loading attendance…
       </div>
     );
-
   if (error)
     return (
       <div className="flex items-center gap-2 text-red-500 text-sm py-4">
         <AlertTriangle size={14} /> {error}
       </div>
     );
-
   if (records.length === 0)
     return (
       <p className="text-center text-gray-400 text-sm py-8 italic">
@@ -854,10 +783,7 @@ function AttendanceTab({ emp, viewerRank }) {
               <td className="px-2 py-2">
                 {r.dailyStatus ? (
                   <span
-                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${
-                      DAILY_STATUS_STYLE[r.dailyStatus] ??
-                      'bg-gray-100 text-gray-500'
-                    }`}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-semibold ${DAILY_STATUS_STYLE[r.dailyStatus] ?? 'bg-gray-100 text-gray-500'}`}
                   >
                     {r.dailyStatus}
                   </span>
@@ -874,7 +800,7 @@ function AttendanceTab({ emp, viewerRank }) {
 }
 
 /* ═══════════════════════════════════════════════════════════════
-   MAIN MODAL
+   EMPLOYEE MODAL
 ═══════════════════════════════════════════════════════════════ */
 const TABS = [
   { key: 'view', label: 'Details', Icon: User },
@@ -893,8 +819,6 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
   const profileSrc = emp.profilePic
     ? `${API_BASE}/uploads/profilePhoto/${emp.profilePic}`
     : null;
-
-  // Determine if the viewer can manage this employee at all
   const canEdit = canManage(viewerRank, emp.roles);
 
   const handleSaved = useCallback(async () => {
@@ -925,7 +849,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4 overflow-y-auto animate-in fade-in duration-200"
       style={{
         backgroundColor: 'rgba(15,23,42,0.6)',
         backdropFilter: 'blur(6px)',
@@ -933,19 +857,9 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
       onClick={handleBackdrop}
     >
       <div
-        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl my-4"
-        style={{
-          animation: 'modalIn 0.22s cubic-bezier(0.34,1.56,0.64,1) both',
-        }}
+        className="relative w-full max-w-lg bg-white rounded-2xl shadow-2xl my-4 animate-in zoom-in-95 slide-in-from-bottom-4 duration-200"
         onClick={(e) => e.stopPropagation()}
       >
-        <style>{`
-          @keyframes modalIn {
-            from { opacity:0; transform:scale(0.93) translateY(10px); }
-            to   { opacity:1; transform:scale(1)    translateY(0); }
-          }
-        `}</style>
-
         {/* Header gradient */}
         <div
           className={`relative rounded-t-2xl bg-gradient-to-br ${gradient}`}
@@ -969,27 +883,22 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
             </defs>
             <rect width="100%" height="100%" fill="url(#dp)" />
           </svg>
-
           <button
             onClick={onClose}
             className="absolute top-3 right-3 p-1.5 rounded-full bg-white/20 hover:bg-white/40 text-white transition-colors"
           >
             <X size={16} />
           </button>
-
           <span
             className={`absolute top-3 left-4 px-2.5 py-0.5 rounded-full text-[11px] font-bold tracking-wide ring-1 ${STATUS_STYLE[emp.employeeStatus] ?? 'bg-gray-100 text-gray-600 ring-gray-200'}`}
           >
             {emp.employeeStatus}
           </span>
-
-          {/* Read-only badge if viewer cannot manage */}
           {!canEdit && (
             <span className="absolute top-3 left-28 flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white/20 text-white ring-1 ring-white/30">
               <Lock size={10} /> Read-only
             </span>
           )}
-
           {/* Avatar */}
           <div className="absolute left-1/2 -translate-x-1/2 -bottom-12">
             {profileSrc ? (
@@ -1102,13 +1011,11 @@ function SearchFilterBar({
   departments,
   jobTitles,
 }) {
-  const [open, setOpen] = useState(false);
   const hasFilter = department || jobTitle;
   const activeCount = [department, jobTitle].filter(Boolean).length;
 
   return (
     <div className="flex flex-col sm:flex-row gap-3">
-      {/* Search input */}
       <div className="relative flex-1">
         <Search
           size={15}
@@ -1130,8 +1037,6 @@ function SearchFilterBar({
           </button>
         )}
       </div>
-
-      {/* Department dropdown (always visible) */}
       <div className="relative w-full sm:w-48">
         <Building2
           size={14}
@@ -1150,8 +1055,6 @@ function SearchFilterBar({
           ))}
         </select>
       </div>
-
-      {/* Job Title dropdown (always visible) */}
       <div className="relative w-full sm:w-48">
         <User
           size={14}
@@ -1170,8 +1073,6 @@ function SearchFilterBar({
           ))}
         </select>
       </div>
-
-      {/* Clear filters button */}
       {hasFilter && (
         <button
           onClick={() => {
@@ -1180,8 +1081,7 @@ function SearchFilterBar({
           }}
           className="flex items-center gap-1.5 px-3 py-2.5 rounded-xl border border-red-200 text-red-500 text-xs font-semibold hover:bg-red-50 transition shadow-sm whitespace-nowrap"
         >
-          <X size={12} />
-          Clear ({activeCount})
+          <X size={12} /> Clear ({activeCount})
         </button>
       )}
     </div>
@@ -1192,33 +1092,22 @@ function SearchFilterBar({
    EMPLOYEE LIST PAGE
 ═══════════════════════════════════════════════════════════════ */
 const EmployeeList = () => {
+  const { user } = useAuth();
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(null);
-
-  // Search & filter state
   const [search, setSearch] = useState('');
   const [department, setDepartment] = useState('');
   const [jobTitle, setJobTitle] = useState('');
 
-  // Viewer's role from localStorage
-  const { rawRole, rank: viewerRank } = useViewerRole();
+  // Derive viewer rank from AuthContext — single source of truth, no localStorage
+  const rawRole = getHighestRole(user?.roles ?? []);
+  const viewerRank = ROLE_HIERARCHY[rawRole] ?? 1;
 
   useEffect(() => {
     axiosInstance
       .get('/employees')
-      .then((res) => {
-        const data = res.data;
-        setEmployees(data);
-
-        // Sync the highest role to localStorage based on own employee record
-        const myId = localStorage.getItem('employeeId');
-        const me = data.find((e) => e.id === myId);
-        if (me?.roles) {
-          const highest = getHighestRole(me.roles);
-          if (highest) localStorage.setItem('role', highest);
-        }
-      })
+      .then((res) => setEmployees(res.data))
       .catch((err) => console.error('Failed to load employees', err))
       .finally(() => setLoading(false));
   }, []);
@@ -1230,7 +1119,6 @@ const EmployeeList = () => {
     setSelected(updated);
   }, []);
 
-  // Derive unique filter options from employee data
   const departments = useMemo(
     () =>
       [
@@ -1243,7 +1131,6 @@ const EmployeeList = () => {
     [employees]
   );
 
-  // Filtered list
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return employees.filter((emp) => {
@@ -1253,37 +1140,73 @@ const EmployeeList = () => {
         emp.email?.toLowerCase().includes(q) ||
         emp.departmentName?.toLowerCase().includes(q) ||
         emp.jobTitle?.toLowerCase().includes(q);
-
-      const matchesDept = !department || emp.departmentName === department;
-      const matchesTitle = !jobTitle || emp.jobTitle === jobTitle;
-
-      return matchesSearch && matchesDept && matchesTitle;
+      return (
+        matchesSearch &&
+        (!department || emp.departmentName === department) &&
+        (!jobTitle || emp.jobTitle === jobTitle)
+      );
     });
   }, [employees, search, department, jobTitle]);
 
-  if (loading)
+  if (loading) {
     return (
-      <div className="p-8 text-center text-gray-500">Loading directory…</div>
+      <div className="px-6 py-4 lg:px-8 lg:py-6 max-w-7xl mx-auto space-y-5 animate-in fade-in duration-500">
+        <div className="flex items-center justify-between">
+          <Skeleton className="h-10 w-64" />
+          <Skeleton className="h-6 w-24 rounded-full" />
+        </div>
+        <div className="flex gap-3">
+          <Skeleton className="h-10 flex-1" />
+          <Skeleton className="h-10 w-48 hidden sm:block" />
+          <Skeleton className="h-10 w-48 hidden sm:block" />
+        </div>
+        <div className="bg-white border border-gray-200 rounded-xl overflow-hidden shadow-sm">
+          <div className="border-b bg-gray-50 h-14 w-full" />
+          {[...Array(8)].map((_, i) => (
+            <div
+              key={i}
+              className="border-b border-gray-100 p-4 flex gap-6 items-center"
+            >
+              <Skeleton className="h-8 w-8 rounded-lg shrink-0" />
+              <div className="space-y-2 flex-1">
+                <Skeleton className="h-4 w-48" />
+                <Skeleton className="h-3 w-32" />
+              </div>
+              <Skeleton className="h-6 w-24 rounded-full hidden sm:block" />
+              <Skeleton className="h-6 w-20 hidden md:block" />
+            </div>
+          ))}
+        </div>
+      </div>
     );
+  }
 
   return (
     <>
-      <div className="p-6 space-y-5 max-w-7xl mx-auto">
-        {/* Page header */}
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Users className="h-8 w-8 text-blue-500" />
-            <h1 className="text-3xl font-bold text-gray-900">
-              Employee Directory
-            </h1>
+      <div className="px-6 py-4 lg:px-8 lg:py-6 max-w-7xl mx-auto space-y-5">
+        {/* Page header — matches project pattern */}
+        <div className="flex items-center justify-between pb-4 border-b border-gray-200">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-gray-900 flex items-center justify-center flex-shrink-0">
+              <Users size={18} className="text-white" />
+            </div>
+            <div>
+              <h1 className="text-xl font-semibold text-gray-900 tracking-tight">
+                Employee Directory
+              </h1>
+              <p className="text-sm text-gray-500">
+                {employees.length} employees across all departments
+              </p>
+            </div>
           </div>
-          {/* Current viewer's role badge */}
-          <span className="px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-500 ring-1 ring-gray-200">
-            {rawRole.replace('_', ' ')}
+          <span
+            className={`px-2.5 py-0.5 rounded-full text-xs font-semibold ring-1 ${ROLE_COLOR[rawRole] ?? 'bg-gray-100 text-gray-500 ring-gray-200'}`}
+          >
+            {rawRole?.replace('_', ' ')}
           </span>
         </div>
 
-        {/* Search + filter bar */}
+        {/* Search + filter */}
         <SearchFilterBar
           search={search}
           setSearch={setSearch}
@@ -1295,28 +1218,38 @@ const EmployeeList = () => {
           jobTitles={jobTitles}
         />
 
-        {/* Result count */}
         <p className="text-xs text-gray-400">
           {filtered.length === employees.length
             ? `${employees.length} employees`
             : `${filtered.length} of ${employees.length} employees`}
         </p>
 
+        {/* Table */}
         <Card>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left border-collapse">
-                <thead className="bg-gray-50 text-gray-700 border-b">
+                <thead className="bg-gray-50 text-gray-700 border-b border-gray-200">
                   <tr>
-                    <th className="px-6 py-4 font-semibold">Employee</th>
-                    <th className="px-6 py-4 font-semibold">Email</th>
-                    <th className="px-6 py-4 font-semibold">Department</th>
-                    <th className="px-6 py-4 font-semibold">Job Title</th>
-                    <th className="px-6 py-4 font-semibold">Status</th>
-                    <th className="px-6 py-4 sr-only">Open</th>
+                    <th className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-gray-500">
+                      Employee
+                    </th>
+                    <th className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-gray-500">
+                      Email
+                    </th>
+                    <th className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-gray-500">
+                      Department
+                    </th>
+                    <th className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-gray-500">
+                      Job Title
+                    </th>
+                    <th className="px-6 py-3.5 font-semibold text-xs uppercase tracking-wider text-gray-500">
+                      Status
+                    </th>
+                    <th className="px-6 py-3.5 sr-only">Open</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y">
+                <tbody className="divide-y divide-gray-100">
                   {filtered.length === 0 && (
                     <tr>
                       <td
@@ -1332,7 +1265,7 @@ const EmployeeList = () => {
                     return (
                       <tr
                         key={emp.id}
-                        className="hover:bg-blue-50/60 cursor-pointer transition-colors group"
+                        className="hover:bg-blue-50/50 cursor-pointer transition-colors group"
                         onClick={() => setSelected(emp)}
                       >
                         <td className="px-6 py-4 font-medium">
@@ -1352,10 +1285,9 @@ const EmployeeList = () => {
                                 </span>
                               </div>
                             )}
-                            <span>
+                            <span className="text-gray-800">
                               {emp.firstName} {emp.lastName}
                             </span>
-                            {/* Small lock on rows the viewer cannot manage */}
                             {!manageable && (
                               <Lock
                                 size={11}
@@ -1365,11 +1297,11 @@ const EmployeeList = () => {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 text-gray-600">{emp.email}</td>
-                        <td className="px-6 py-4 text-gray-600">
+                        <td className="px-6 py-4 text-gray-500">{emp.email}</td>
+                        <td className="px-6 py-4 text-gray-500">
                           {emp.departmentName || '—'}
                         </td>
-                        <td className="px-6 py-4 text-gray-600">
+                        <td className="px-6 py-4 text-gray-500">
                           {emp.jobTitle || '—'}
                         </td>
                         <td className="px-6 py-4">

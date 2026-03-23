@@ -8,6 +8,10 @@ import {
 } from '../../api/taskApi';
 import AlertMessage from '../../components/common/AlertMessage';
 import axiosInstance from '../../api/axiosInstance';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
+import TaskInfoTab from './tabs/TaskInfoTab';
+import CommentsTab from './tabs/CommentsTab';
+import EvidenceTab from './tabs/EvidenceTab';
 
 /* ─────────────────────────────────────────
    STYLES  (scoped via <style> tag injected once)
@@ -677,418 +681,58 @@ const TaskDetailsModal = ({ task, onClose }) => {
           </button>
         </div>
 
-        {/* BODY */}
-        <div className="tdm-body">
-          {/* ── LEFT COLUMN ── */}
-          <div className="tdm-col">
-            {/* Description */}
-            <div style={{ marginBottom: '20px' }}>
-              <span className="tdm-section-label">Description</span>
-              <div className="tdm-desc">
-                {task.description || 'No description provided.'}
-              </div>
-            </div>
+        {/* BODY (TABS) */}
+        <div className="p-6">
+          <Tabs defaultValue="info" className="w-full">
+            <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100/50 p-1 rounded-xl">
+              <TabsTrigger value="info" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Task Info</TabsTrigger>
+              <TabsTrigger value="evidence" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Evidence & Review</TabsTrigger>
+              <TabsTrigger value="comments" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Comments ({comments?.length || 0})</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="info" className="mt-0 outline-none">
+               <TaskInfoTab task={task} />
+            </TabsContent>
+            
+            <TabsContent value="evidence" className="mt-0 outline-none">
+               <EvidenceTab
+                  task={task}
+                  evidenceList={evidenceList}
+                  loading={loading}
+                  uploading={uploading}
+                  selectedFile={selectedFile}
+                  fileInputRef={fileInputRef}
+                  handleFileSelect={handleFileSelect}
+                  handleRemoveFile={handleRemoveFile}
+                  handleFileUpload={handleFileUpload}
+                  handleEvidenceReview={handleEvidenceReview}
+                  activeReview={activeReview}
+                  setActiveReview={setActiveReview}
+                  reviewingEvidence={reviewingEvidence}
+                  isManager={isManagerOrAdmin}
+                  isAuditor={storedRoles.includes('ROLE_AUDITOR')}
+                  rating={rating}
+                  setRating={setRating}
+                  handleLateRating={handleLateRating}
+                  isCompleting={isCompleting}
+                  handleApproveAndComplete={handleApproveAndComplete}
+                  handleCancelTask={handleCancelTask}
+                  isCanceling={isCanceling}
+               />
+            </TabsContent>
 
-            {/* Info row */}
-            <div className="tdm-info-grid" style={{ marginBottom: '20px' }}>
-              <div className="tdm-info-item">
-                <label>Due date</label>
-                <span>
-                  {task.dueDate
-                    ? new Date(task.dueDate).toLocaleDateString()
-                    : '—'}
-                </span>
-              </div>
-              <div className="tdm-info-item">
-                <label>Assigned to</label>
-                <span>{task.assignedToName || '—'}</span>
-              </div>
-              <div className="tdm-info-item">
-                <label>Assigned by</label>
-                <span>{task.assignerName || '—'}</span>
-              </div>
-            </div>
-
-            <div className="tdm-divider" />
-
-            {/* COMPLETED rating display or late-rating */}
-            {task.status === 'COMPLETED' && (
-              <div style={{ marginBottom: '20px' }}>
-                {task.managerRating ? (
-                  <div className="tdm-rating-display">
-                    <div>
-                      <h4>Manager rating</h4>
-                      <p>Final performance score</p>
-                    </div>
-                    <div className="tdm-rating-stars-display">
-                      {[1, 2, 3, 4, 5].map((s) => (
-                        <span key={s}>
-                          {task.managerRating >= s ? '★' : '☆'}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                ) : isManagerOrAdmin ? (
-                  <div className="tdm-pending-rating">
-                    <h4>⚠ Rating required</h4>
-                    <p>This task was completed without a performance rating.</p>
-                    <Stars value={rating} onChange={setRating} />
-                    <button
-                      className="tdm-submit-rating-btn"
-                      onClick={handleLateRating}
-                      disabled={isCompleting || rating === 0}
-                    >
-                      {isCompleting ? 'Saving...' : 'Submit rating'}
-                    </button>
-                  </div>
-                ) : (
-                  <div className="tdm-awaiting-rating">
-                    Awaiting manager rating…
-                  </div>
-                )}
-              </div>
-            )}
-
-            {/* EVIDENCE */}
-            <div>
-              <span className="tdm-section-label">Proof of work</span>
-
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '10px',
-                  marginBottom: '14px',
-                }}
-              >
-                {loading ? (
-                  <p className="tdm-loading">Loading evidence…</p>
-                ) : evidenceList.length === 0 ? (
-                  <p className="tdm-empty">No files uploaded yet.</p>
-                ) : (
-                  evidenceList.map((file) => (
-                    <div key={file.id} className="tdm-evidence-item">
-                      <div className="tdm-evidence-row">
-                        <div className="tdm-evidence-icon">📄</div>
-                        <div
-                          style={{
-                            display: 'flex',
-                            flexDirection: 'column',
-                            flex: 1,
-                            gap: '3px',
-                          }}
-                        >
-                          <a
-                            href={file.fileUrl}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="tdm-evidence-name"
-                          >
-                            {file.fileName || 'Unknown file'}
-                          </a>
-                          <div
-                            style={{
-                              display: 'flex',
-                              gap: '8px',
-                              alignItems: 'center',
-                            }}
-                          >
-                            <span className="tdm-evidence-date">
-                              {file.createdAt
-                                ? new Date(file.createdAt).toLocaleDateString()
-                                : 'Just now'}
-                            </span>
-                            <span
-                              className={`tdm-evidence-status ${file.status || 'PENDING'}`}
-                            >
-                              {file.status || 'PENDING'}
-                            </span>
-                          </div>
-                        </div>
-                        {isManagerOrAdmin &&
-                          (file.status === 'PENDING' || !file.status) &&
-                          activeReview.id !== file.id && (
-                            <div className="tdm-ev-actions">
-                              <button
-                                className="tdm-ev-btn accept"
-                                disabled={reviewingEvidence}
-                                onClick={() =>
-                                  handleEvidenceReview(file.id, 'ACCEPTED')
-                                }
-                              >
-                                ✓ Accept
-                              </button>
-                              <button
-                                className="tdm-ev-btn reject"
-                                disabled={reviewingEvidence}
-                                onClick={() =>
-                                  handleEvidenceReview(file.id, 'REJECTED')
-                                }
-                              >
-                                ✕ Reject
-                              </button>
-                            </div>
-                          )}
-                      </div>
-
-                      {activeReview.id === file.id &&
-                        activeReview.status === 'REJECTED' && (
-                          <div className="tdm-feedback-box">
-                            <input
-                              className="tdm-feedback-input"
-                              type="text"
-                              placeholder="Reason for rejection (optional)"
-                              value={activeReview.feedback}
-                              onChange={(e) =>
-                                setActiveReview({
-                                  ...activeReview,
-                                  feedback: e.target.value,
-                                })
-                              }
-                              autoFocus
-                            />
-                            <div className="tdm-feedback-actions">
-                              <button
-                                className="tdm-confirm-reject"
-                                disabled={reviewingEvidence}
-                                onClick={() =>
-                                  handleEvidenceReview(file.id, 'REJECTED')
-                                }
-                              >
-                                Confirm rejection
-                              </button>
-                              <button
-                                className="tdm-cancel-link"
-                                onClick={() =>
-                                  setActiveReview({
-                                    id: null,
-                                    status: null,
-                                    feedback: '',
-                                  })
-                                }
-                              >
-                                Cancel
-                              </button>
-                            </div>
-                          </div>
-                        )}
-
-                      {file.status === 'REJECTED' && file.reviewFeedback && (
-                        <div className="tdm-rejection-reason">
-                          <strong>Reason:</strong> {file.reviewFeedback}
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-
-              {/* Upload */}
-              {task.assignedToId === currentUser.id && (
-                <>
-                  <input
-                    type="file"
-                    ref={fileInputRef}
-                    onChange={handleFileSelect}
-                    style={{ display: 'none' }}
-                  />
-                  {!selectedFile ? (
-                    <div
-                      className="tdm-upload-zone"
-                      onClick={() => fileInputRef.current.click()}
-                    >
-                      <button
-                        className="tdm-select-btn"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          fileInputRef.current.click();
-                        }}
-                      >
-                        📎 Select evidence file
-                      </button>
-                      <p className="tdm-upload-hint">
-                        Click to browse documents
-                      </p>
-                    </div>
-                  ) : (
-                    <div className="tdm-upload-preview">
-                      <span style={{ fontSize: '20px' }}>📄</span>
-                      <div>
-                        <div
-                          style={{
-                            fontSize: '13px',
-                            fontWeight: 600,
-                            color: '#1C1A17',
-                          }}
-                        >
-                          {selectedFile.name}
-                        </div>
-                        <div style={{ fontSize: '11px', color: '#9B8F80' }}>
-                          Ready to upload
-                        </div>
-                      </div>
-                      <div className="tdm-upload-actions">
-                        <button
-                          className="tdm-cancel-link"
-                          disabled={uploading}
-                          onClick={handleRemoveFile}
-                        >
-                          Cancel
-                        </button>
-                        <button
-                          className="tdm-confirm-upload"
-                          disabled={uploading}
-                          onClick={handleFileUpload}
-                        >
-                          {uploading ? 'Uploading…' : 'Confirm upload'}
-                        </button>
-                      </div>
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Danger zone */}
-            {isManagerOrAdmin &&
-              !['COMPLETED', 'CANCELLED'].includes(task.status) && (
-                <div style={{ marginTop: '24px' }}>
-                  <div className="tdm-danger-zone">
-                    <span className="tdm-danger-label">Danger zone</span>
-                    <button
-                      className="tdm-cancel-task-btn"
-                      disabled={isCanceling}
-                      onClick={handleCancelTask}
-                    >
-                      {isCanceling ? 'Canceling…' : '🚫 Cancel this task'}
-                    </button>
-                    <p className="tdm-danger-hint">
-                      Removes this task from the active workflow. This action is
-                      difficult to reverse.
-                    </p>
-                  </div>
-                </div>
-              )}
-          </div>
-
-          {/* ── RIGHT COLUMN ── */}
-          <div className="tdm-col tdm-col-right">
-            {/* Manager review panel */}
-            {isManagerOrAdmin && task.status === 'IN_REVIEW' && (
-              <div className="tdm-review-panel">
-                <h4>Review & approval</h4>
-                <p>
-                  Rate the employee's performance to officially close this task.
-                </p>
-                <div
-                  style={{ display: 'flex', alignItems: 'center', gap: '14px' }}
-                >
-                  <Stars value={rating} onChange={setRating} />
-                  <span
-                    style={{
-                      fontSize: '13px',
-                      color: '#7A6F63',
-                      fontWeight: 500,
-                    }}
-                  >
-                    {rating > 0 ? `${rating} / 5` : 'Select a rating'}
-                  </span>
-                </div>
-                <button
-                  className="tdm-approve-btn green"
-                  onClick={handleApproveAndComplete}
-                  disabled={isCompleting || rating === 0}
-                >
-                  {isCompleting ? 'Processing…' : 'Approve & complete task'}
-                </button>
-              </div>
-            )}
-
-            {/* Helpdesk context */}
-            {task.sourceTicketId && (
-              <div
-                className="tdm-helpdesk-panel"
-                style={{ marginBottom: '20px' }}
-              >
-                <div className="tdm-helpdesk-header">
-                  <span>🎧</span>
-                  <span>Original helpdesk context</span>
-                </div>
-                <div className="tdm-helpdesk-body">
-                  {loading ? (
-                    <p className="tdm-loading">Loading ticket context…</p>
-                  ) : ticketComments.length === 0 ? (
-                    <p className="tdm-empty">No original comments found.</p>
-                  ) : (
-                    ticketComments.map((tc) => (
-                      <div key={tc.id} className="tdm-ticket-comment">
-                        <div
-                          style={{
-                            display: 'flex',
-                            justifyContent: 'space-between',
-                            alignItems: 'center',
-                          }}
-                        >
-                          <span className="author">{tc.authorName}</span>
-                          <span className="time">
-                            {new Date(tc.createdAt).toLocaleString()}
-                          </span>
-                        </div>
-                        <p className="body">{tc.content}</p>
-                      </div>
-                    ))
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* Task comments */}
-            <span className="tdm-section-label">Developer activity</span>
-            <div className="tdm-comments-list">
-              {loading ? (
-                <p className="tdm-loading">Loading…</p>
-              ) : comments.length === 0 ? (
-                <p className="tdm-comment-empty">
-                  No comments yet. Be the first.
-                </p>
-              ) : (
-                comments.map((c) => (
-                  <div key={c.id} className="tdm-comment-bubble">
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'baseline',
-                      }}
-                    >
-                      <span className="author">{c.authorName}</span>
-                      <span className="time">
-                        {new Date(c.createdAt).toLocaleString()}
-                      </span>
-                    </div>
-                    <p className="body">{c.content}</p>
-                  </div>
-                ))
-              )}
-            </div>
-
-            <form className="tdm-comment-form" onSubmit={handleSendComment}>
-              <input
-                className="tdm-comment-input"
-                type="text"
-                placeholder="Write a comment…"
-                value={newComment}
-                onChange={(e) => setNewComment(e.target.value)}
-              />
-              <button
-                className="tdm-send-btn"
-                type="submit"
-                disabled={sendingComment || !newComment.trim()}
-              >
-                {sendingComment ? '…' : 'Send'}
-              </button>
-            </form>
-          </div>
+            <TabsContent value="comments" className="mt-0 outline-none">
+               <CommentsTab
+                  comments={comments}
+                  ticketComments={ticketComments}
+                  newComment={newComment}
+                  setNewComment={setNewComment}
+                  handleSendComment={handleSendComment}
+                  sendingComment={sendingComment}
+                  sourceTicketId={task.sourceTicketId}
+               />
+            </TabsContent>
+          </Tabs>
         </div>
       </div>
     </div>

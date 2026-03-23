@@ -497,6 +497,12 @@ public class EmployeeService {
                     .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
         }
 
+        // Work Schedule
+        if (request.getWorkScheduleId() != null) {
+            employee.setWorkSchedule(workScheduleRepository.findById(request.getWorkScheduleId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Work Schedule not found")));
+        }
+
         Employee savedEmployee = employeeRepository.save(employee);
 
         // Send onboarding email with the final (possibly HR-overridden) username

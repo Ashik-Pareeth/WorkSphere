@@ -28,6 +28,12 @@ public class GlobalExceptionHandler {
                 return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage(), request);
         }
 
+        @ExceptionHandler(IllegalStateException.class)
+        public ResponseEntity<ApiErrorResponse> handleIllegalState(
+                IllegalStateException ex, HttpServletRequest request) {
+                return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage(), request);
+        }
+
         @ExceptionHandler(org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class)
         public ResponseEntity<ApiErrorResponse> handleTypeMismatch(
                 Exception ex, HttpServletRequest request) {
@@ -85,7 +91,11 @@ public class GlobalExceptionHandler {
         })
         public ResponseEntity<ApiErrorResponse> handleAccessDenied(
                 Exception ex, HttpServletRequest request) {
-                return build(HttpStatus.FORBIDDEN, "Forbidden", "You do not have permission to access this resource.", request);
+                // Preserve the real message (e.g. department jurisdiction errors from service layer)
+                String message = (ex.getMessage() != null && !ex.getMessage().isBlank())
+                        ? ex.getMessage()
+                        : "You do not have permission to access this resource.";
+                return build(HttpStatus.FORBIDDEN, "Forbidden", message, request);
         }
 
         @ExceptionHandler(Exception.class)

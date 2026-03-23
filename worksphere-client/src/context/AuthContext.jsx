@@ -1,4 +1,5 @@
-import { createContext, useState } from 'react';
+import { createContext, useState, useEffect } from 'react';
+import { getMyProfile } from '../api/employeeApi';
 
 // Tell Vite's Fast Refresh it is safe to export this Context object
 // eslint-disable-next-line react-refresh/only-export-components
@@ -22,11 +23,12 @@ const checkTokenValidity = (token) => {
  * Build UI-friendly role flags from role list
  */
 const buildRoleFlags = (roles = []) => ({
-  isGlobalAdmin: roles.includes('SUPER_ADMIN'),
-  isHR: roles.includes('HR'),
-  isManager: roles.includes('MANAGER'),
-  isEmployee: roles.includes('EMPLOYEE'),
-  isAuditor: roles.includes('AUDITOR'),
+  isGlobalAdmin:
+    roles.includes('ROLE_SUPER_ADMIN') || roles.includes('SUPER_ADMIN'),
+  isHR: roles.includes('ROLE_HR') || roles.includes('HR'),
+  isManager: roles.includes('ROLE_MANAGER') || roles.includes('MANAGER'),
+  isEmployee: roles.includes('ROLE_EMPLOYEE') || roles.includes('EMPLOYEE'),
+  isAuditor: roles.includes('ROLE_AUDITOR') || roles.includes('AUDITOR'),
 });
 
 export const AuthProvider = ({ children }) => {
@@ -62,12 +64,47 @@ export const AuthProvider = ({ children }) => {
     return null;
   });
 
-  const [loading] = useState(false);
+  const [loading, setLoading] = useState(true);
+
+  // Fetch the profile once on mount if we hydrated a valid token
+  useEffect(() => {
+    let isMounted = true;
+    const initProfile = async () => {
+      if (user && user.id) {
+        try {
+          const profile = await getMyProfile();
+          console.log('Fetched profile on startup:', profile); // Debugging line to check fetched profile data
+          if (isMounted) {
+            setUser((prev) => ({
+              ...prev,
+              firstName: profile.firstName,
+              lastName: profile.lastName,
+              profilePic: profile.profilePic,
+              department: profile.department,
+              designation: profile.jobTitle || null,
+              workSchedule: profile.workSchedule || null, // Add work schedule to context for attendance computations
+            }));
+          }
+        } catch (error) {
+          console.error('Failed to load user profile on startup', error);
+        }
+      }
+      if (isMounted) {
+        setLoading(false);
+      }
+    };
+
+    initProfile();
+    return () => {
+      isMounted = false;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * Handle login success
    */
-  const handleLogin = (authData) => {
+  const handleLogin = async (authData) => {
     const roles = authData.roles || [];
 
     localStorage.setItem('token', authData.token);
@@ -75,12 +112,28 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('roles', JSON.stringify(roles));
     localStorage.setItem('status', authData.status);
 
+    // Initial state to unblock UI
     setUser({
       id: authData.employeeId,
       status: authData.status,
       roles,
       ...buildRoleFlags(roles),
     });
+
+    // Fetch full profile info in the background
+    try {
+      const profile = await getMyProfile();
+      setUser((prev) => ({
+        ...prev,
+        firstName: profile.firstName,
+        lastName: profile.lastName,
+        profilePic: profile.profilePic,
+        department: profile.department,
+        designation: profile.jobPosition?.title || null,
+      }));
+    } catch (err) {
+      console.error('Failed to fetch profile during login', err);
+    }
   };
 
   /**

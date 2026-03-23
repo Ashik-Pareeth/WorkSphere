@@ -21,7 +21,9 @@ public record TaskResponseDTO(
         String assignerName,
         String assignedToName,
         UUID assignedToId,
-        UUID sourceTicketId
+        UUID sourceTicketId,
+        LocalDateTime flaggedAt,
+        String flaggedByName
 ) {
     public static TaskResponseDTO fromEntity(Task task) {
         return new TaskResponseDTO(
@@ -41,7 +43,9 @@ public record TaskResponseDTO(
                 task.getAssigner() != null ? task.getAssigner().getUserName() : null,
                 task.getAssignedTo() != null ? task.getAssignedTo().getUserName() : null,
                 task.getAssignedTo() != null ? task.getAssignedTo().getId() : null,
-                task.getSourceTicket() != null ? task.getSourceTicket().getId() : null
+                task.getSourceTicket() != null ? task.getSourceTicket().getId() : null,
+                task.getFlaggedAt(),
+                task.getFlaggedBy() != null ? task.getFlaggedBy().getUserName() : null
         );
     }
 }

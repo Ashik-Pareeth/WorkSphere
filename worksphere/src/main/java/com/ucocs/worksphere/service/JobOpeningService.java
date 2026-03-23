@@ -96,4 +96,31 @@ public class JobOpeningService {
 
         return jobOpeningRepository.save(opening);
     }
+
+    public com.ucocs.worksphere.dto.hiring.JobStatsResponse getJobStats() {
+        int openJobs = (int) jobOpeningRepository.countByStatus(JobOpeningStatus.OPEN);
+        List<com.ucocs.worksphere.entity.Candidate> candidates = candidateRepository.findAll();
+        int totalCandidates = candidates.size();
+
+        java.util.Map<String, Integer> byStage = new java.util.LinkedHashMap<>();
+        byStage.put("APPLIED", 0);
+        byStage.put("SHORTLISTED", 0);
+        byStage.put("INTERVIEWING", 0);
+        byStage.put("OFFERED", 0);
+        byStage.put("ACCEPTED", 0);
+
+        for (com.ucocs.worksphere.entity.Candidate c : candidates) {
+            if (c.getStatus() == null) continue;
+            switch(c.getStatus()) {
+                case APPLIED -> byStage.put("APPLIED", byStage.get("APPLIED") + 1);
+                case SHORTLISTED -> byStage.put("SHORTLISTED", byStage.get("SHORTLISTED") + 1);
+                case INTERVIEWING -> byStage.put("INTERVIEWING", byStage.get("INTERVIEWING") + 1);
+                case OFFERED -> byStage.put("OFFERED", byStage.get("OFFERED") + 1);
+                case ACCEPTED -> byStage.put("ACCEPTED", byStage.get("ACCEPTED") + 1);
+                default -> {} // Ignore REJECTED and DECLINED as they fall out of funnel
+            }
+        }
+        
+        return new com.ucocs.worksphere.dto.hiring.JobStatsResponse(openJobs, totalCandidates, byStage, 0);
+    }
 }
