@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
 import { adjustBalanceManually, getAllLeavePolicies } from '../../api/leaveApi';
 import { getAllEmployees } from '../../api/employeeApi';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import '../../styles/admin-ui.css';
 
 import {
@@ -73,6 +73,9 @@ function LeaveBalanceOverridePage() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [alert, setAlert] = useState(null);
+  
+  // Confirmation state
+  const [confirmOpen, setConfirmOpen] = useState(false);
 
   useEffect(() => {
     const loadData = async () => {
@@ -106,9 +109,14 @@ function LeaveBalanceOverridePage() {
   const isFormValid =
     selectedEmployee && selectedPolicy && days !== '' && reason.trim();
 
-  const handleSubmit = async (e) => {
+  const handlePreSubmit = (e) => {
     e.preventDefault();
     if (!isFormValid) return;
+    setConfirmOpen(true);
+  };
+
+  const executeOverride = async () => {
+    setConfirmOpen(false);
     setLoading(true);
     try {
       await adjustBalanceManually({
@@ -192,7 +200,7 @@ function LeaveBalanceOverridePage() {
             <div className="ws-panel-title">Apply adjustment</div>
           </div>
           <div className="ws-panel-body">
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={handlePreSubmit}>
               {/* Employee */}
               <div className="ws-field">
                 <label className="ws-label">Employee</label>
@@ -405,6 +413,21 @@ function LeaveBalanceOverridePage() {
           </div>
         </div>
       </div>
+
+      <ConfirmDialog 
+        isOpen={confirmOpen}
+        title="Confirm Balance Override"
+        description={`You are about to manually adjust ${
+          employees.find((e) => e.id === selectedEmployee)?.firstName || 'the employee'
+        }'s ${
+          policies.find((p) => p.id === selectedPolicy)?.name || 'leave'
+        } balance by ${parseFloat(days) || 0} days. This cannot be automatically reversed.`}
+        confirmLabel="Apply Override"
+        cancelLabel="Cancel"
+        variant="destructive"
+        onCancel={() => setConfirmOpen(false)}
+        onConfirm={executeOverride}
+      />
     </div>
   );
 }

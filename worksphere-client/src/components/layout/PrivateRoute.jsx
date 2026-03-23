@@ -1,7 +1,7 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useAuth } from '../../hooks/useAuth'; // Adjust path!
-import NavBar from './NavBar';
+import AppShell from './AppShell';
 
 const PrivateRoute = ({ allowedRoles = [] }) => {
   const { user, loading, isAuthenticated, logout } = useAuth();
@@ -59,12 +59,7 @@ const PrivateRoute = ({ allowedRoles = [] }) => {
   }
 
   // 7. User is valid, active, and authorized. Render the UI!
-  return (
-    <>
-      <NavBar />
-      <Outlet />
-    </>
-  );
+  return <AppShell />;
 };
 
 export default PrivateRoute;

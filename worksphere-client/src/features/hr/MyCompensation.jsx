@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from "react";
 import { fetchMyPayroll } from "../../api/hrApi";
+import PayslipViewerModal from "./PayslipViewerModal";
 
 const MyCompensation = () => {
   const [records, setRecords] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [viewingPayslipId, setViewingPayslipId] = useState(null);
 
   useEffect(() => {
     loadPayroll();
@@ -100,14 +102,12 @@ const MyCompensation = () => {
                   <div className="flex items-center gap-3">
                     {statusBadge(r.status)}
                     {r.payslipDownloadUrl && (
-                      <a
-                        href={`http://localhost:8080${r.payslipDownloadUrl}`}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="px-3 py-1.5 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors font-medium"
+                      <button
+                        onClick={() => setViewingPayslipId(r.id)}
+                        className="px-3 py-1.5 text-sm bg-indigo-50 hover:bg-indigo-100 text-indigo-700 rounded-lg transition-colors font-medium cursor-pointer"
                       >
-                        📄 Download Payslip
-                      </a>
+                        📄 View Payslip
+                      </button>
                     )}
                   </div>
                 </div>
@@ -190,6 +190,13 @@ const MyCompensation = () => {
           })}
         </div>
       )}
+
+      {/* Payslip Modal */}
+      <PayslipViewerModal
+        isOpen={!!viewingPayslipId}
+        onClose={() => setViewingPayslipId(null)}
+        payrollId={viewingPayslipId}
+      />
     </div>
   );
 };

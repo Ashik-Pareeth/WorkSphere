@@ -70,6 +70,13 @@ public class AttendanceService {
         LocalTime currentTime = now.toLocalTime();
         long minutesLate = Duration.between(schedule.getExpectedStart(), currentTime).toMinutes();
 
+        // Normalize minutesLate to handle overnight shifts or clock-ins around midnight
+        if (minutesLate < -720) {
+            minutesLate += 1440; // Crossed midnight forward
+        } else if (minutesLate > 720) {
+            minutesLate -= 1440; // Crossed midnight backward
+        }
+
         if (minutesLate > schedule.getGracePeriodMin()) {
             newAttendance.setDailyStatus(DailyStatus.LATE);
         } else {
@@ -99,7 +106,14 @@ public class AttendanceService {
 
         WorkSchedule schedule = attendance.getWorkSchedule();
         long totalMinutes = Duration.between(attendance.getClockIn(), now).toMinutes();
-        int breakMin = (schedule != null) ? schedule.getBreakDurationMin() : 0;
+        
+        // Only automatically deduct the break if the employee has worked at least 4 hours (240 mins)
+        // This prevents deducting breaks for accidental rapid clock in/outs or half-day leaves.
+        int breakMin = 0;
+        if (schedule != null && schedule.getBreakDurationMin() != null && totalMinutes >= 240) {
+            breakMin = schedule.getBreakDurationMin();
+        }
+        
         attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
 
         attendanceRepository.save(attendance);
@@ -112,6 +126,17 @@ public class AttendanceService {
 
         // Note: You may need to update AttendanceDTO.fromEntity to handle the UUID
         // change
+        return attendanceRepository.findByEmployee(employee)
+                .stream()
+                .map(AttendanceDTO::fromEntity)
+                .toList();
+    }
+
+    // --- ADMIN/MANAGER: ATTENDANCE HISTORY FOR A SPECIFIC EMPLOYEE BY ID ---
+    @Transactional(readOnly = true)
+    public List<AttendanceDTO> getAttendanceHistoryForEmployee(UUID employeeId) {
+        Employee employee = employeeRepository.findById(employeeId)
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found with id: " + employeeId));
         return attendanceRepository.findByEmployee(employee)
                 .stream()
                 .map(AttendanceDTO::fromEntity)
@@ -170,8 +195,14 @@ public class AttendanceService {
         attendance.setIsManuallyAdjusted(true);
         if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
             long totalMinutes = Duration.between(attendance.getClockIn(), attendance.getClockOut()).toMinutes();
-            int breakMin = attendance.getWorkSchedule().getBreakDurationMin();
-            attendance.setTotalWorkMinutes((int) (totalMinutes - breakMin));
+            
+            // Only automatically deduct the break if the employee has worked at least 4 hours (240 mins)
+            int breakMin = 0;
+            if (attendance.getWorkSchedule() != null && attendance.getWorkSchedule().getBreakDurationMin() != null && totalMinutes >= 240) {
+                breakMin = attendance.getWorkSchedule().getBreakDurationMin();
+            }
+            
+            attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
         }
 
         return attendanceRepository.save(attendance);

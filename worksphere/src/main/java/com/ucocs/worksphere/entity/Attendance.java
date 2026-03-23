@@ -14,8 +14,6 @@ import java.time.LocalDateTime;
 @Table(name = "attendance")
 public class Attendance extends BaseEntity {
 
-    // id (UUID) is inherited from BaseEntity
-
     @Column(nullable = false)
     private LocalDate date;
 

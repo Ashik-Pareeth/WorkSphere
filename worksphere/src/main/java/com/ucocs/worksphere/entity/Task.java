@@ -62,6 +62,12 @@ public class Task extends BaseEntity {
     @Column(columnDefinition = "TEXT")
     private String flagReason;
 
+    private LocalDateTime flaggedAt;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "flagged_by_id")
+    private Employee flaggedBy;
+
     @Column(nullable = false)
     private boolean isSystemOverridden = false;
 
@@ -162,12 +168,14 @@ public class Task extends BaseEntity {
         this.requiresEvidence = requiresEvidence;
     }
 
-    public void flagForAudit(String reason) {
+    public void flagForAudit(String reason, Employee auditor) {
         if (reason == null || reason.isBlank()) {
             throw new IllegalArgumentException("A reason must be provided when flagging a task.");
         }
         this.isFlagged = true;
         this.flagReason = reason;
+        this.flaggedAt = LocalDateTime.now();
+        this.flaggedBy = auditor;
     }
 
     public void setSourceTicket(GrievanceTicket sourceTicket) {
@@ -177,6 +185,8 @@ public class Task extends BaseEntity {
     public void resolveFlag() {
         this.isFlagged = false;
         this.flagReason = null;
+        this.flaggedAt = null;
+        this.flaggedBy = null;
     }
 
     public void overrideSystem() {

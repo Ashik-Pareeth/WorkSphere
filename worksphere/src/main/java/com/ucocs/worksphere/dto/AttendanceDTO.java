@@ -10,14 +10,20 @@ public record AttendanceDTO(
         UUID id,
         LocalDate date,
         LocalDateTime clockIn,
-        LocalDateTime clockOut
+        LocalDateTime clockOut,
+        String dailyStatus,
+        Integer totalWorkMinutes,
+        Boolean isManuallyAdjusted
 ) {
     public static AttendanceDTO fromEntity(Attendance attendance) {
         return new AttendanceDTO(
-                attendance.getId(), // Note: If your Attendance ID is a Long, change UUID to Long here!
+                attendance.getId(),
                 attendance.getDate(),
                 attendance.getClockIn(),
-                attendance.getClockOut()
+                attendance.getClockOut(),
+                attendance.getDailyStatus() != null ? attendance.getDailyStatus().name() : null,
+                attendance.getTotalWorkMinutes(),
+                attendance.getIsManuallyAdjusted()
         );
     }
 }

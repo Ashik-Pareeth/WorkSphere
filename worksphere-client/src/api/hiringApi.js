@@ -7,6 +7,10 @@ export const fetchAllJobOpenings = () => {
   return axiosInstance.get('/api/jobs');
 };
 
+export const fetchHiringStats = () => {
+  return axiosInstance.get('/api/jobs/stats');
+};
+
 export const fetchPublicJobOpenings = () => {
   return axios.get('http://localhost:8080/api/jobs/public');
 };

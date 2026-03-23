@@ -2,6 +2,7 @@ package com.ucocs.worksphere.config;
 
 import com.ucocs.worksphere.entity.*;
 import com.ucocs.worksphere.enums.EmployeeStatus;
+import com.ucocs.worksphere.enums.TaskPriority;
 import com.ucocs.worksphere.repository.*;
 import org.jspecify.annotations.NonNull;
 import org.springframework.boot.CommandLineRunner;
@@ -10,6 +11,7 @@ import org.springframework.stereotype.Component;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.Set;
 
@@ -25,6 +27,7 @@ public class DataSeeder implements CommandLineRunner {
     private final SalaryStructureRepository salaryStructureRepository;
     private final LeavePolicyRepository leavePolicyRepository;
     private final PublicHolidayRepository publicHolidayRepository;
+    private final TaskRepository taskRepository;
     private final PasswordEncoder passwordEncoder;
 
     public DataSeeder(EmployeeRepository employeeRepository,
@@ -36,6 +39,7 @@ public class DataSeeder implements CommandLineRunner {
                       SalaryStructureRepository salaryStructureRepository,
                       LeavePolicyRepository leavePolicyRepository,
                       PublicHolidayRepository publicHolidayRepository,
+                      TaskRepository taskRepository,
                       PasswordEncoder passwordEncoder) {
         this.employeeRepository = employeeRepository;
         this.roleRepository = roleRepository;
@@ -46,6 +50,7 @@ public class DataSeeder implements CommandLineRunner {
         this.salaryStructureRepository = salaryStructureRepository;
         this.leavePolicyRepository = leavePolicyRepository;
         this.publicHolidayRepository = publicHolidayRepository;
+        this.taskRepository = taskRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -131,6 +136,8 @@ public class DataSeeder implements CommandLineRunner {
             employeeRepository.save(ashikEmp);
             employeeRepository.save(johnEmp);
 
+            seedTasks(managerEmp, ashikEmp, johnEmp);
+
             // 6. Seed Tax Slabs (India New Regime FY 2025-26)
             seedTaxSlabs();
 
@@ -155,6 +162,76 @@ public class DataSeeder implements CommandLineRunner {
             System.out.println("Tax slabs, Salary structures, Leave Policies, and Holidays seeded.");
             System.out.println("---------------------------------------------");
         }
+    }
+
+    private void seedTasks(Employee manager, Employee ashik, Employee john) {
+        if (taskRepository.count() > 0) return;
+
+        // Ashik's tasks — spread across all statuses to populate every Kanban column
+        Task t1 = new Task("TASK-001", "Set up CI/CD pipeline",
+                "Configure GitHub Actions for automated build and test on every PR.",
+                manager, ashik,
+                LocalDateTime.now().plusDays(7),
+                TaskPriority.HIGH);
+
+        Task t2 = new Task("TASK-002", "Refactor authentication module",
+                "Extract JWT logic into a dedicated service class.",
+                manager, ashik,
+                LocalDateTime.now().plusDays(3),
+                TaskPriority.HIGH);
+        t2.startProgress();
+
+        Task t3 = new Task("TASK-003", "Write unit tests for LeaveService",
+                "Achieve 80% coverage on LeaveRequestService methods.",
+                manager, ashik,
+                LocalDateTime.now().plusDays(5),
+                TaskPriority.MEDIUM);
+        t3.startProgress();
+        t3.submitForReview();
+
+        Task t4 = new Task("TASK-004", "Update API documentation",
+                "Document all new endpoints added in the current sprint.",
+                manager, ashik,
+                LocalDateTime.now().minusDays(2),
+                TaskPriority.LOW);
+        t4.startProgress();
+        t4.submitForReview();
+        t4.markAsCompleted();
+
+        // John's tasks
+        Task t5 = new Task("TASK-005", "Fix pagination bug on EmployeeList",
+                "The table does not reset to page 1 after applying a filter.",
+                manager, john,
+                LocalDateTime.now().plusDays(2),
+                TaskPriority.HIGH);
+
+        Task t6 = new Task("TASK-006", "Implement payslip download endpoint",
+                "Return PDF blob from GET /api/payroll/{id}/payslip.",
+                manager, john,
+                LocalDateTime.now().plusDays(6),
+                TaskPriority.MEDIUM);
+        t6.startProgress();
+
+        Task t7 = new Task("TASK-007", "Add department filter to roster board",
+                "Allow managers to filter the daily roster by department.",
+                manager, john,
+                LocalDateTime.now().plusDays(4),
+                TaskPriority.MEDIUM);
+        t7.startProgress();
+        t7.submitForReview();
+
+        Task t8 = new Task("TASK-008", "Database index optimisation",
+                "Add composite indexes on attendance and task tables for query performance.",
+                manager, john,
+                LocalDateTime.now().minusDays(5),
+                TaskPriority.LOW);
+        t8.startProgress();
+        t8.submitForReview();
+        t8.markAsCompleted();
+
+        taskRepository.saveAll(java.util.List.of(t1, t2, t3, t4, t5, t6, t7, t8));
+
+        System.out.println("Tasks seeded: 8 tasks across all Kanban statuses and priorities.");
     }
 
     // Helper method to keep code clean

@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { Suspense } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 
@@ -19,33 +19,40 @@ import Profile from './pages/Profile';
 import LeaveRequestPage from './pages/LeaveRequestPage';
 import LeaveApprovalsPage from './pages/LeaveApprovalsPage';
 import ManagerDashboard from './pages/ManagerDashboard';
+import RosterPage from './pages/RosterPage';
 import LeaveBalanceOverridePage from './features/leave/LeaveBalanceOverridePage';
 import LeavePolicyPage from './features/leave/LeavePolicyPage';
 import PublicHolidayPage from './features/admin/PublicHolidayPage';
 import WorkSchedulePage from './features/admin/WorkSchedulePage';
 import AssetDirectory from './features/hr/AssetDirectory';
-import HelpdeskAdmin from './features/hr/HelpdeskAdmin';
+const HelpdeskAdmin = React.lazy(() => import('./features/hr/HelpdeskAdmin'));
 import MyAssets from './features/hr/MyAssets';
 import Helpdesk from './features/hr/Helpdesk';
 import PerformanceOverview from './features/hr/PerformanceOverview';
 import OffboardingTracker from './features/hr/OffboardingTracker';
 import TeamAppraisals from './features/hr/TeamAppraisals';
 import MyAppraisals from './features/hr/MyAppraisals';
-import PayrollDashboard from './features/hr/PayrollDashboard';
+const PayrollDashboard = React.lazy(
+  () => import('./features/hr/PayrollDashboard')
+);
 import MyCompensation from './features/hr/MyCompensation';
-import EmployeeList from './features/hr/EmployeeList';
+const EmployeeList = React.lazy(() => import('./features/hr/EmployeeList'));
 import Unauthorized from './pages/Unauthorized';
 import MyAttendanceLog from './features/attendance/MyAttendanceLog';
+import NotificationsPage from './pages/NotificationsPage';
 
 // Hiring Pipeline
 import JobOpeningsList from './features/hiring/JobOpeningsList';
-import HiringPipelineBoard from './features/hiring/HiringPipelineBoard';
+const HiringPipelineBoard = React.lazy(
+  () => import('./features/hiring/HiringPipelineBoard')
+);
 import PublicApplyForm from './features/hiring/PublicApplyForm';
 import PublicOfferResponse from './features/hiring/PublicOfferResponse';
 import PublicCareersList from './features/hiring/PublicCareersList';
 import PublicJobDetails from './features/hiring/PublicJobDetails';
 
 import { Toaster } from '@/components/ui/sonner';
+import PageSkeleton from './components/common/PageSkeleton';
 
 const isTokenValid = () => {
   const token = localStorage.getItem('token');
@@ -68,122 +75,133 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <div className="app">
-          <Routes>
-            {/* PUBLIC ROUTES */}
-            <Route path="/" element={<LandingPage />} />
-            <Route
-              path="/login"
-              element={
-                <PublicRoute>
-                  <Login />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/forgot-password"
-              element={
-                <PublicRoute>
-                  <ForgotPassword />
-                </PublicRoute>
-              }
-            />
-            <Route
-              path="/reset-password"
-              element={
-                <PublicRoute>
-                  <ResetPassword />
-                </PublicRoute>
-              }
-            />
+          <Suspense fallback={<PageSkeleton />}>
+            <Routes>
+              {/* PUBLIC ROUTES */}
+              <Route path="/" element={<LandingPage />} />
+              <Route
+                path="/login"
+                element={
+                  <PublicRoute>
+                    <Login />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/forgot-password"
+                element={
+                  <PublicRoute>
+                    <ForgotPassword />
+                  </PublicRoute>
+                }
+              />
+              <Route
+                path="/reset-password"
+                element={
+                  <PublicRoute>
+                    <ResetPassword />
+                  </PublicRoute>
+                }
+              />
 
-            {/* PUBLIC HIRING ROUTES (No Auth checking wrapper) */}
-            <Route path="/careers" element={<PublicCareersList />} />
-            <Route path="/careers/:id" element={<PublicJobDetails />} />
-            <Route
-              path="/jobs/:openingId/apply"
-              element={<PublicApplyForm />}
-            />
-            <Route
-              path="/offers/:offerId/respond"
-              element={<PublicOfferResponse />}
-            />
+              {/* PUBLIC HIRING ROUTES (No Auth checking wrapper) */}
+              <Route path="/careers" element={<PublicCareersList />} />
+              <Route path="/careers/:id" element={<PublicJobDetails />} />
+              <Route
+                path="/jobs/:openingId/apply"
+                element={<PublicApplyForm />}
+              />
+              <Route
+                path="/offers/:offerId/respond"
+                element={<PublicOfferResponse />}
+              />
 
-            {/* --- TIER 1: EVERYONE (Employees, Managers, HR, Admins, Auditors) --- */}
-            <Route
-              element={
-                <PrivateRoute
-                  allowedRoles={[
-                    'EMPLOYEE',
-                    'MANAGER',
-                    'HR',
-                    'SUPER_ADMIN',
-                    'AUDITOR',
-                  ]}
+              {/* --- TIER 1: EVERYONE (Employees, Managers, HR, Admins, Auditors) --- */}
+              <Route
+                element={
+                  <PrivateRoute
+                    allowedRoles={[
+                      'EMPLOYEE',
+                      'MANAGER',
+                      'HR',
+                      'SUPER_ADMIN',
+                      'AUDITOR',
+                    ]}
+                  />
+                }
+              >
+                <Route path="/onBoarding" element={<Onboarding />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/profile" element={<Profile />} />
+                <Route path="/tasks" element={<TaskBoard />} />
+                <Route path="/attendance-log" element={<MyAttendanceLog />} />
+                <Route path="/leave" element={<LeaveRequestPage />} />
+                <Route path="/my-assets" element={<MyAssets />} />
+                <Route path="/helpdesk" element={<Helpdesk />} />
+                <Route path="/my-appraisals" element={<MyAppraisals />} />
+                <Route path="/my-compensation" element={<MyCompensation />} />
+                <Route path="/notifications" element={<NotificationsPage />} />
+              </Route>
+
+              {/* --- TIER 1.5: MANAGERS, HR, SUPER_ADMINS --- */}
+              <Route
+                element={
+                  <PrivateRoute
+                    allowedRoles={['MANAGER', 'HR', 'SUPER_ADMIN']}
+                  />
+                }
+              >
+                <Route path="/approvals" element={<LeaveApprovalsPage />} />
+                <Route path="/roster" element={<RosterPage />} />
+                <Route path="/team-appraisals" element={<TeamAppraisals />} />
+              </Route>
+
+              {/* --- TIER 1.8: SUPER_ADMINS ONLY (Core System Config) --- */}
+              <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
+                <Route path="/roles" element={<RoleForm />} />
+                <Route path="/role-management" element={<RoleManagement />} />
+                <Route path="/register" element={<AddEmployee />} />
+              </Route>
+
+              {/* --- TIER 2: HR & SUPER_ADMINS ONLY (System Config) --- */}
+              <Route
+                element={<PrivateRoute allowedRoles={['HR', 'SUPER_ADMIN']} />}
+              >
+                <Route path="/departments" element={<DepartmentForm />} />
+                <Route path="/jobPosition" element={<JobPositionForm />} />
+                <Route path="/leave-policies" element={<LeavePolicyPage />} />
+                <Route path="/employee-list" element={<EmployeeList />} />
+                <Route
+                  path="/leave-override"
+                  element={<LeaveBalanceOverridePage />}
                 />
-              }
-            >
-              <Route path="/onBoarding" element={<Onboarding />} />
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/tasks" element={<TaskBoard />} />
-              <Route path="/attendance-log" element={<MyAttendanceLog />} />
-              <Route path="/leave" element={<LeaveRequestPage />} />
-              <Route path="/my-assets" element={<MyAssets />} />
-              <Route path="/helpdesk" element={<Helpdesk />} />
-              <Route path="/my-appraisals" element={<MyAppraisals />} />
-              <Route path="/my-compensation" element={<MyCompensation />} />
-            </Route>
+                <Route path="/holidays" element={<PublicHolidayPage />} />
+                <Route path="/work-schedules" element={<WorkSchedulePage />} />
+                <Route path="/hr/assets" element={<AssetDirectory />} />
+                <Route path="/hr/helpdesk" element={<HelpdeskAdmin />} />
+                <Route
+                  path="/hr/appraisals"
+                  element={<PerformanceOverview />}
+                />
+                <Route
+                  path="/hr/offboarding"
+                  element={<OffboardingTracker />}
+                />
+                <Route path="/hr/payroll" element={<PayrollDashboard />} />
 
-            {/* --- TIER 1.5: MANAGERS, HR, SUPER_ADMINS --- */}
-            <Route
-              element={
-                <PrivateRoute allowedRoles={['MANAGER', 'HR', 'SUPER_ADMIN']} />
-              }
-            >
-              <Route path="/approvals" element={<LeaveApprovalsPage />} />
-              <Route path="/roster" element={<ManagerDashboard />} />
-              <Route path="/team-appraisals" element={<TeamAppraisals />} />
-            </Route>
+                {/* Hiring Pipeline module routes */}
+                <Route path="/hiring/jobs" element={<JobOpeningsList />} />
+                <Route
+                  path="/hiring/jobs/:id/pipeline"
+                  element={<HiringPipelineBoard />}
+                />
+              </Route>
 
-            {/* --- TIER 1.8: SUPER_ADMINS ONLY (Core System Config) --- */}
-            <Route element={<PrivateRoute allowedRoles={['SUPER_ADMIN']} />}>
-              <Route path="/roles" element={<RoleForm />} />
-              <Route path="/role-management" element={<RoleManagement />} />
-              <Route path="/register" element={<AddEmployee />} />
-            </Route>
-
-            {/* --- TIER 2: HR & SUPER_ADMINS ONLY (System Config) --- */}
-            <Route
-              element={<PrivateRoute allowedRoles={['HR', 'SUPER_ADMIN']} />}
-            >
-              <Route path="/departments" element={<DepartmentForm />} />
-              <Route path="/jobPosition" element={<JobPositionForm />} />
-              <Route path="/leave-policies" element={<LeavePolicyPage />} />
-              <Route path="/employee-list" element={<EmployeeList />} />
-              <Route
-                path="/leave-override"
-                element={<LeaveBalanceOverridePage />}
-              />
-              <Route path="/holidays" element={<PublicHolidayPage />} />
-              <Route path="/work-schedules" element={<WorkSchedulePage />} />
-              <Route path="/hr/assets" element={<AssetDirectory />} />
-              <Route path="/hr/helpdesk" element={<HelpdeskAdmin />} />
-              <Route path="/hr/appraisals" element={<PerformanceOverview />} />
-              <Route path="/hr/offboarding" element={<OffboardingTracker />} />
-              <Route path="/hr/payroll" element={<PayrollDashboard />} />
-
-              {/* Hiring Pipeline module routes */}
-              <Route path="/hiring/jobs" element={<JobOpeningsList />} />
-              <Route
-                path="/hiring/jobs/:id/pipeline"
-                element={<HiringPipelineBoard />}
-              />
-            </Route>
-
-            {/* FALLBACK ROUTE */}
-            <Route path="/unauthorized" element={<Unauthorized />} />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
+              {/* FALLBACK ROUTE */}
+              <Route path="/unauthorized" element={<Unauthorized />} />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </Suspense>
           <Toaster />
         </div>
       </AuthProvider>

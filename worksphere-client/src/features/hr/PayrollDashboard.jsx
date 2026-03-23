@@ -4,10 +4,11 @@ import {
   fetchPayrollSummary,
   processPayroll,
   markPayrollPaid,
-  fetchSalaryStructure,
-  saveSalaryStructure,
 } from "../../api/hrApi";
 import { getAllEmployees } from "../../api/employeeApi";
+import PayslipViewerModal from "./PayslipViewerModal";
+import SalaryStructureModal from "./SalaryStructureModal";
+import { Skeleton } from "../../components/ui/skeleton";
 
 const PayrollDashboard = () => {
   const [records, setRecords] = useState([]);
@@ -15,6 +16,7 @@ const PayrollDashboard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [viewingPayslipId, setViewingPayslipId] = useState(null);
 
   const now = new Date();
   const [month, setMonth] = useState(now.getMonth() + 1);
@@ -23,17 +25,6 @@ const PayrollDashboard = () => {
   // Salary Structure Modal
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
-  const [salaryForm, setSalaryForm] = useState({
-    baseSalary: "",
-    hra: "0",
-    da: "0",
-    travelAllowance: "0",
-    otherAllowances: "0",
-    pfEmployeePercent: "12",
-    pfEmployerPercent: "12",
-    professionalTax: "200",
-    effectiveDate: new Date().toISOString().split("T")[0],
-  });
 
   useEffect(() => {
     loadEmployees();
@@ -98,55 +89,9 @@ const PayrollDashboard = () => {
     }
   };
 
-  const openSalaryModal = async (emp) => {
+  const openSalaryModal = (emp) => {
     setSelectedEmployee(emp);
-    try {
-      const res = await fetchSalaryStructure(emp.id);
-      const data = res.data;
-      setSalaryForm({
-        baseSalary: data.baseSalary || "",
-        hra: data.hra || "0",
-        da: data.da || "0",
-        travelAllowance: data.travelAllowance || "0",
-        otherAllowances: data.otherAllowances || "0",
-        pfEmployeePercent: data.pfEmployeePercent || "12",
-        pfEmployerPercent: data.pfEmployerPercent || "12",
-        professionalTax: data.professionalTax || "200",
-        effectiveDate:
-          data.effectiveDate || new Date().toISOString().split("T")[0],
-      });
-    } catch {
-      // Reset form if no structure found
-      setSalaryForm({
-        baseSalary: "",
-        hra: "0",
-        da: "0",
-        travelAllowance: "0",
-        otherAllowances: "0",
-        pfEmployeePercent: "12",
-        pfEmployerPercent: "12",
-        professionalTax: "200",
-        effectiveDate: new Date().toISOString().split("T")[0],
-      });
-    }
     setSalaryModalOpen(true);
-  };
-
-  const handleSalarySubmit = async (e) => {
-    e.preventDefault();
-    try {
-      await saveSalaryStructure({
-        ...salaryForm,
-        employeeId: selectedEmployee.id,
-      });
-      setSalaryModalOpen(false);
-      setSuccess("Salary structure saved.");
-      setTimeout(() => setSuccess(null), 4000);
-    } catch (err) {
-      setError(
-        err.response?.data?.message || err.response?.data?.error || "Failed to save salary structure"
-      );
-    }
   };
 
   const statusBadge = (status) => {
@@ -303,12 +248,23 @@ const PayrollDashboard = () => {
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
-              {records.length === 0 ? (
+              {loading ? (
+                [...Array(5)].map((_, i) => (
+                  <tr key={`skel-${i}`} className="hover:bg-gray-50">
+                    <td className="p-4"><Skeleton className="h-5 w-32" /></td>
+                    <td className="p-4"><Skeleton className="h-4 w-24" /></td>
+                    <td className="p-4"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                    <td className="p-4"><Skeleton className="h-4 w-20 ml-auto" /></td>
+                    <td className="p-4"><Skeleton className="h-5 w-24 ml-auto" /></td>
+                    <td className="p-4"><Skeleton className="h-4 w-16" /></td>
+                    <td className="p-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
+                    <td className="p-4 flex gap-2"><Skeleton className="h-8 w-16 rounded-md" /><Skeleton className="h-8 w-16 rounded-md" /></td>
+                  </tr>
+                ))
+              ) : records.length === 0 ? (
                 <tr>
                   <td colSpan="8" className="p-6 text-center text-gray-500">
-                    {loading
-                      ? "Loading..."
-                      : "No records. Select a period and click View Records or Generate Payroll."}
+                    No records. Select a period and click View Records or Generate Payroll.
                   </td>
                 </tr>
               ) : (
@@ -365,14 +321,12 @@ const PayrollDashboard = () => {
                             </button>
                           )}
                           {r.payslipDownloadUrl && (
-                            <a
-                              href={`http://localhost:8080${r.payslipDownloadUrl}`}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors"
+                            <button
+                              onClick={() => setViewingPayslipId(r.id)}
+                              className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors cursor-pointer"
                             >
-                              📄 Payslip
-                            </a>
+                              📄 View Payslip
+                            </button>
                           )}
                         </div>
                       </td>
@@ -385,101 +339,22 @@ const PayrollDashboard = () => {
         </div>
       </div>
 
-      {/* Salary Structure Modal */}
-      {salaryModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-lg mx-4 max-h-[90vh] overflow-y-auto">
-            <h2 className="text-xl font-bold text-gray-900 mb-1">
-              Salary Structure
-            </h2>
-            <p className="text-sm text-gray-500 mb-4">
-              {selectedEmployee?.firstName} {selectedEmployee?.lastName}
-            </p>
-            <form onSubmit={handleSalarySubmit} className="space-y-3">
-              <div className="grid grid-cols-2 gap-4">
-                {[
-                  ["baseSalary", "Base Salary"],
-                  ["hra", "HRA"],
-                  ["da", "DA"],
-                  ["travelAllowance", "Travel Allowance"],
-                  ["otherAllowances", "Other Allowances"],
-                  ["professionalTax", "Professional Tax"],
-                ].map(([key, label]) => (
-                  <div key={key}>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">
-                      {label}
-                    </label>
-                    <input
-                      type="number"
-                      step="0.01"
-                      required={key === "baseSalary"}
-                      value={salaryForm[key]}
-                      onChange={(e) =>
-                        setSalaryForm({
-                          ...salaryForm,
-                          [key]: e.target.value,
-                        })
-                      }
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                    />
-                  </div>
-                ))}
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    PF Employee %
-                  </label>
-                  <input
-                    type="number"
-                    step="0.1"
-                    value={salaryForm.pfEmployeePercent}
-                    onChange={(e) =>
-                      setSalaryForm({
-                        ...salaryForm,
-                        pfEmployeePercent: e.target.value,
-                      })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Effective Date
-                  </label>
-                  <input
-                    type="date"
-                    required
-                    value={salaryForm.effectiveDate}
-                    onChange={(e) =>
-                      setSalaryForm({
-                        ...salaryForm,
-                        effectiveDate: e.target.value,
-                      })
-                    }
-                    className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
-                  />
-                </div>
-              </div>
-              <div className="flex justify-end space-x-3 mt-4">
-                <button
-                  type="button"
-                  onClick={() => setSalaryModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 rounded-lg transition-colors"
-                >
-                  Save Structure
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+      <SalaryStructureModal
+        isOpen={salaryModalOpen}
+        onClose={() => setSalaryModalOpen(false)}
+        employee={selectedEmployee}
+        onSave={() => {
+          setSuccess("Salary structure saved.");
+          setTimeout(() => setSuccess(null), 4000);
+        }}
+      />
+
+      {/* Payslip Modal */}
+      <PayslipViewerModal
+        isOpen={!!viewingPayslipId}
+        onClose={() => setViewingPayslipId(null)}
+        payrollId={viewingPayslipId}
+      />
     </div>
   );
 };

@@ -230,7 +230,7 @@ public class TaskService {
         }
 
         // Use the new entity method
-        task.flagForAudit(reason);
+        task.flagForAudit(reason, currentUser);
 
         logHistory(task, currentUser, "Flagged: " + reason, "ROLE_AUDITOR", task.getStatus(), task.getStatus());
 
@@ -250,7 +250,8 @@ public class TaskService {
                 .anyMatch(a -> {
                     String role = a.getAuthority();
                     assert role != null;
-                    return role.equals("ROLE_ADMIN") || role.equals("ROLE_HR") || role.equals("ROLE_AUDITOR");
+                    String normalizedRole = role.startsWith("ROLE_") ? role.substring(5) : role;
+                    return normalizedRole.equals("ADMIN") || normalizedRole.equals("HR") || normalizedRole.equals("AUDITOR");
                 });
 
         if (isGlobalViewer) {
@@ -310,9 +311,13 @@ public class TaskService {
     }
 
     private boolean hasRole(Employee employee, String roleName) {
-        employee.getRoles().forEach(r -> System.out.println("DB ROLE = " + r.getRoleName()));
+        String normalizedTarget = roleName.startsWith("ROLE_") ? roleName.substring(5) : roleName;
         return employee.getRoles().stream()
-                .anyMatch(r -> r.getRoleName().equals(roleName));
+                .anyMatch(r -> {
+                    String dbRole = r.getRoleName();
+                    String normalizedDb = dbRole != null && dbRole.startsWith("ROLE_") ? dbRole.substring(5) : dbRole;
+                    return normalizedTarget.equals(normalizedDb);
+                });
     }
 
     public Task getTaskById(UUID taskId) {
