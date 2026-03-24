@@ -132,6 +132,10 @@ export default function Sidebar() {
                 <Users size={18} />
                 {!collapsed && <span>Team Roster</span>}
               </NavLink>
+              <NavLink to="/team-attendance" className={navLinkClass}>
+                <Clock size={18} />
+                {!collapsed && <span>Team Attendance</span>}
+              </NavLink>
               <NavLink to="/approvals" className={navLinkClass}>
                 <CheckCircle size={18} />
                 {!collapsed && <span>Approvals</span>}

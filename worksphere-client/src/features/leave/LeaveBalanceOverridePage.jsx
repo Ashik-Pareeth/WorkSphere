@@ -1,6 +1,7 @@
 import { adjustBalanceManually, getAllLeavePolicies } from '../../api/leaveApi';
 import { getAllEmployees } from '../../api/employeeApi';
 import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { useEffect, useState } from 'react';
 import '../../styles/admin-ui.css';
 
 import {
@@ -73,7 +74,7 @@ function LeaveBalanceOverridePage() {
   const [loading, setLoading] = useState(false);
   const [dataLoading, setDataLoading] = useState(true);
   const [alert, setAlert] = useState(null);
-  
+
   // Confirmation state
   const [confirmOpen, setConfirmOpen] = useState(false);
 
@@ -414,11 +415,12 @@ function LeaveBalanceOverridePage() {
         </div>
       </div>
 
-      <ConfirmDialog 
+      <ConfirmDialog
         isOpen={confirmOpen}
         title="Confirm Balance Override"
         description={`You are about to manually adjust ${
-          employees.find((e) => e.id === selectedEmployee)?.firstName || 'the employee'
+          employees.find((e) => e.id === selectedEmployee)?.firstName ||
+          'the employee'
         }'s ${
           policies.find((p) => p.id === selectedPolicy)?.name || 'leave'
         } balance by ${parseFloat(days) || 0} days. This cannot be automatically reversed.`}

@@ -306,6 +306,14 @@ public class EmployeeService {
                 .toList();
     }
 
+    @Transactional(readOnly = true)
+    public List<EmployeeResponseDTO> getMyTeam(String managerUsername) {
+        return employeeRepository.findByManagerUserName(managerUsername)
+                .stream()
+                .map(EmployeeResponseDTO::fromEntity)
+                .toList();
+    }
+
     public EmployeeResponseDTO getEmployeeById(UUID id) {
         Employee employee = employeeRepository.findByIdWithDetails(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));

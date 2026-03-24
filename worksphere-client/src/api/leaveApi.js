@@ -24,6 +24,11 @@ export const getMyLedger = async () => {
   return response.data;
 };
 
+export const getMyLeaveRequests = async () => {
+  const response = await axiosInstance.get('/api/leave-requests/my-requests');
+  return response.data;
+};
+
 // HR Only: Manually add/remove days from a balance
 export const adjustBalanceManually = async (adjustmentData) => {
   // adjustmentData needs: { employeeId, policyId, transactionType, days, reason }

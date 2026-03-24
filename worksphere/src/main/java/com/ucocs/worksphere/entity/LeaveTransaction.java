@@ -29,8 +29,6 @@ public class LeaveTransaction extends BaseEntity {
     @Column(nullable = false, length = 255)
     private String reason; // "Monthly Accrual", "Approved Vacation", "HR Correction"
 
-    // Optional reference: If this deduction was caused by an approved request, link it!
-    // (We will create the LeaveRequest entity in Phase 4)
     @Column(name = "reference_request_id", nullable = true)
     private String referenceRequestId;
 }

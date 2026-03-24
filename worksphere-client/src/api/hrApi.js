@@ -1,14 +1,14 @@
-import axiosInstance from "./axiosInstance";
+import axiosInstance from './axiosInstance';
 
 // ==================== ASSET ENDPOINTS ====================
 
 export const fetchAllAssets = (type) => {
   const params = type ? { type } : {};
-  return axiosInstance.get("/api/hr/assets", { params });
+  return axiosInstance.get('/api/hr/assets', { params });
 };
 
 export const createAsset = (data) => {
-  return axiosInstance.post("/api/hr/assets", data);
+  return axiosInstance.post('/api/hr/assets', data);
 };
 
 export const assignAsset = (assetId, data) => {
@@ -24,18 +24,18 @@ export const fetchEmployeeAssets = (employeeId) => {
 };
 
 export const fetchMyAssets = () => {
-  return axiosInstance.get("/api/hr/assets/my");
+  return axiosInstance.get('/api/hr/assets/my');
 };
 
 // ==================== TICKET ENDPOINTS ====================
 
 export const fetchAllTickets = (status) => {
   const params = status ? { status } : {};
-  return axiosInstance.get("/api/hr/tickets", { params });
+  return axiosInstance.get('/api/hr/tickets', { params });
 };
 
 export const createTicket = (data) => {
-  return axiosInstance.post("/api/hr/tickets", data);
+  return axiosInstance.post('/api/hr/tickets', data);
 };
 
 export const assignTicket = (ticketId, assignToId) => {
@@ -55,17 +55,17 @@ export const resolveTicket = (ticketId, resolution) => {
 };
 
 export const fetchMyTickets = () => {
-  return axiosInstance.get("/api/hr/tickets/my");
+  return axiosInstance.get('/api/hr/tickets/my');
 };
 
 // ==================== NOTIFICATION ENDPOINTS ====================
 
 export const fetchNotifications = () => {
-  return axiosInstance.get("/api/notifications");
+  return axiosInstance.get('/api/notifications');
 };
 
 export const fetchUnreadCount = () => {
-  return axiosInstance.get("/api/notifications/unread-count");
+  return axiosInstance.get('/api/notifications/unread-count');
 };
 
 export const markNotificationRead = (id) => {
@@ -73,25 +73,25 @@ export const markNotificationRead = (id) => {
 };
 
 export const markAllNotificationsRead = () => {
-  return axiosInstance.put("/api/notifications/read-all");
+  return axiosInstance.put('/api/notifications/read-all');
 };
 
 // ==================== APPRAISAL ENDPOINTS ====================
 
 export const fetchAllAppraisals = () => {
-  return axiosInstance.get("/api/hr/appraisal");
+  return axiosInstance.get('/api/hr/appraisal');
 };
 
 export const fetchMyAppraisals = () => {
-  return axiosInstance.get("/api/hr/appraisal/my");
+  return axiosInstance.get('/api/hr/appraisal/my');
 };
 
 export const fetchTeamAppraisals = () => {
-  return axiosInstance.get("/api/hr/appraisal/team");
+  return axiosInstance.get('/api/hr/appraisal/team');
 };
 
 export const createAppraisal = (data) => {
-  return axiosInstance.post("/api/hr/appraisal", data);
+  return axiosInstance.post('/api/hr/appraisal', data);
 };
 
 export const submitSelfAppraisal = (id, data) => {
@@ -109,15 +109,15 @@ export const acknowledgeAppraisal = (id) => {
 // ==================== OFFBOARDING ENDPOINTS ====================
 
 export const fetchAllOffboardingRecords = () => {
-  return axiosInstance.get("/api/hr/offboarding");
+  return axiosInstance.get('/api/hr/offboarding');
 };
 
 export const fetchMyOffboardingRecord = () => {
-  return axiosInstance.get("/api/hr/offboarding/my");
+  return axiosInstance.get('/api/hr/offboarding/my');
 };
 
 export const initiateOffboarding = (data) => {
-  return axiosInstance.post("/api/hr/offboarding", data);
+  return axiosInstance.post('/api/hr/offboarding', data);
 };
 
 export const updateOffboardingClearance = (id, department, isCleared) => {
@@ -129,11 +129,11 @@ export const updateOffboardingClearance = (id, department, isCleared) => {
 // ==================== PAYROLL ENDPOINTS ====================
 
 export const generatePayroll = (data) => {
-  return axiosInstance.post("/api/hr/payroll/generate", data);
+  return axiosInstance.post('/api/hr/payroll/generate', data);
 };
 
 export const fetchPayrollSummary = (month, year) => {
-  return axiosInstance.get("/api/hr/payroll/summary", {
+  return axiosInstance.get('/api/hr/payroll/summary', {
     params: { month, year },
   });
 };
@@ -143,7 +143,7 @@ export const fetchEmployeePayroll = (employeeId) => {
 };
 
 export const fetchMyPayroll = () => {
-  return axiosInstance.get("/api/hr/payroll/my");
+  return axiosInstance.get('/api/hr/payroll/my');
 };
 
 export const processPayroll = (id) => {
@@ -155,9 +155,15 @@ export const markPayrollPaid = (id) => {
 };
 
 export const saveSalaryStructure = (data) => {
-  return axiosInstance.post("/api/hr/payroll/salary-structure", data);
+  return axiosInstance.post('/api/hr/payroll/salary-structure', data);
 };
 
 export const fetchSalaryStructure = (employeeId) => {
   return axiosInstance.get(`/api/hr/payroll/salary-structure/${employeeId}`);
+};
+
+export const downloadPayslip = (id) => {
+  return axiosInstance.get(`/api/hr/payroll/${id}/payslip`, {
+    responseType: 'blob',
+  });
 };

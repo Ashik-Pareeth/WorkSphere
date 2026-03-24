@@ -7,6 +7,7 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.TimesheetAuditLog;
 import com.ucocs.worksphere.entity.WorkSchedule;
 import com.ucocs.worksphere.enums.DailyStatus;
+import com.ucocs.worksphere.enums.NotificationType;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.AttendanceRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
@@ -30,22 +31,19 @@ public class AttendanceService {
     private final AttendanceRepository attendanceRepository;
     private final EmployeeRepository employeeRepository;
     private final TimesheetAuditLogRepository auditLogRepository;
+    private final NotificationService notificationService; // ADDED
 
-    // --- HELPER METHOD TO KEEP CODE DRY ---
     private Employee getEmployeeByUsername(String username) {
         return employeeRepository.findByUserName(username)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found with username: " + username));
     }
 
-    // --- YOUR UPDATED CLOCK-IN LOGIC ---
     @Transactional
     public void clockIn(String username) {
         Employee employee = getEmployeeByUsername(username);
         LocalDate today = LocalDate.now();
 
-        // Assuming your AttendanceRepository has been updated to use existsBy...
         Attendance existingAttendance = attendanceRepository.findByEmployeeAndDate(employee, today);
-
         if (existingAttendance != null) {
             throw new IllegalStateException("You are already clocked in for today.");
         }
@@ -61,24 +59,42 @@ public class AttendanceService {
 
         LocalDateTime now = LocalDateTime.now();
         newAttendance.setClockIn(now);
-
-        // 1. Snapshot the schedule
         newAttendance.setWorkSchedule(schedule);
         newAttendance.setIsManuallyAdjusted(false);
 
-        // 2. Late Detection Logic
         LocalTime currentTime = now.toLocalTime();
         long minutesLate = Duration.between(schedule.getExpectedStart(), currentTime).toMinutes();
 
-        // Normalize minutesLate to handle overnight shifts or clock-ins around midnight
         if (minutesLate < -720) {
-            minutesLate += 1440; // Crossed midnight forward
+            minutesLate += 1440;
         } else if (minutesLate > 720) {
-            minutesLate -= 1440; // Crossed midnight backward
+            minutesLate -= 1440;
         }
 
         if (minutesLate > schedule.getGracePeriodMin()) {
             newAttendance.setDailyStatus(DailyStatus.LATE);
+
+            // NOTIFICATION: Notify the employee that they clocked in late
+            notificationService.send(
+                    employee.getId(),
+                    NotificationType.ATTENDANCE_LATE,
+                    "Late Clock-In Recorded",
+                    "You clocked in at " + now.toLocalTime().withSecond(0).withNano(0) + " today, which is " + minutesLate + " minute(s) past your scheduled start time of " + schedule.getExpectedStart() + ". This has been recorded.",
+                    null,
+                    "Attendance"
+            );
+
+            // NOTIFICATION: Also alert manager if employee is significantly late (>30 min)
+            if (minutesLate > 30 && employee.getManager() != null) {
+                notificationService.send(
+                        employee.getManager().getId(),
+                        NotificationType.ATTENDANCE_LATE,
+                        employee.getFirstName() + " " + employee.getLastName() + " clocked in late",
+                        employee.getFirstName() + " " + employee.getLastName() + " clocked in " + minutesLate + " minute(s) late today (" + now.toLocalTime().withSecond(0).withNano(0) + " vs scheduled " + schedule.getExpectedStart() + ").",
+                        null,
+                        "Attendance"
+                );
+            }
         } else {
             newAttendance.setDailyStatus(DailyStatus.PRESENT);
         }
@@ -86,53 +102,50 @@ public class AttendanceService {
         attendanceRepository.save(newAttendance);
     }
 
-    // --- YOUR UPDATED CLOCK-OUT LOGIC ---
     @Transactional
     public void clockOut(String username) {
         Employee employee = getEmployeeByUsername(username);
 
-        // Find latest open session instead of today's date
         List<Attendance> openSessions = attendanceRepository.findOpenSessionsForEmployee(employee);
         if (openSessions.isEmpty()) {
             throw new IllegalStateException("You cannot clock out because you haven't clocked in.");
         }
-        Attendance attendance = openSessions.get(0); // Most recent open session
+
+        Attendance attendance = openSessions.get(0);
+
         if (attendance.getClockOut() != null) {
             throw new IllegalStateException("You have already clocked out.");
         }
+
+        // --- ADDED FIX: Null safety check for clock-in ---
+        if (attendance.getClockIn() == null) {
+            throw new IllegalStateException("Cannot process clock-out: Clock-in time is missing for this session. Please contact HR or your manager to manually adjust your timesheet.");
+        }
+        // -------------------------------------------------
 
         LocalDateTime now = LocalDateTime.now();
         attendance.setClockOut(now);
 
         WorkSchedule schedule = attendance.getWorkSchedule();
         long totalMinutes = Duration.between(attendance.getClockIn(), now).toMinutes();
-        
-        // Only automatically deduct the break if the employee has worked at least 4 hours (240 mins)
-        // This prevents deducting breaks for accidental rapid clock in/outs or half-day leaves.
+
         int breakMin = 0;
         if (schedule != null && schedule.getBreakDurationMin() != null && totalMinutes >= 240) {
             breakMin = schedule.getBreakDurationMin();
         }
-        
-        attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
 
+        attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
         attendanceRepository.save(attendance);
     }
-
-    // --- YOUR EXISTING HISTORY LOGIC ---
     @Transactional(readOnly = true)
     public List<AttendanceDTO> getEmployeeAttendanceHistory(String username) {
         Employee employee = getEmployeeByUsername(username);
-
-        // Note: You may need to update AttendanceDTO.fromEntity to handle the UUID
-        // change
         return attendanceRepository.findByEmployee(employee)
                 .stream()
                 .map(AttendanceDTO::fromEntity)
                 .toList();
     }
 
-    // --- ADMIN/MANAGER: ATTENDANCE HISTORY FOR A SPECIFIC EMPLOYEE BY ID ---
     @Transactional(readOnly = true)
     public List<AttendanceDTO> getAttendanceHistoryForEmployee(UUID employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
@@ -143,10 +156,9 @@ public class AttendanceService {
                 .toList();
     }
 
-    // --- THE NEW MANUAL OVERRIDE LOGIC ---
     @Transactional
     public Attendance manuallyUpdateTimesheet(UUID attendanceId, String managerUsername,
-            ManualTimeUpdateRequest request) {
+                                              ManualTimeUpdateRequest request) {
         if (request.getReason() == null || request.getReason().trim().isEmpty()) {
             throw new IllegalArgumentException("A valid reason must be provided for manual timesheet adjustments.");
         }
@@ -155,10 +167,8 @@ public class AttendanceService {
                 .orElseThrow(() -> new ResourceNotFoundException("Attendance record not found"));
 
         Employee modifyingUser = getEmployeeByUsername(managerUsername);
-
         Employee targetEmployee = attendance.getEmployee();
 
-        // 4. Row-Level Security Authorization
         boolean hasGodMode = modifyingUser.getRoles().stream()
                 .anyMatch(role -> {
                     String roleName = role.getRoleName().toUpperCase();
@@ -175,7 +185,6 @@ public class AttendanceService {
             }
         }
 
-        // Audit Clock In Change
         if (request.getNewClockIn() != null && !request.getNewClockIn().equals(attendance.getClockIn())) {
             createAuditLog(attendance, modifyingUser, "clockIn",
                     String.valueOf(attendance.getClockIn()), String.valueOf(request.getNewClockIn()),
@@ -183,7 +192,6 @@ public class AttendanceService {
             attendance.setClockIn(request.getNewClockIn());
         }
 
-        // Audit Clock Out Change
         if (request.getNewClockOut() != null && !request.getNewClockOut().equals(attendance.getClockOut())) {
             createAuditLog(attendance, modifyingUser, "clockOut",
                     String.valueOf(attendance.getClockOut()), String.valueOf(request.getNewClockOut()),
@@ -191,25 +199,33 @@ public class AttendanceService {
             attendance.setClockOut(request.getNewClockOut());
         }
 
-        // Recalculate Work Minutes and Flag as Adjusted
         attendance.setIsManuallyAdjusted(true);
         if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
             long totalMinutes = Duration.between(attendance.getClockIn(), attendance.getClockOut()).toMinutes();
-            
-            // Only automatically deduct the break if the employee has worked at least 4 hours (240 mins)
             int breakMin = 0;
             if (attendance.getWorkSchedule() != null && attendance.getWorkSchedule().getBreakDurationMin() != null && totalMinutes >= 240) {
                 breakMin = attendance.getWorkSchedule().getBreakDurationMin();
             }
-            
             attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
         }
 
-        return attendanceRepository.save(attendance);
+        Attendance saved = attendanceRepository.save(attendance);
+
+        // NOTIFICATION: Notify the employee that their timesheet was adjusted
+        notificationService.send(
+                targetEmployee.getId(),
+                NotificationType.TIMESHEET_MANUALLY_ADJUSTED,
+                "Your timesheet was manually adjusted",
+                modifyingUser.getFirstName() + " " + modifyingUser.getLastName() + " adjusted your timesheet for " + attendance.getDate() + ". Reason: " + request.getReason() + ".",
+                saved.getId(),
+                "Attendance"
+        );
+
+        return saved;
     }
 
     private void createAuditLog(Attendance attendance, Employee manager, String field, String oldVal, String newVal,
-            String reason) {
+                                String reason) {
         TimesheetAuditLog log = new TimesheetAuditLog();
         log.setAttendance(attendance);
         log.setChangedBy(manager);
@@ -225,7 +241,6 @@ public class AttendanceService {
         return auditLogRepository.findByAttendanceIdOrderByChangeTimestampDesc(attendanceId);
     }
 
-    // --- DAILY ROSTER FOR MANAGERS ---
     @Transactional(readOnly = true)
     public List<com.ucocs.worksphere.dto.DailyRosterDTO> getDailyRoster(String username) {
         Employee reviewer = getEmployeeByUsername(username);

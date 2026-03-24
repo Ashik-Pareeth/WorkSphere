@@ -4,8 +4,10 @@ import com.ucocs.worksphere.entity.Attendance;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.enums.DailyStatus;
 import com.ucocs.worksphere.enums.EmployeeStatus;
+import com.ucocs.worksphere.enums.LeaveRequestStatus;
 import com.ucocs.worksphere.repository.AttendanceRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
+import com.ucocs.worksphere.repository.LeaveRequestRepository;
 import com.ucocs.worksphere.service.PublicHolidayService;
 import lombok.RequiredArgsConstructor;
 import org.slf4j.Logger;
@@ -22,7 +24,7 @@ import java.util.List;
  * Midnight Absentee Job (Phase 3).
  * Runs at 11:59 PM every night.
  * Checks who was supposed to work today but never clocked in,
- * and generates an Attendance row with DailyStatus.ABSENT.
+ * and generates an Attendance row with DailyStatus.ABSENT or DailyStatus.ON_LEAVE.
  */
 @Component
 @RequiredArgsConstructor
@@ -33,6 +35,7 @@ public class MidnightAbsenteeJob {
     private final EmployeeRepository employeeRepository;
     private final AttendanceRepository attendanceRepository;
     private final PublicHolidayService publicHolidayService;
+    private final LeaveRequestRepository leaveRequestRepository; // <-- ADDED THIS
 
     @Scheduled(cron = "0 59 23 * * *")
     @Transactional
@@ -48,7 +51,7 @@ public class MidnightAbsenteeJob {
         // 2. Get all ACTIVE employees
         List<Employee> activeEmployees = employeeRepository.findByEmployeeStatus(EmployeeStatus.ACTIVE);
 
-        int absentCount = 0;
+        int recordCount = 0;
         for (Employee emp : activeEmployees) {
             // 3. Check if this day is a working day for the employee's schedule
             if (!isWorkingDay(emp, today)) {
@@ -61,27 +64,41 @@ public class MidnightAbsenteeJob {
                 continue; // They clocked in (or were already marked)
             }
 
-            // 5. No record exists → Mark them ABSENT
-            Attendance absent = new Attendance();
-            absent.setEmployee(emp);
-            absent.setDate(today);
-            absent.setDailyStatus(DailyStatus.ABSENT);
-            absent.setClockIn(null);
-            absent.setClockOut(null);
-            absent.setTotalWorkMinutes(0);
-            absent.setIsManuallyAdjusted(false);
-            absent.setWorkSchedule(emp.getWorkSchedule());
-            attendanceRepository.save(absent);
-            absentCount++;
+            // 5. NEW LOGIC: Check if the employee is on an approved leave today
+            boolean isOnLeave = leaveRequestRepository.existsByEmployee_IdAndStatusInAndStartDateLessThanEqualAndEndDateGreaterThanEqual(
+                    emp.getId(),
+                    List.of(LeaveRequestStatus.APPROVED),
+                    today, // endDate param
+                    today  // startDate param
+            );
+
+            // 6. Generate the appropriate Attendance record
+            Attendance generatedRecord = new Attendance();
+            generatedRecord.setEmployee(emp);
+            generatedRecord.setDate(today);
+
+            // Assign ON_LEAVE if they have an approved request, otherwise ABSENT
+            if (isOnLeave) {
+                generatedRecord.setDailyStatus(DailyStatus.ON_LEAVE);
+            } else {
+                generatedRecord.setDailyStatus(DailyStatus.ABSENT);
+            }
+
+            generatedRecord.setClockIn(null);
+            generatedRecord.setClockOut(null);
+            generatedRecord.setTotalWorkMinutes(0);
+            generatedRecord.setIsManuallyAdjusted(false);
+            generatedRecord.setWorkSchedule(emp.getWorkSchedule());
+            attendanceRepository.save(generatedRecord);
+            recordCount++;
         }
 
-        log.info("[AbsenteeJob] Completed for {}. Marked {} employees as ABSENT.", today, absentCount);
+        log.info("[AbsenteeJob] Completed for {}. Generated {} absent/leave records.", today, recordCount);
     }
 
     /**
      * Checks if the given date is a working day according to the employee's
      * WorkSchedule.
-     * WorkSchedule.workingDays is a bitmask: Bit 0=Mon, Bit 1=Tue, ..., Bit 6=Sun.
      */
     private boolean isWorkingDay(Employee emp, LocalDate date) {
         if (emp.getWorkSchedule() == null) {

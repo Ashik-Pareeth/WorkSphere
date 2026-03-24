@@ -45,9 +45,9 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         // 8. Department View (For Manager Dashboard)
         // We apply your same optimization here so the Manager dashboard is fast.
         @Query("SELECT t FROM Task t " +
-                        "LEFT JOIN FETCH t.assignedTo " +
-                        "LEFT JOIN FETCH t.assigner " +
-                        "WHERE t.assignedTo.department.id = :deptId")
+                "LEFT JOIN FETCH t.assignedTo " +
+                "LEFT JOIN FETCH t.assigner " +
+                "WHERE t.assignedTo.department.id = :deptId")
         List<Task> findAllByDepartmentId(@Param("deptId") UUID deptId);
 
         long countByAssignedTo_IdAndStatus(UUID employeeId, TaskStatus status);
@@ -59,16 +59,26 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         // --- APPRAISAL METRICS ---
         @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.status = 'COMPLETED' AND t.completedAt BETWEEN :startDate AND :endDate")
         Integer countCompletedTasksInPeriod(@Param("employeeId") UUID employeeId,
-                        @Param("startDate") java.time.LocalDateTime startDate,
-                        @Param("endDate") java.time.LocalDateTime endDate);
+                                            @Param("startDate") java.time.LocalDateTime startDate,
+                                            @Param("endDate") java.time.LocalDateTime endDate);
 
-        @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.isOverdue = true AND t.completedAt BETWEEN :startDate AND :endDate")
+        @Query("""
+                SELECT COUNT(t) FROM Task t
+                WHERE t.assignedTo.id = :employeeId
+                AND (
+                    (t.isOverdue = true AND t.completedAt BETWEEN :startDate AND :endDate)
+                    OR
+                    (t.dueDate BETWEEN :startDate AND :endDate
+                     AND t.dueDate < CURRENT_TIMESTAMP
+                     AND t.status NOT IN ('COMPLETED', 'CANCELLED'))
+                )
+                """)
         Integer countOverdueTasksInPeriod(@Param("employeeId") UUID employeeId,
-                        @Param("startDate") java.time.LocalDateTime startDate,
-                        @Param("endDate") java.time.LocalDateTime endDate);
+                                          @Param("startDate") java.time.LocalDateTime startDate,
+                                          @Param("endDate") java.time.LocalDateTime endDate);
 
         @Query("SELECT AVG(t.completionScore) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.status = 'COMPLETED' AND t.completedAt BETWEEN :startDate AND :endDate")
         Double getAverageTaskScoreInPeriod(@Param("employeeId") UUID employeeId,
-                        @Param("startDate") java.time.LocalDateTime startDate,
-                        @Param("endDate") java.time.LocalDateTime endDate);
+                                           @Param("startDate") java.time.LocalDateTime startDate,
+                                           @Param("endDate") java.time.LocalDateTime endDate);
 }

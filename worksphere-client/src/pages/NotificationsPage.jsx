@@ -1,8 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { fetchNotifications, markNotificationRead, markAllNotificationsRead } from '../api/hrApi';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../components/ui/tabs';
-import { Bell, Briefcase, CheckSquare, Calendar, CreditCard, ShieldAlert } from 'lucide-react';
+import {
+  fetchNotifications,
+  markNotificationRead,
+  markAllNotificationsRead,
+} from '../api/hrApi';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../components/ui/tabs';
+import {
+  Bell,
+  Briefcase,
+  CheckSquare,
+  Calendar,
+  CreditCard,
+  ShieldAlert,
+} from 'lucide-react';
 
 function timeAgo(dateString) {
   if (!dateString) return '';
@@ -18,20 +34,28 @@ function timeAgo(dateString) {
 
 const getRouteForNotification = (type, referenceId) => {
   switch (type) {
-    case 'PAYSLIP_READY': return '/my-compensation';
-    case 'APPRAISAL_DUE': 
-    case 'APPRAISAL_RECEIVED': return '/my-appraisals';
-    case 'TICKET_UPDATE': return '/helpdesk';
+    case 'PAYSLIP_READY':
+      return '/my-compensation';
+    case 'APPRAISAL_DUE':
+    case 'APPRAISAL_RECEIVED':
+      return '/my-appraisals';
+    case 'TICKET_UPDATE':
+      return '/helpdesk';
     case 'ASSET_ASSIGNED':
-    case 'ASSET_RETURN_REQUEST': return '/my-assets';
-    case 'OFFBOARDING_INITIATED': return '/profile';
+    case 'ASSET_RETURN_REQUEST':
+      return '/my-assets';
+    case 'OFFBOARDING_INITIATED':
+      return '/profile';
     case 'LEAVE_APPROVED':
     case 'LEAVE_REJECTED':
-    case 'LEAVE_REQUESTED': return '/my-leave';
+    case 'LEAVE_REQUESTED':
+      return '/my-leave';
     case 'TASK_ASSIGNED':
     case 'TASK_UPDATED':
-    case 'TASK_OVERDUE': return `/tasks?open=${referenceId}`;
-    default: return '/dashboard';
+    case 'TASK_OVERDUE':
+      return `/tasks?open=${referenceId}`;
+    default:
+      return '/dashboard';
   }
 };
 
@@ -44,13 +68,18 @@ const getCategoryForType = (type) => {
 };
 
 const getIconForCategory = (category, isUnread) => {
-  const color = isUnread ? "text-blue-600" : "text-gray-400";
+  const color = isUnread ? 'text-blue-600' : 'text-gray-400';
   switch (category) {
-    case 'Leave': return <Calendar className={`w-5 h-5 ${color}`} />;
-    case 'Tasks': return <CheckSquare className={`w-5 h-5 ${color}`} />;
-    case 'Payroll': return <CreditCard className={`w-5 h-5 ${color}`} />;
-    case 'System': return <ShieldAlert className={`w-5 h-5 ${color}`} />;
-    default: return <Bell className={`w-5 h-5 ${color}`} />;
+    case 'Leave':
+      return <Calendar className={`w-5 h-5 ${color}`} />;
+    case 'Tasks':
+      return <CheckSquare className={`w-5 h-5 ${color}`} />;
+    case 'Payroll':
+      return <CreditCard className={`w-5 h-5 ${color}`} />;
+    case 'System':
+      return <ShieldAlert className={`w-5 h-5 ${color}`} />;
+    default:
+      return <Bell className={`w-5 h-5 ${color}`} />;
   }
 };
 
@@ -69,7 +98,10 @@ export default function NotificationsPage() {
     try {
       const res = await fetchNotifications();
       // Ensure sorted by newest first just in case
-      const notifs = (res.data || []).sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+      const notifs = (res.data || []).sort(
+        (a, b) => new Date(b.createdAt) - new Date(a.createdAt)
+      );
+      console.log('Fetched notifications:', notifs);
       setNotifications(notifs);
     } catch (err) {
       console.error(err);
@@ -81,8 +113,10 @@ export default function NotificationsPage() {
   const handleNotificationClick = (notif) => {
     // Optimistic reading
     if (!notif.isRead) {
-      markNotificationRead(notif.id).catch(err => console.error(err));
-      setNotifications(prev => prev.map(n => n.id === notif.id ? { ...n, isRead: true } : n));
+      markNotificationRead(notif.id).catch((err) => console.error(err));
+      setNotifications((prev) =>
+        prev.map((n) => (n.id === notif.id ? { ...n, isRead: true } : n))
+      );
     }
     navigate(getRouteForNotification(notif.type, notif.referenceId));
   };
@@ -90,14 +124,14 @@ export default function NotificationsPage() {
   const handleMarkAllRead = async () => {
     try {
       await markAllNotificationsRead();
-      setNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+      setNotifications((prev) => prev.map((n) => ({ ...n, isRead: true })));
     } catch (err) {
       console.error(err);
     }
   };
 
   // Filtering
-  const filteredNotifs = notifications.filter(n => {
+  const filteredNotifs = notifications.filter((n) => {
     if (activeTab === 'All') return true;
     return getCategoryForType(n.type) === activeTab;
   });
@@ -110,10 +144,14 @@ export default function NotificationsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold tracking-tight text-gray-900">Notifications</h1>
-          <p className="text-sm text-gray-500 mt-1">Review your recent alerts and actionable items.</p>
+          <h1 className="text-2xl font-bold tracking-tight text-gray-900">
+            Notifications
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Review your recent alerts and actionable items.
+          </p>
         </div>
-        <button 
+        <button
           onClick={handleMarkAllRead}
           className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors"
         >
@@ -122,9 +160,18 @@ export default function NotificationsPage() {
       </div>
 
       {loading ? (
-        <div className="text-center py-12 text-gray-500">Loading notifications...</div>
+        <div className="text-center py-12 text-gray-500">
+          Loading notifications...
+        </div>
       ) : (
-        <Tabs value={activeTab} onValueChange={(v) => { setActiveTab(v); setLimit(20); }} className="w-full">
+        <Tabs
+          value={activeTab}
+          onValueChange={(v) => {
+            setActiveTab(v);
+            setLimit(20);
+          }}
+          className="w-full"
+        >
           <TabsList className="mb-6">
             <TabsTrigger value="All">All</TabsTrigger>
             <TabsTrigger value="Leave">Leave</TabsTrigger>
@@ -132,7 +179,7 @@ export default function NotificationsPage() {
             <TabsTrigger value="Payroll">Payroll</TabsTrigger>
             <TabsTrigger value="System">System</TabsTrigger>
           </TabsList>
-          
+
           <div className="bg-white border border-gray-200 rounded-xl shadow-sm overflow-hidden">
             {displayedNotifs.length === 0 ? (
               <div className="p-12 text-center text-sm text-gray-500">
@@ -140,10 +187,10 @@ export default function NotificationsPage() {
               </div>
             ) : (
               <div className="divide-y divide-gray-100">
-                {displayedNotifs.map(notif => {
+                {displayedNotifs.map((notif) => {
                   const category = getCategoryForType(notif.type);
                   return (
-                    <div 
+                    <div
                       key={notif.id}
                       onClick={() => handleNotificationClick(notif)}
                       className={`group p-4 flex gap-4 cursor-pointer hover:bg-gray-50 transition-colors ${!notif.isRead ? 'bg-blue-50/30' : ''}`}
@@ -153,7 +200,9 @@ export default function NotificationsPage() {
                       </div>
                       <div className="flex-1 space-y-1">
                         <div className="flex items-start justify-between gap-4">
-                          <p className={`text-sm ${!notif.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}>
+                          <p
+                            className={`text-sm ${!notif.isRead ? 'font-semibold text-gray-900' : 'font-medium text-gray-700'}`}
+                          >
                             {notif.title || category}
                           </p>
                           <div className="flex items-center gap-2 shrink-0">
@@ -174,11 +223,11 @@ export default function NotificationsPage() {
                 })}
               </div>
             )}
-            
+
             {hasMore && (
               <div className="p-4 border-t border-gray-100 bg-gray-50 text-center">
-                <button 
-                  onClick={() => setLimit(prev => prev + 20)}
+                <button
+                  onClick={() => setLimit((prev) => prev + 20)}
                   className="text-sm font-semibold text-gray-600 hover:text-gray-900 transition-colors"
                 >
                   Load more

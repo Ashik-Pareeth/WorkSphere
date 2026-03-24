@@ -73,5 +73,15 @@ public class LeaveRequestController {
         LeaveRequest request = leaveRequestService.cancelRequest(requestId, principal.getName());
         return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
     }
+
+    @GetMapping("/my-requests")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getMyRequests(Principal principal) {
+        List<LeaveRequest> requests = leaveRequestService.getMyRequests(principal.getName());
+        List<LeaveRequestResponseDTO> dtos = requests.stream()
+                .map(LeaveRequestResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
 }
 

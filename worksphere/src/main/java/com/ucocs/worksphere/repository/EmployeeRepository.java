@@ -27,4 +27,6 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
     boolean existsByUserName(String userName);
     boolean existsByUserNameAndIdNot(String userName, UUID id);
 
+    List<Employee> findByManagerUserName(String managerUsername);
+
 }

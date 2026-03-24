@@ -8,401 +8,16 @@ import {
 } from '../../api/taskApi';
 import AlertMessage from '../../components/common/AlertMessage';
 import axiosInstance from '../../api/axiosInstance';
-import { Tabs, TabsList, TabsTrigger, TabsContent } from '../../components/ui/tabs';
+import {
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+} from '../../components/ui/tabs';
 import TaskInfoTab from './tabs/TaskInfoTab';
 import CommentsTab from './tabs/CommentsTab';
 import EvidenceTab from './tabs/EvidenceTab';
 
-/* ─────────────────────────────────────────
-   STYLES  (scoped via <style> tag injected once)
-───────────────────────────────────────── */
-const STYLES = `
-  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@400;500;600&family=DM+Mono:wght@400;500&display=swap');
-
-  .tdm-overlay {
-    position: fixed; inset: 0;
-    background: rgba(10, 10, 15, 0.6);
-    backdrop-filter: blur(6px);
-    display: flex; align-items: center; justify-content: center;
-    z-index: 1000;
-    animation: tdm-fade-in 0.18s ease;
-  }
-  @keyframes tdm-fade-in { from { opacity: 0 } to { opacity: 1 } }
-
-  .tdm-modal {
-    font-family: 'DM Sans', sans-serif;
-    width: 940px; max-width: 96vw; max-height: 92vh;
-    overflow-y: auto; overflow-x: hidden;
-    background: #FAFAF8;
-    border-radius: 16px;
-    border: 1px solid #E5E2DC;
-    box-shadow: 0 32px 64px -12px rgba(0,0,0,0.22), 0 0 0 1px rgba(255,255,255,0.6) inset;
-    animation: tdm-slide-up 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-    scrollbar-width: thin;
-    scrollbar-color: #D4CFC7 transparent;
-  }
-  .tdm-modal::-webkit-scrollbar { width: 6px; }
-  .tdm-modal::-webkit-scrollbar-track { background: transparent; }
-  .tdm-modal::-webkit-scrollbar-thumb { background: #D4CFC7; border-radius: 3px; }
-
-  @keyframes tdm-slide-up {
-    from { opacity: 0; transform: translateY(20px) scale(0.98) }
-    to   { opacity: 1; transform: translateY(0) scale(1) }
-  }
-
-  /* ── Header ── */
-  .tdm-header {
-    padding: 28px 32px 24px;
-    border-bottom: 1px solid #EAE7E1;
-    display: flex; justify-content: space-between; align-items: flex-start;
-    background: #FFFFFF;
-    border-radius: 16px 16px 0 0;
-    position: sticky; top: 0; z-index: 10;
-  }
-  .tdm-code {
-    font-family: 'DM Mono', monospace;
-    font-size: 11px; font-weight: 500;
-    color: #9B8F80; letter-spacing: 0.06em;
-    text-transform: uppercase;
-    background: #F2EFE9; border-radius: 4px;
-    padding: 3px 8px; display: inline-block;
-    margin-bottom: 8px;
-  }
-  .tdm-title {
-    font-size: 20px; font-weight: 600;
-    color: #1C1A17; margin: 0; line-height: 1.3;
-  }
-  .tdm-meta-row {
-    display: flex; gap: 8px; align-items: center; margin-top: 10px;
-  }
-  .tdm-close {
-    background: #F2EFE9; border: none; border-radius: 8px;
-    width: 36px; height: 36px; cursor: pointer;
-    font-size: 18px; color: #7A6F63;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s, color 0.15s; flex-shrink: 0;
-  }
-  .tdm-close:hover { background: #EAE7E1; color: #1C1A17; }
-
-  /* ── Badges ── */
-  .tdm-badge {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
-    text-transform: uppercase; border-radius: 6px;
-    padding: 3px 9px; border: 1px solid transparent;
-  }
-  .tdm-badge.priority-low    { background:#EDF7ED; color:#2E7D32; border-color:#C8E6C9; }
-  .tdm-badge.priority-medium { background:#FFF8E1; color:#E65100; border-color:#FFE082; }
-  .tdm-badge.priority-high   { background:#FDE8E8; color:#C62828; border-color:#FFCDD2; }
-  .tdm-badge.priority-urgent { background:#4A1942; color:#F8BBD0; border-color:#7B1FA2; }
-
-  .tdm-status {
-    font-size: 11px; font-weight: 600; letter-spacing: 0.04em;
-    text-transform: uppercase; border-radius: 20px;
-    padding: 4px 12px;
-  }
-  .tdm-status.todo        { background:#F2EFE9; color:#7A6F63; }
-  .tdm-status.in_progress { background:#E3F2FD; color:#1565C0; }
-  .tdm-status.in_review   { background:#F3E5F5; color:#6A1B9A; }
-  .tdm-status.completed   { background:#E8F5E9; color:#2E7D32; }
-  .tdm-status.cancelled   { background:#FAFAFA; color:#9E9E9E; }
-
-  /* ── Body layout ── */
-  .tdm-body {
-    display: grid; grid-template-columns: 1fr 1fr;
-    gap: 0; min-height: 520px;
-  }
-  .tdm-col { padding: 28px 32px; }
-  .tdm-col-right {
-    border-left: 1px solid #EAE7E1;
-    display: flex; flex-direction: column;
-  }
-
-  /* ── Section label ── */
-  .tdm-section-label {
-    font-size: 10px; font-weight: 600; letter-spacing: 0.1em;
-    text-transform: uppercase; color: #B0A699;
-    margin: 0 0 10px; display: block;
-  }
-
-  /* ── Description box ── */
-  .tdm-desc {
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 10px; padding: 14px 16px;
-    min-height: 80px; color: #3D3830;
-    font-size: 14px; line-height: 1.65;
-  }
-
-  /* ── Info grid ── */
-  .tdm-info-grid { display: flex; gap: 24px; margin-top: 4px; }
-  .tdm-info-item label { display: block; font-size: 10px; font-weight: 600; letter-spacing: 0.08em; text-transform: uppercase; color: #B0A699; margin-bottom: 4px; }
-  .tdm-info-item span  { font-size: 13px; font-weight: 500; color: #3D3830; }
-
-  /* ── Divider ── */
-  .tdm-divider { height: 1px; background: #EAE7E1; margin: 24px 0; }
-
-  /* ── Rating stars ── */
-  .tdm-stars { display: flex; gap: 2px; }
-  .tdm-star-btn {
-    background: none; border: none; cursor: pointer;
-    font-size: 22px; padding: 2px;
-    transition: transform 0.1s;
-    line-height: 1;
-  }
-  .tdm-star-btn:hover { transform: scale(1.2); }
-
-  /* ── Review panel ── */
-  .tdm-review-panel {
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 12px; padding: 18px 20px;
-    margin-bottom: 20px;
-  }
-  .tdm-review-panel h4 { margin: 0 0 4px; font-size: 14px; font-weight: 600; color: #1C1A17; }
-  .tdm-review-panel p  { margin: 0 0 14px; font-size: 12px; color: #9B8F80; line-height: 1.5; }
-
-  .tdm-approve-btn {
-    width: 100%; padding: 11px;
-    background: #1C1A17; color: #FAFAF8;
-    border: none; border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; margin-top: 14px;
-    transition: background 0.15s, transform 0.1s;
-    letter-spacing: 0.02em;
-  }
-  .tdm-approve-btn:hover:not(:disabled) { background: #2D2A26; transform: translateY(-1px); }
-  .tdm-approve-btn:disabled { background: #D4CFC7; cursor: not-allowed; transform: none; }
-  .tdm-approve-btn.green { background: #2E7D32; }
-  .tdm-approve-btn.green:hover:not(:disabled) { background: #1B5E20; }
-
-  /* ── Helpdesk context ── */
-  .tdm-helpdesk-panel {
-    background: #FFFBF5;
-    border: 1px solid #F0D9B5;
-    border-radius: 12px;
-    overflow: hidden;
-    margin-bottom: 20px;
-  }
-  .tdm-helpdesk-header {
-    padding: 12px 16px;
-    background: #FFF3DC;
-    border-bottom: 1px solid #F0D9B5;
-    display: flex; align-items: center; gap: 8px;
-  }
-  .tdm-helpdesk-header span { font-size: 12px; font-weight: 600; color: #7C5109; letter-spacing: 0.04em; text-transform: uppercase; }
-  .tdm-helpdesk-body { padding: 12px; max-height: 200px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-  .tdm-helpdesk-body::-webkit-scrollbar { width: 4px; }
-  .tdm-helpdesk-body::-webkit-scrollbar-thumb { background: #F0D9B5; border-radius: 2px; }
-  .tdm-ticket-comment {
-    background: #FFFFFF; border: 1px solid #F0D9B5;
-    border-radius: 8px; padding: 10px 12px;
-  }
-  .tdm-ticket-comment .author { font-size: 12px; font-weight: 600; color: #A0622A; }
-  .tdm-ticket-comment .time   { font-size: 11px; color: #C49A5A; font-family: 'DM Mono', monospace; }
-  .tdm-ticket-comment .body   { font-size: 13px; color: #5C3D1A; margin: 4px 0 0; line-height: 1.5; }
-
-  /* ── Comments ── */
-  .tdm-comments-list {
-    flex: 1; overflow-y: auto; margin-bottom: 14px;
-    max-height: 340px; padding-right: 4px;
-    display: flex; flex-direction: column; gap: 10px;
-  }
-  .tdm-comments-list::-webkit-scrollbar { width: 4px; }
-  .tdm-comments-list::-webkit-scrollbar-thumb { background: #D4CFC7; border-radius: 2px; }
-  .tdm-comment-bubble {
-    padding: 12px 14px;
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 10px;
-  }
-  .tdm-comment-bubble .author { font-size: 13px; font-weight: 600; color: #1C1A17; }
-  .tdm-comment-bubble .time   { font-size: 11px; color: #B0A699; font-family: 'DM Mono', monospace; }
-  .tdm-comment-bubble .body   { font-size: 14px; color: #3D3830; margin: 5px 0 0; line-height: 1.55; }
-  .tdm-comment-empty { font-size: 13px; color: #B0A699; font-style: italic; text-align: center; padding: 24px 0; }
-
-  /* ── Comment input ── */
-  .tdm-comment-form { display: flex; gap: 8px; margin-top: auto; }
-  .tdm-comment-input {
-    flex: 1; padding: 10px 14px;
-    background: #FFFFFF; border: 1px solid #D4CFC7;
-    border-radius: 8px; font-family: 'DM Sans', sans-serif;
-    font-size: 14px; color: #1C1A17; outline: none;
-    transition: border-color 0.15s;
-  }
-  .tdm-comment-input:focus { border-color: #1C1A17; }
-  .tdm-comment-input::placeholder { color: #C4BEB7; }
-  .tdm-send-btn {
-    padding: 10px 18px;
-    background: #1C1A17; color: #FAFAF8;
-    border: none; border-radius: 8px;
-    font-family: 'DM Sans', sans-serif;
-    font-size: 13px; font-weight: 600;
-    cursor: pointer; transition: background 0.15s;
-    white-space: nowrap;
-  }
-  .tdm-send-btn:hover:not(:disabled) { background: #2D2A26; }
-  .tdm-send-btn:disabled { background: #D4CFC7; cursor: not-allowed; }
-
-  /* ── Evidence ── */
-  .tdm-evidence-item {
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 10px; padding: 12px 14px;
-    display: flex; flex-direction: column; gap: 8px;
-  }
-  .tdm-evidence-row { display: flex; align-items: center; gap: 10px; }
-  .tdm-evidence-icon {
-    width: 36px; height: 36px; background: #F2EFE9;
-    border-radius: 8px; display: flex; align-items: center;
-    justify-content: center; font-size: 16px; flex-shrink: 0;
-  }
-  .tdm-evidence-name { font-size: 13px; font-weight: 500; color: #2563EB; text-decoration: none; }
-  .tdm-evidence-name:hover { text-decoration: underline; }
-  .tdm-evidence-date { font-size: 11px; color: #B0A699; font-family: 'DM Mono', monospace; }
-  .tdm-evidence-status {
-    font-size: 10px; font-weight: 700; letter-spacing: 0.06em;
-    text-transform: uppercase; border-radius: 4px; padding: 2px 7px;
-  }
-  .tdm-evidence-status.ACCEPTED { background:#E8F5E9; color:#2E7D32; }
-  .tdm-evidence-status.REJECTED { background:#FDE8E8; color:#C62828; }
-  .tdm-evidence-status.PENDING  { background:#F2EFE9; color:#9B8F80; }
-
-  .tdm-ev-actions { display: flex; gap: 6px; margin-left: auto; }
-  .tdm-ev-btn {
-    padding: 4px 10px; font-size: 11px; font-weight: 600;
-    border: none; border-radius: 5px; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; letter-spacing: 0.03em;
-    transition: opacity 0.15s;
-  }
-  .tdm-ev-btn:disabled { opacity: 0.5; cursor: not-allowed; }
-  .tdm-ev-btn.accept { background: #E8F5E9; color: #2E7D32; }
-  .tdm-ev-btn.accept:hover:not(:disabled) { background: #C8E6C9; }
-  .tdm-ev-btn.reject { background: #FDE8E8; color: #C62828; }
-  .tdm-ev-btn.reject:hover:not(:disabled) { background: #FFCDD2; }
-
-  .tdm-feedback-box {
-    background: #F9F8F6; border: 1px dashed #D4CFC7;
-    border-radius: 8px; padding: 12px;
-  }
-  .tdm-feedback-input {
-    width: 100%; padding: 8px 12px; border: 1px solid #D4CFC7;
-    border-radius: 6px; font-size: 13px; font-family: 'DM Sans', sans-serif;
-    color: #1C1A17; background: #FFFFFF; outline: none; box-sizing: border-box;
-  }
-  .tdm-feedback-input:focus { border-color: #1C1A17; }
-  .tdm-feedback-actions { display: flex; gap: 8px; margin-top: 8px; }
-  .tdm-confirm-reject {
-    padding: 6px 12px; font-size: 12px; font-weight: 600;
-    background: #C62828; color: #fff; border: none; border-radius: 6px;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s;
-  }
-  .tdm-confirm-reject:hover:not(:disabled) { background: #B71C1C; }
-  .tdm-cancel-link {
-    background: none; border: none; font-size: 12px; color: #9B8F80;
-    cursor: pointer; font-family: 'DM Sans', sans-serif; padding: 6px 4px;
-  }
-  .tdm-rejection-reason {
-    font-size: 12px; color: #C62828; background: #FDE8E8;
-    padding: 8px 10px; border-radius: 6px;
-  }
-
-  /* ── Upload ── */
-  .tdm-upload-zone {
-    border: 1.5px dashed #D4CFC7; border-radius: 10px;
-    padding: 20px; text-align: center; background: #FAFAF8;
-    transition: border-color 0.15s, background 0.15s; cursor: pointer;
-  }
-  .tdm-upload-zone:hover { border-color: #B0A699; background: #F5F3EF; }
-  .tdm-upload-hint { font-size: 12px; color: #B0A699; margin-top: 6px; }
-  .tdm-select-btn {
-    background: #FFFFFF; border: 1px solid #D4CFC7;
-    border-radius: 7px; padding: 8px 16px;
-    font-size: 13px; font-weight: 500; color: #3D3830;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
-    transition: border-color 0.15s, background 0.15s;
-    display: inline-flex; align-items: center; gap: 6px;
-  }
-  .tdm-select-btn:hover { border-color: #B0A699; background: #F5F3EF; }
-
-  .tdm-upload-preview {
-    display: flex; align-items: center;
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 10px; padding: 12px 14px; gap: 12px;
-  }
-  .tdm-upload-actions { display: flex; gap: 8px; margin-left: auto; }
-  .tdm-confirm-upload {
-    padding: 8px 16px; background: #1C1A17; color: #FAFAF8;
-    border: none; border-radius: 7px; font-size: 13px; font-weight: 600;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
-    transition: background 0.15s;
-  }
-  .tdm-confirm-upload:hover:not(:disabled) { background: #2D2A26; }
-  .tdm-confirm-upload:disabled { background: #D4CFC7; cursor: not-allowed; }
-
-  /* ── Danger zone ── */
-  .tdm-danger-zone {
-    margin-top: 4px; padding: 14px 16px;
-    background: #FFF5F5; border: 1px solid #FFCDD2;
-    border-radius: 10px;
-  }
-  .tdm-danger-label { font-size: 10px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: #E53935; margin: 0 0 10px; display: block; }
-  .tdm-cancel-task-btn {
-    width: 100%; padding: 10px;
-    background: transparent; color: #C62828;
-    border: 1px solid #FFCDD2; border-radius: 7px;
-    font-size: 13px; font-weight: 600; cursor: pointer;
-    font-family: 'DM Sans', sans-serif; transition: background 0.15s;
-  }
-  .tdm-cancel-task-btn:hover:not(:disabled) { background: #FDE8E8; }
-  .tdm-cancel-task-btn:disabled { opacity: 0.6; cursor: wait; }
-  .tdm-danger-hint { font-size: 11px; color: #9B8F80; margin: 8px 0 0; line-height: 1.5; }
-
-  /* ── Completed rating display ── */
-  .tdm-rating-display {
-    background: #FFFFFF; border: 1px solid #EAE7E1;
-    border-radius: 10px; padding: 14px 16px;
-    display: flex; justify-content: space-between; align-items: center;
-  }
-  .tdm-rating-display h4 { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: #1C1A17; }
-  .tdm-rating-display p  { margin: 0; font-size: 11px; color: #9B8F80; }
-  .tdm-rating-stars-display { display: flex; gap: 2px; font-size: 20px; color: #F59E0B; }
-
-  .tdm-pending-rating {
-    background: #FFFBF5; border: 1px solid #F0D9B5;
-    border-radius: 10px; padding: 14px 16px;
-  }
-  .tdm-pending-rating h4 { margin: 0 0 2px; font-size: 13px; font-weight: 600; color: #7C5109; }
-  .tdm-pending-rating p  { margin: 0 0 12px; font-size: 12px; color: #A0622A; }
-  .tdm-submit-rating-btn {
-    width: 100%; padding: 9px;
-    background: #7C5109; color: #FFFBF5;
-    border: none; border-radius: 7px; font-size: 13px; font-weight: 600;
-    cursor: pointer; font-family: 'DM Sans', sans-serif;
-    margin-top: 12px; transition: background 0.15s;
-  }
-  .tdm-submit-rating-btn:hover:not(:disabled) { background: #5C3D1A; }
-  .tdm-submit-rating-btn:disabled { background: #D4CFC7; cursor: not-allowed; }
-
-  .tdm-awaiting-rating {
-    background: #F9F8F6; border: 1px dashed #D4CFC7;
-    border-radius: 10px; padding: 14px 16px;
-    text-align: center; font-size: 12px; color: #B0A699; font-style: italic;
-  }
-
-  /* ── Empty/loading states ── */
-  .tdm-empty { color: #B0A699; font-style: italic; font-size: 13px; padding: 12px 0; }
-  .tdm-loading { color: #B0A699; font-size: 13px; padding: 12px 0; }
-`;
-
-/* ─── inject styles once ─── */
-if (!document.getElementById('tdm-styles')) {
-  const el = document.createElement('style');
-  el.id = 'tdm-styles';
-  el.textContent = STYLES;
-  document.head.appendChild(el);
-}
-
-/* ─────────────────────────────────────────
-   COMPONENT
-───────────────────────────────────────── */
 const TaskDetailsModal = ({ task, onClose }) => {
   const storedRoles = JSON.parse(localStorage.getItem('roles') || '[]');
   const isManagerOrAdmin =
@@ -455,12 +70,6 @@ const TaskDetailsModal = ({ task, onClose }) => {
       setComments(results[0]);
       setEvidenceList(results[1]);
       if (task.sourceTicketId && results[2]) setTicketComments(results[2]);
-
-      console.log('Full task object:', task);
-      console.log('sourceTicketId:', task.sourceTicketId);
-      console.log('Task comments:', results[0]);
-      console.log('Evidence:', results[1]);
-      if (task.sourceTicketId) console.log('Ticket comments:', results[2]);
     } catch (err) {
       setAlert({
         type: 'error',
@@ -618,13 +227,13 @@ const TaskDetailsModal = ({ task, onClose }) => {
   };
 
   const Stars = ({ value, onChange }) => (
-    <div className="tdm-stars">
+    <div className="flex gap-1">
       {[1, 2, 3, 4, 5].map((s) => (
         <button
           key={s}
-          className="tdm-star-btn"
           onClick={() => onChange(s)}
-          style={{ color: value >= s ? '#F59E0B' : '#D4CFC7' }}
+          className="text-xl transition-transform hover:scale-110"
+          style={{ color: value >= s ? '#F59E0B' : '#D1D5DB' }}
         >
           ★
         </button>
@@ -635,11 +244,16 @@ const TaskDetailsModal = ({ task, onClose }) => {
   const statusClass = task.status?.toLowerCase().replace('_', '_') || 'todo';
 
   return (
-    <div className="tdm-overlay" onClick={onClose}>
-      <div className="tdm-modal" onClick={(e) => e.stopPropagation()}>
-        {/* ALERT */}
+    <div
+      className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
+      onClick={onClose}
+    >
+      <div
+        className="w-[920px] max-w-[95vw] max-h-[92vh] overflow-hidden bg-white rounded-2xl border border-gray-200 shadow-2xl flex flex-col"
+        onClick={(e) => e.stopPropagation()}
+      >
         {alert && (
-          <div style={{ padding: '12px 24px 0' }}>
+          <div className="px-6 pt-4">
             <AlertMessage
               error={alert.type === 'error' ? alert.message : null}
               success={alert.type === 'success' ? alert.message : null}
@@ -649,53 +263,71 @@ const TaskDetailsModal = ({ task, onClose }) => {
         )}
 
         {/* HEADER */}
-        <div className="tdm-header">
+        <div className="flex justify-between items-start p-6 border-b border-gray-200">
           <div>
-            <span className="tdm-code">{task.taskCode}</span>
-            <h2 className="tdm-title">{task.title}</h2>
-            <div className="tdm-meta-row">
-              <span className={`tdm-status ${statusClass}`}>
+            <div className="text-xs font-mono text-gray-500 mb-1">
+              {task.taskCode}
+            </div>
+            <h2 className="text-xl font-semibold text-gray-900">
+              {task.title}
+            </h2>
+
+            <div className="flex gap-2 mt-3 flex-wrap">
+              <span className="px-3 py-1 text-xs rounded-full bg-blue-50 text-blue-600">
                 {task.status?.replace(/_/g, ' ')}
               </span>
-              <span
-                className={`tdm-badge priority-${task.priority?.toLowerCase()}`}
-              >
+              <span className="px-3 py-1 text-xs rounded-md bg-gray-100 text-gray-700">
                 {task.priority}
               </span>
               {task.sourceTicketId && (
-                <span
-                  className="tdm-badge"
-                  style={{
-                    background: '#FFF3DC',
-                    color: '#7C5109',
-                    borderColor: '#F0D9B5',
-                  }}
-                >
+                <span className="px-3 py-1 text-xs rounded-md bg-amber-50 text-amber-700">
                   Helpdesk
                 </span>
               )}
             </div>
           </div>
-          <button className="tdm-close" onClick={onClose}>
+
+          <button
+            className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-500"
+            onClick={onClose}
+          >
             ✕
           </button>
         </div>
 
-        {/* BODY (TABS) */}
-        <div className="p-6">
+        {/* BODY */}
+        <div className="p-6 flex-1 overflow-y-auto">
           <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid w-full grid-cols-3 mb-6 bg-gray-100/50 p-1 rounded-xl">
-              <TabsTrigger value="info" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Task Info</TabsTrigger>
-              <TabsTrigger value="evidence" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Evidence & Review</TabsTrigger>
-              <TabsTrigger value="comments" className="rounded-lg data-[state=active]:bg-white data-[state=active]:shadow-sm">Comments ({comments?.length || 0})</TabsTrigger>
+            <TabsList className="grid grid-cols-3 bg-gray-50 p-1 rounded-xl border border-gray-200 mb-6">
+              <TabsTrigger
+                value="info"
+                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
+              >
+                Task Info
+              </TabsTrigger>
+              <TabsTrigger
+                value="evidence"
+                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
+              >
+                Evidence & Review
+              </TabsTrigger>
+              <TabsTrigger
+                value="comments"
+                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
+              >
+                Comments ({comments?.length || 0})
+              </TabsTrigger>
             </TabsList>
-            
-            <TabsContent value="info" className="mt-0 outline-none">
-               <TaskInfoTab task={task} />
+
+            <TabsContent value="info" className="mt-0">
+              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <TaskInfoTab task={task} />
+              </div>
             </TabsContent>
-            
-            <TabsContent value="evidence" className="mt-0 outline-none">
-               <EvidenceTab
+
+            <TabsContent value="evidence" className="mt-0">
+              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <EvidenceTab
                   task={task}
                   evidenceList={evidenceList}
                   loading={loading}
@@ -718,11 +350,13 @@ const TaskDetailsModal = ({ task, onClose }) => {
                   handleApproveAndComplete={handleApproveAndComplete}
                   handleCancelTask={handleCancelTask}
                   isCanceling={isCanceling}
-               />
+                />
+              </div>
             </TabsContent>
 
-            <TabsContent value="comments" className="mt-0 outline-none">
-               <CommentsTab
+            <TabsContent value="comments" className="mt-0">
+              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+                <CommentsTab
                   comments={comments}
                   ticketComments={ticketComments}
                   newComment={newComment}
@@ -730,7 +364,8 @@ const TaskDetailsModal = ({ task, onClose }) => {
                   handleSendComment={handleSendComment}
                   sendingComment={sendingComment}
                   sourceTicketId={task.sourceTicketId}
-               />
+                />
+              </div>
             </TabsContent>
           </Tabs>
         </div>
