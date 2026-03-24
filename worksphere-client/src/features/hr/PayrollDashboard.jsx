@@ -1,14 +1,14 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect } from 'react';
 import {
   generatePayroll,
   fetchPayrollSummary,
   processPayroll,
   markPayrollPaid,
-} from "../../api/hrApi";
-import { getAllEmployees } from "../../api/employeeApi";
-import PayslipViewerModal from "./PayslipViewerModal";
-import SalaryStructureModal from "./SalaryStructureModal";
-import { Skeleton } from "../../components/ui/skeleton";
+} from '../../api/hrApi';
+import { getAllEmployees } from '../../api/employeeApi';
+import PayslipViewerModal from './PayslipViewerModal';
+import SalaryStructureModal from './SalaryStructureModal';
+import { Skeleton } from '../../components/ui/skeleton';
 
 const PayrollDashboard = () => {
   const [records, setRecords] = useState([]);
@@ -35,7 +35,7 @@ const PayrollDashboard = () => {
       const res = await getAllEmployees();
       setEmployees(res);
     } catch (err) {
-      console.error("Failed to load employees", err);
+      console.error('Failed to load employees', err);
     }
   };
 
@@ -46,7 +46,11 @@ const PayrollDashboard = () => {
       const res = await fetchPayrollSummary(month, year);
       setRecords(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Failed to load payroll summary");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to load payroll summary'
+      );
     } finally {
       setLoading(false);
     }
@@ -61,7 +65,11 @@ const PayrollDashboard = () => {
       setSuccess(`Generated ${res.data.length} payroll records.`);
       setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Failed to generate payroll");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to generate payroll'
+      );
     } finally {
       setLoading(false);
     }
@@ -70,22 +78,30 @@ const PayrollDashboard = () => {
   const handleProcess = async (id) => {
     try {
       await processPayroll(id);
-      setSuccess("Payroll processed and payslip generated.");
+      setSuccess('Payroll processed and payslip generated.');
       setTimeout(() => setSuccess(null), 4000);
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Failed to process payroll");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to process payroll'
+      );
     }
   };
 
   const handleMarkPaid = async (id) => {
     try {
       await markPayrollPaid(id);
-      setSuccess("Payroll marked as paid.");
+      setSuccess('Payroll marked as paid.');
       setTimeout(() => setSuccess(null), 4000);
       loadSummary();
     } catch (err) {
-      setError(err.response?.data?.message || err.response?.data?.error || "Failed to mark as paid");
+      setError(
+        err.response?.data?.message ||
+          err.response?.data?.error ||
+          'Failed to mark as paid'
+      );
     }
   };
 
@@ -96,13 +112,13 @@ const PayrollDashboard = () => {
 
   const statusBadge = (status) => {
     const colors = {
-      DRAFT: "bg-yellow-100 text-yellow-800",
-      PROCESSED: "bg-blue-100 text-blue-800",
-      PAID: "bg-green-100 text-green-800",
+      DRAFT: 'bg-amber-100 text-amber-900 border-amber-200',
+      PROCESSED: 'bg-blue-100 text-blue-900 border-blue-200',
+      PAID: 'bg-emerald-100 text-emerald-900 border-emerald-200',
     };
     return (
       <span
-        className={`px-2 py-1 text-xs rounded-full font-medium ${colors[status] || "bg-gray-100 text-gray-800"}`}
+        className={`px-3 py-1 text-xs rounded-md font-bold border ${colors[status] || 'bg-slate-100 text-slate-800 border-slate-200'}`}
       >
         {status}
       </span>
@@ -111,52 +127,62 @@ const PayrollDashboard = () => {
 
   const fmt = (val) =>
     val != null
-      ? Number(val).toLocaleString("en-IN", {
+      ? Number(val).toLocaleString('en-IN', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
-      : "0.00";
+      : '0.00';
 
   const monthNames = [
-    "January", "February", "March", "April", "May", "June",
-    "July", "August", "September", "October", "November", "December",
+    'January',
+    'February',
+    'March',
+    'April',
+    'May',
+    'June',
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
   ];
 
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">
+          <h1 className="text-3xl font-extrabold text-slate-900">
             Payroll Dashboard
           </h1>
-          <p className="text-gray-500 text-sm mt-1">
+          <p className="text-slate-600 font-medium mt-1">
             Generate, process, and manage monthly payroll.
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="mb-4 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+        <div className="mb-4 text-red-800 bg-red-50 p-3 rounded-lg border border-red-200 font-medium">
           {error}
         </div>
       )}
       {success && (
-        <div className="mb-4 text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+        <div className="mb-4 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200 font-medium">
           {success}
         </div>
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
         <div className="flex flex-wrap items-end gap-4">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-slate-800 mb-1">
               Month
             </label>
             <select
               value={month}
               onChange={(e) => setMonth(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="border border-slate-300 text-slate-900 font-medium rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
             >
               {monthNames.map((name, i) => (
                 <option key={i} value={i + 1}>
@@ -166,7 +192,7 @@ const PayrollDashboard = () => {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
+            <label className="block text-sm font-bold text-slate-800 mb-1">
               Year
             </label>
             <input
@@ -174,32 +200,32 @@ const PayrollDashboard = () => {
               min="2020"
               value={year}
               onChange={(e) => setYear(parseInt(e.target.value))}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+              className="border border-slate-300 text-slate-900 font-medium rounded-lg px-3 py-2 text-sm w-24 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
             />
           </div>
           <button
             onClick={loadSummary}
             disabled={loading}
-            className="bg-gray-600 hover:bg-gray-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors text-sm"
+            className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2 rounded-lg font-semibold shadow-sm transition-colors text-sm"
           >
             View Records
           </button>
           <button
             onClick={handleGenerate}
             disabled={loading}
-            className="bg-indigo-600 hover:bg-indigo-700 text-white px-4 py-2 rounded-lg font-medium shadow-sm transition-colors text-sm"
+            className="bg-indigo-600 hover:bg-indigo-700 text-white px-5 py-2 rounded-lg font-semibold shadow-sm transition-colors text-sm"
           >
-            {loading ? "Generating..." : "Generate Payroll"}
+            {loading ? 'Generating...' : 'Generate Payroll'}
           </button>
         </div>
       </div>
 
       {/* Salary Structure Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 mb-6">
-        <h2 className="text-lg font-semibold text-gray-900 mb-3">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-2">
           Salary Structures
         </h2>
-        <p className="text-sm text-gray-500 mb-4">
+        <p className="text-sm text-slate-600 font-medium mb-4">
           Click an employee to set or update their salary structure.
         </p>
         <div className="flex flex-wrap gap-2">
@@ -207,7 +233,7 @@ const PayrollDashboard = () => {
             <button
               key={emp.id}
               onClick={() => openSalaryModal(emp)}
-              className="px-3 py-2 text-sm bg-gray-50 hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg transition-colors"
+              className="px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 rounded-lg transition-colors shadow-sm"
             >
               {emp.firstName} {emp.lastName}
             </button>
@@ -216,55 +242,72 @@ const PayrollDashboard = () => {
       </div>
 
       {/* Payroll Records Table */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="p-4 text-sm font-semibold text-gray-600">
+              <tr className="bg-slate-50 border-b border-slate-200">
+                <th className="p-4 text-sm font-bold text-slate-800">
                   Employee
                 </th>
-                <th className="p-4 text-sm font-semibold text-gray-600">
+                <th className="p-4 text-sm font-bold text-slate-800">
                   Department
                 </th>
-                <th className="p-4 text-sm font-semibold text-gray-600 text-right">
+                <th className="p-4 text-sm font-bold text-slate-800 text-right">
                   Gross
                 </th>
-                <th className="p-4 text-sm font-semibold text-gray-600 text-right">
+                <th className="p-4 text-sm font-bold text-slate-800 text-right">
                   Deductions
                 </th>
-                <th className="p-4 text-sm font-semibold text-gray-600 text-right">
+                <th className="p-4 text-sm font-bold text-slate-800 text-right">
                   Net Pay
                 </th>
-                <th className="p-4 text-sm font-semibold text-gray-600">
-                  Days
-                </th>
-                <th className="p-4 text-sm font-semibold text-gray-600">
-                  Status
-                </th>
-                <th className="p-4 text-sm font-semibold text-gray-600">
+                <th className="p-4 text-sm font-bold text-slate-800">Days</th>
+                <th className="p-4 text-sm font-bold text-slate-800">Status</th>
+                <th className="p-4 text-sm font-bold text-slate-800">
                   Actions
                 </th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-slate-200">
               {loading ? (
                 [...Array(5)].map((_, i) => (
-                  <tr key={`skel-${i}`} className="hover:bg-gray-50">
-                    <td className="p-4"><Skeleton className="h-5 w-32" /></td>
-                    <td className="p-4"><Skeleton className="h-4 w-24" /></td>
-                    <td className="p-4"><Skeleton className="h-4 w-20 ml-auto" /></td>
-                    <td className="p-4"><Skeleton className="h-4 w-20 ml-auto" /></td>
-                    <td className="p-4"><Skeleton className="h-5 w-24 ml-auto" /></td>
-                    <td className="p-4"><Skeleton className="h-4 w-16" /></td>
-                    <td className="p-4"><Skeleton className="h-6 w-20 rounded-full" /></td>
-                    <td className="p-4 flex gap-2"><Skeleton className="h-8 w-16 rounded-md" /><Skeleton className="h-8 w-16 rounded-md" /></td>
+                  <tr key={`skel-${i}`} className="hover:bg-slate-50">
+                    <td className="p-4">
+                      <Skeleton className="h-5 w-32" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-4 w-24" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-4 w-20 ml-auto" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-4 w-20 ml-auto" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-5 w-24 ml-auto" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-4 w-16" />
+                    </td>
+                    <td className="p-4">
+                      <Skeleton className="h-6 w-20 rounded-md" />
+                    </td>
+                    <td className="p-4 flex gap-2">
+                      <Skeleton className="h-8 w-16 rounded-md" />
+                      <Skeleton className="h-8 w-16 rounded-md" />
+                    </td>
                   </tr>
                 ))
               ) : records.length === 0 ? (
                 <tr>
-                  <td colSpan="8" className="p-6 text-center text-gray-500">
-                    No records. Select a period and click View Records or Generate Payroll.
+                  <td
+                    colSpan="8"
+                    className="p-8 text-center font-medium text-slate-600"
+                  >
+                    No records found. Select a period and click View Records or
+                    Generate Payroll.
                   </td>
                 </tr>
               ) : (
@@ -277,26 +320,26 @@ const PayrollDashboard = () => {
                     Number(r.otherDeductions || 0);
 
                   return (
-                    <tr key={r.id} className="hover:bg-gray-50">
-                      <td className="p-4 font-medium text-gray-900">
+                    <tr key={r.id} className="hover:bg-slate-50">
+                      <td className="p-4 font-bold text-slate-900">
                         {r.employeeName}
                       </td>
-                      <td className="p-4 text-gray-600 text-sm">
+                      <td className="p-4 text-slate-700 font-medium text-sm">
                         {r.department}
                       </td>
-                      <td className="p-4 text-right text-sm">
+                      <td className="p-4 text-right text-sm font-semibold text-slate-800">
                         ₹{fmt(r.grossPay)}
                       </td>
-                      <td className="p-4 text-right text-sm text-red-600">
+                      <td className="p-4 text-right text-sm font-semibold text-red-600">
                         -₹{fmt(totalDeductions)}
                       </td>
-                      <td className="p-4 text-right font-semibold text-green-700">
+                      <td className="p-4 text-right font-extrabold text-emerald-700">
                         ₹{fmt(r.netPay)}
                       </td>
-                      <td className="p-4 text-sm text-gray-500">
+                      <td className="p-4 text-sm font-semibold text-slate-700">
                         {r.presentDays}/{r.workingDays}
                         {r.lopDays > 0 && (
-                          <span className="text-red-500 ml-1">
+                          <span className="text-red-600 font-bold ml-1">
                             ({r.lopDays} LOP)
                           </span>
                         )}
@@ -304,18 +347,18 @@ const PayrollDashboard = () => {
                       <td className="p-4">{statusBadge(r.status)}</td>
                       <td className="p-4">
                         <div className="flex gap-2">
-                          {r.status === "DRAFT" && (
+                          {r.status === 'DRAFT' && (
                             <button
                               onClick={() => handleProcess(r.id)}
-                              className="px-3 py-1 text-xs bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                              className="px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
                             >
                               Process
                             </button>
                           )}
-                          {r.status === "PROCESSED" && (
+                          {r.status === 'PROCESSED' && (
                             <button
                               onClick={() => handleMarkPaid(r.id)}
-                              className="px-3 py-1 text-xs bg-green-600 hover:bg-green-700 text-white rounded-md transition-colors"
+                              className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
                             >
                               Mark Paid
                             </button>
@@ -323,7 +366,7 @@ const PayrollDashboard = () => {
                           {r.payslipDownloadUrl && (
                             <button
                               onClick={() => setViewingPayslipId(r.id)}
-                              className="px-3 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-md transition-colors cursor-pointer"
+                              className="px-3 py-1.5 text-xs font-bold bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 rounded-md transition-colors cursor-pointer"
                             >
                               📄 View Payslip
                             </button>
@@ -344,7 +387,7 @@ const PayrollDashboard = () => {
         onClose={() => setSalaryModalOpen(false)}
         employee={selectedEmployee}
         onSave={() => {
-          setSuccess("Salary structure saved.");
+          setSuccess('Salary structure saved.');
           setTimeout(() => setSuccess(null), 4000);
         }}
       />

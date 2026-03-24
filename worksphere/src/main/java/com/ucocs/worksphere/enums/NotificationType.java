@@ -1,11 +1,39 @@
 package com.ucocs.worksphere.enums;
 
 public enum NotificationType {
+    // --- Existing ---
     PAYSLIP_READY,
     APPRAISAL_DUE,
     APPRAISAL_RECEIVED,
     TICKET_UPDATE,
     ASSET_ASSIGNED,
     ASSET_RETURN_REQUEST,
-    OFFBOARDING_INITIATED
+    OFFBOARDING_INITIATED,
+
+    // --- Leave ---
+    LEAVE_SUBMITTED,
+    LEAVE_APPROVED,
+    LEAVE_REJECTED,
+    LEAVE_CANCELLED,
+
+    // --- Tasks ---
+    TASK_ASSIGNED,
+    TASK_STATUS_UPDATED,
+    TASK_COMPLETED,
+    TASK_RATED,
+
+    // --- Hiring ---
+    CANDIDATE_APPLIED,
+    CANDIDATE_STATUS_CHANGED,
+    INTERVIEW_SCHEDULED,
+    INTERVIEW_FEEDBACK_SUBMITTED,
+
+    // --- Employee Actions ---
+    EMPLOYEE_ACTION_APPLIED,
+    MANAGER_REPORT_SUBMITTED,
+    MANAGER_REPORT_REVIEWED,
+
+    // --- Attendance ---
+    ATTENDANCE_LATE,
+    TIMESHEET_MANUALLY_ADJUSTED
 }

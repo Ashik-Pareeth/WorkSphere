@@ -36,6 +36,7 @@ public class PayrollCalculationService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final JobPositionRepository jobPositionRepository;
+    private final LeaveRequestRepository leaveRequestRepository;
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal TWELVE = new BigDecimal("12");
@@ -211,9 +212,10 @@ public class PayrollCalculationService {
         return count;
     }
 
+
     /**
      * Count the number of present / working days from attendance records.
-     * Counts PRESENT, LATE, and HALF_DAY statuses.
+     * Counts PRESENT, LATE, HALF_DAY, and paid ON_LEAVE statuses.
      */
     private int countPresentDays(Employee emp, YearMonth yearMonth) {
         LocalDate start = yearMonth.atDay(1);
@@ -224,23 +226,42 @@ public class PayrollCalculationService {
             return 0;
         }
 
+        // Fetch employee's leave requests to check for paid/unpaid status during ON_LEAVE days
+        List<LeaveRequest> allLeaves = leaveRequestRepository.findByEmployeeOrderByCreatedAtDesc(emp);
+
         int count = 0;
         for (Attendance att : records) {
             if (att.getDate() != null
                     && !att.getDate().isBefore(start)
                     && !att.getDate().isAfter(end)) {
+
                 DailyStatus status = att.getDailyStatus();
+
                 if (status == DailyStatus.PRESENT || status == DailyStatus.LATE) {
                     count++;
                 } else if (status == DailyStatus.HALF_DAY_MORNING || status == DailyStatus.HALF_DAY_AFTERNOON) {
-                    // Count half day as 0.5, but since we use int, round up for simplicity
+                    // Count half day as full day for payroll simplification (or change to 0.5 if using double)
                     count++;
+                } else if (status == DailyStatus.ON_LEAVE) {
+                    // Check if this specific day falls under an approved, PAID leave request
+                    boolean isPaidLeave = allLeaves.stream()
+                            .filter(lr -> lr.getStatus() == LeaveRequestStatus.APPROVED)
+                            .filter(lr -> !att.getDate().isBefore(lr.getStartDate()) && !att.getDate().isAfter(lr.getEndDate()))
+                            .findFirst()
+                            .map(lr -> {
+                                Boolean isUnpaid = lr.getLeavePolicy().getIsUnpaid();
+                                return isUnpaid != null && !isUnpaid; // True if it is NOT an unpaid leave
+                            })
+                            .orElse(false);
+
+                    if (isPaidLeave) {
+                        count++;
+                    }
                 }
             }
         }
         return count;
     }
-
     // ==================== PROCESS & MARK PAID ====================
 
     @Transactional

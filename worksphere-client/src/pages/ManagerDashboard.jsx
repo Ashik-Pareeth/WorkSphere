@@ -9,6 +9,7 @@ import {
   approveLeaveRequest,
   rejectLeaveRequest,
 } from '../api/leaveApi';
+import { getDailyRoster } from '../api/attendanceApi';
 
 import {
   Users,
@@ -134,6 +135,23 @@ const AppraisalsWidget = () => (
 // ─── Main Dashboard ───────────────────────────────────────────────────────────
 
 const ManagerDashboard = () => {
+  const { data: roster = [], isLoading: rosterLoading } = useQuery({
+    queryKey: ['dailyRoster'],
+    queryFn: getDailyRoster,
+  });
+
+  const presentCount = roster.filter(
+    (r) =>
+      r.dailyStatus === 'PRESENT' ||
+      r.dailyStatus === 'LATE' ||
+      r.dailyStatus === 'HALF_DAY_MORNING' ||
+      r.dailyStatus === 'HALF_DAY_AFTERNOON'
+  ).length;
+  const onLeaveCount = roster.filter(
+    (r) => r.dailyStatus === 'ON_LEAVE'
+  ).length;
+  const teamSize = roster.length;
+
   return (
     <div className="p-6 lg:p-8 max-w-7xl mx-auto flex flex-col gap-6 font-sans">
       {/* ── Header ── */}
@@ -149,11 +167,29 @@ const ManagerDashboard = () => {
         </p>
       </div>
 
-      {/* ── Stat Cards (placeholder for now) ── */}
+      {/* ── Stat Cards ── */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard title="Present Today" value="--" icon={<Users />} />
-        <StatCard title="On Leave" value="--" icon={<CalendarOff />} />
-        <StatCard title="Team Size" value="--" icon={<ClipboardList />} />
+        <StatCard
+          title="Present Today"
+          value={rosterLoading ? '--' : presentCount}
+          icon={<Users />}
+          colorClass="text-emerald-600"
+          bgColorClass="bg-emerald-50/40"
+        />
+        <StatCard
+          title="On Leave"
+          value={rosterLoading ? '--' : onLeaveCount}
+          icon={<CalendarOff />}
+          colorClass="text-amber-600"
+          bgColorClass="bg-amber-50/40"
+        />
+        <StatCard
+          title="Team Size"
+          value={rosterLoading ? '--' : teamSize}
+          icon={<ClipboardList />}
+          colorClass="text-blue-600"
+          bgColorClass="bg-blue-50/40"
+        />
       </div>
 
       {/* ── Roster Section ── */}

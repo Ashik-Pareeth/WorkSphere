@@ -2,7 +2,12 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useSearchParams } from 'react-router-dom';
 import { DragDropContext } from '@hello-pangea/dnd';
-import { getMyTasks, updateTaskStatus, getTeamTasks } from '../../api/taskApi';
+import {
+  getMyTasks,
+  updateTaskStatus,
+  getTeamTasks,
+  getAllTasks,
+} from '../../api/taskApi';
 import CreateTaskModal from './CreateTaskModal';
 import TaskDetailsModal from './TaskDetailsModal';
 import AlertMessage from '../../components/common/AlertMessage';
@@ -10,8 +15,18 @@ import KanbanColumn from './KanbanColumn';
 import TaskFilterBar from './TaskFilterBar';
 
 const PlusIcon = () => (
-  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 4v16m8-8H4" />
+  <svg
+    className="w-4 h-4"
+    fill="none"
+    stroke="currentColor"
+    viewBox="0 0 24 24"
+  >
+    <path
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      strokeWidth="2"
+      d="M12 4v16m8-8H4"
+    />
   </svg>
 );
 
@@ -29,34 +44,71 @@ const TaskBoard = () => {
     filterPriority: searchParams.get('priority') || 'ALL',
     filterAssignee: searchParams.get('assignee') || 'ALL',
     dateFrom: searchParams.get('from') || '',
-    dateTo: searchParams.get('to') || ''
+    dateTo: searchParams.get('to') || '',
   };
 
   const setFilters = (newFilters) => {
     const params = new URLSearchParams();
-    if (newFilters.viewMode !== 'MY_TASKS') params.set('view', newFilters.viewMode);
+    if (newFilters.viewMode !== 'MY_TASKS')
+      params.set('view', newFilters.viewMode);
     if (newFilters.showCancelled) params.set('graveyard', 'true');
-    if (newFilters.filterPriority !== 'ALL') params.set('priority', newFilters.filterPriority);
-    if (newFilters.filterAssignee !== 'ALL') params.set('assignee', newFilters.filterAssignee);
+    if (newFilters.filterPriority !== 'ALL')
+      params.set('priority', newFilters.filterPriority);
+    if (newFilters.filterAssignee !== 'ALL')
+      params.set('assignee', newFilters.filterAssignee);
     if (newFilters.dateFrom) params.set('from', newFilters.dateFrom);
     if (newFilters.dateTo) params.set('to', newFilters.dateTo);
     setSearchParams(params);
   };
 
   const baseColumns = ['TODO', 'IN_PROGRESS', 'IN_REVIEW', 'COMPLETED'];
-  const columns = filters.showCancelled ? [...baseColumns, 'CANCELLED'] : baseColumns;
+  const columns = filters.showCancelled
+    ? [...baseColumns, 'CANCELLED']
+    : baseColumns;
 
   const userRole = localStorage.getItem('role') || '';
   const normalizedRole = userRole.toUpperCase();
+
   const isGlobalAdmin = [
-    'ROLE_SUPER_ADMIN', 'SUPER_ADMIN', 'ROLE_HR', 'HR', 'ROLE_AUDITOR', 'AUDITOR',
+    'ROLE_SUPER_ADMIN',
+    'SUPER_ADMIN',
+    'ROLE_HR',
+    'HR',
+    'ROLE_AUDITOR',
+    'AUDITOR',
   ].includes(normalizedRole);
+
   const isTeamManager = ['ROLE_MANAGER', 'MANAGER'].includes(normalizedRole);
+
+  // ✅ Added role-specific checks
+  const isHR = ['ROLE_HR', 'HR'].includes(normalizedRole);
+  const isSuperAdmin = ['ROLE_SUPER_ADMIN', 'SUPER_ADMIN'].includes(
+    normalizedRole
+  );
+
   const hasOversightAccess = isGlobalAdmin || isTeamManager;
 
-  // Migration 1: getMyTasks - shares ['myTasks'] cache with EmployeeDashboard
-  const taskQueryFn = filters.viewMode === 'TEAM_TASKS' ? getTeamTasks : getMyTasks;
-  const taskQueryKey = filters.viewMode === 'TEAM_TASKS' ? ['teamTasks'] : ['myTasks'];
+  // ✅ Updated API selection logic
+  let taskQueryFn;
+  if (filters.viewMode === 'TEAM_TASKS') {
+    if (isHR || isSuperAdmin) {
+      taskQueryFn = getAllTasks;
+    } else if (isTeamManager) {
+      taskQueryFn = getTeamTasks;
+    } else {
+      taskQueryFn = getMyTasks;
+    }
+  } else {
+    taskQueryFn = getMyTasks;
+  }
+
+  // ✅ Updated query keys for caching correctness
+  const taskQueryKey =
+    taskQueryFn === getAllTasks
+      ? ['allTasks']
+      : taskQueryFn === getTeamTasks
+        ? ['teamTasks']
+        : ['myTasks'];
 
   const {
     data: fetchedTasks = [],
@@ -67,12 +119,12 @@ const TaskBoard = () => {
     queryFn: taskQueryFn,
   });
 
-  // Keep a local mutable copy for optimistic drag-and-drop updates
   const [optimisticTasks, setOptimisticTasks] = useState(null);
   const tasks2 = optimisticTasks ?? fetchedTasks;
-  // Sync optimistic state when server data changes (e.g. after refetch)
-  useState(() => { setOptimisticTasks(null); });
 
+  useState(() => {
+    setOptimisticTasks(null);
+  });
 
   const handleDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
@@ -86,7 +138,9 @@ const TaskBoard = () => {
       return;
     }
     if (newStatus === 'CANCELLED') {
-      setError('To cancel a task, click on it and use the red "Cancel Task" button inside the details panel.');
+      setError(
+        'To cancel a task, click on it and use the red "Cancel Task" button inside the details panel.'
+      );
       return;
     }
 
@@ -96,28 +150,40 @@ const TaskBoard = () => {
     }
 
     if (newStatus === 'IN_PROGRESS' && !hasOversightAccess) {
-      const assigneeId = taskBeingMoved.assignedToId || taskBeingMoved.assigneeId;
+      const assigneeId =
+        taskBeingMoved.assignedToId || taskBeingMoved.assigneeId;
       const activeWipCount = tasks2.filter(
-        (t) => t.status === 'IN_PROGRESS' && (t.assignedToId === assigneeId || t.assigneeId === assigneeId)
+        (t) =>
+          t.status === 'IN_PROGRESS' &&
+          (t.assignedToId === assigneeId || t.assigneeId === assigneeId)
       ).length;
 
       if (activeWipCount >= 3) {
-        setError('WIP Limit Reached: You already have 3 tasks in progress. Finish one first!');
+        setError(
+          'WIP Limit Reached: You already have 3 tasks in progress. Finish one first!'
+        );
         return;
       }
     }
 
     setError(null);
-    setOptimisticTasks((prev) => (prev ?? fetchedTasks).map((t) => (t.id === draggableId ? { ...t, status: newStatus } : t)));
+    setOptimisticTasks((prev) =>
+      (prev ?? fetchedTasks).map((t) =>
+        t.id === draggableId ? { ...t, status: newStatus } : t
+      )
+    );
 
     try {
       await updateTaskStatus(draggableId, newStatus);
     } catch (err) {
       let errorMessage = 'Action rejected by server.';
       if (err.response?.data) {
-        errorMessage = typeof err.response.data === 'string'
-          ? err.response.data
-          : err.response.data.message || err.response.data.error || errorMessage;
+        errorMessage =
+          typeof err.response.data === 'string'
+            ? err.response.data
+            : err.response.data.message ||
+              err.response.data.error ||
+              errorMessage;
       } else if (err.message) {
         errorMessage = err.message;
       }
@@ -128,28 +194,36 @@ const TaskBoard = () => {
   };
 
   const uniqueAssignees = useMemo(() => {
-    const assignees = tasks2.map((t) => t.assignedToName || t.assigneeName).filter(Boolean);
+    const assignees = tasks2
+      .map((t) => t.assignedToName || t.assigneeName)
+      .filter(Boolean);
     return [...new Set(assignees)].sort();
   }, [tasks2]);
 
   const filteredTasks = tasks2.filter((t) => {
-    const matchesPriority = filters.filterPriority === 'ALL' || t.priority === filters.filterPriority;
+    const matchesPriority =
+      filters.filterPriority === 'ALL' || t.priority === filters.filterPriority;
     const taskAssignee = t.assignedToName || t.assigneeName;
-    const matchesAssignee = filters.filterAssignee === 'ALL' || taskAssignee === filters.filterAssignee;
-    
+    const matchesAssignee =
+      filters.filterAssignee === 'ALL' ||
+      taskAssignee === filters.filterAssignee;
+
     let matchesDateFrom = true;
     let matchesDateTo = true;
     if (filters.dateFrom && t.dueDate) {
-       matchesDateFrom = new Date(t.dueDate) >= new Date(filters.dateFrom);
+      matchesDateFrom = new Date(t.dueDate) >= new Date(filters.dateFrom);
     }
     if (filters.dateTo && t.dueDate) {
-       matchesDateTo = new Date(t.dueDate) <= new Date(filters.dateTo);
+      matchesDateTo = new Date(t.dueDate) <= new Date(filters.dateTo);
     }
-    
-    return matchesPriority && matchesAssignee && matchesDateFrom && matchesDateTo;
+
+    return (
+      matchesPriority && matchesAssignee && matchesDateFrom && matchesDateTo
+    );
   });
 
-  const getTasksByStatus = (status) => filteredTasks.filter((t) => t.status === status);
+  const getTasksByStatus = (status) =>
+    filteredTasks.filter((t) => t.status === status);
 
   if (loading) {
     return (
@@ -181,14 +255,14 @@ const TaskBoard = () => {
           </div>
 
           <div className="flex items-center gap-3">
-            <TaskFilterBar 
-               filters={filters} 
-               onChange={setFilters} 
-               hasOversightAccess={hasOversightAccess} 
-               isGlobalAdmin={isGlobalAdmin} 
-               uniqueAssignees={uniqueAssignees} 
+            <TaskFilterBar
+              filters={filters}
+              onChange={setFilters}
+              hasOversightAccess={hasOversightAccess}
+              isGlobalAdmin={isGlobalAdmin}
+              uniqueAssignees={uniqueAssignees}
             />
-            
+
             <button
               onClick={() => setIsModalOpen(true)}
               className="flex items-center gap-1.5 bg-gray-900 hover:bg-gray-800 text-white px-3 py-1.5 rounded-lg text-xs font-semibold shadow-sm transition-all active:scale-95 ml-2"
@@ -205,14 +279,16 @@ const TaskBoard = () => {
           <AlertMessage error={error} onClose={() => setError(null)} />
 
           <DragDropContext onDragEnd={handleDragEnd}>
-            <div className={`grid gap-6 h-full min-w-250 ${filters.showCancelled ? 'grid-cols-1 md:grid-cols-5' : 'grid-cols-1 md:grid-cols-4'}`}>
+            <div
+              className={`grid gap-6 h-full min-w-250 ${filters.showCancelled ? 'grid-cols-1 md:grid-cols-5' : 'grid-cols-1 md:grid-cols-4'}`}
+            >
               {columns.map((status) => (
-                 <KanbanColumn 
-                   key={status} 
-                   status={status} 
-                   tasks={getTasksByStatus(status)} 
-                   onTaskClick={setSelectedTask} 
-                 />
+                <KanbanColumn
+                  key={status}
+                  status={status}
+                  tasks={getTasksByStatus(status)}
+                  onTaskClick={setSelectedTask}
+                />
               ))}
             </div>
           </DragDropContext>
@@ -220,10 +296,19 @@ const TaskBoard = () => {
       </main>
 
       {isModalOpen && (
-        <CreateTaskModal onClose={() => setIsModalOpen(false)} onTaskCreated={() => { setOptimisticTasks(null); refetch(); }} />
+        <CreateTaskModal
+          onClose={() => setIsModalOpen(false)}
+          onTaskCreated={() => {
+            setOptimisticTasks(null);
+            refetch();
+          }}
+        />
       )}
       {selectedTask && (
-        <TaskDetailsModal task={selectedTask} onClose={() => setSelectedTask(null)} />
+        <TaskDetailsModal
+          task={selectedTask}
+          onClose={() => setSelectedTask(null)}
+        />
       )}
     </div>
   );

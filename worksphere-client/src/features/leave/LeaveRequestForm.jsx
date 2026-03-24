@@ -58,6 +58,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
           <input
             type="date"
             name="startDate"
+            min={new Date().toISOString().split('T')[0]}
             value={formData.startDate}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"

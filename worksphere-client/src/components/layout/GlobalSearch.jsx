@@ -17,7 +17,7 @@ import { Search, Briefcase, CheckSquare, Users } from 'lucide-react';
 
 export default function GlobalSearch({ open, setOpen }) {
   const navigate = useNavigate();
-  const { isHR, isGlobalAdmin } = useAuth();
+  const { user } = useAuth();
 
   const [tasks, setTasks] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -25,7 +25,7 @@ export default function GlobalSearch({ open, setOpen }) {
   const [loading, setLoading] = useState(false);
   const [hasFetched, setHasFetched] = useState(false);
 
-  const hasOversight = isHR || isGlobalAdmin;
+  const hasOversight = user?.isHR || user?.isGlobalAdmin;
 
   useEffect(() => {
     // Only fetch once when the modal opens for the first time

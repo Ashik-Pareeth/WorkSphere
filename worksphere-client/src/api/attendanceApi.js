@@ -38,3 +38,9 @@ export const getDailyRoster = async () => {
   const response = await axiosInstance.get('/attendance/roster/today');
   return response.data;
 };
+
+// HR / Manager / Super Admin: Get full attendance history for a specific employee
+export const getAttendanceForEmployee = async (employeeId) => {
+  const response = await axiosInstance.get(`/attendance/employee/${employeeId}`);
+  return response.data;
+};

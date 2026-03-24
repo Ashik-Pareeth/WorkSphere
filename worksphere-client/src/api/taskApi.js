@@ -15,6 +15,11 @@ export const getTeamTasks = async () => {
   return response.data;
 };
 
+export const getAllTasks = async () => {
+  const response = await axiosInstance.get('/tasks/all-tasks');
+  return response.data;
+};
+
 // --- WRITE OPERATIONS ---
 
 // Create a new task

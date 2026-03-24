@@ -78,6 +78,13 @@ public class TaskController {
         return ResponseEntity.ok(convertToDTOs(tasks));
     }
 
+    @GetMapping("/all-tasks")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    public ResponseEntity<List<TaskResponseDTO>> getAllTasks() {
+        List<Task> tasks = taskService.getAllTasks();
+        return ResponseEntity.ok(convertToDTOs(tasks));
+    }
+
     // --- 4. COMMENTS ---
     @GetMapping("/{taskId}/comments")
     @PreAuthorize("isAuthenticated()")

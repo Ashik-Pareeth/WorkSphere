@@ -1,8 +1,12 @@
 package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.dto.hiring.InterviewScheduleDTO;
+import com.ucocs.worksphere.entity.Candidate;
 import com.ucocs.worksphere.entity.InterviewSchedule;
 import com.ucocs.worksphere.enums.InterviewStatus;
+import com.ucocs.worksphere.enums.NotificationType;
+import com.ucocs.worksphere.repository.CandidateRepository;
+import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.InterviewScheduleRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -16,6 +20,10 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class InterviewService {
     private final InterviewScheduleRepository interviewRepository;
+    private final CandidateRepository candidateRepository;   // ADDED
+    private final NotificationService notificationService;   // ADDED
+    private final EmployeeRepository employeeRepository;
+
 
     public List<InterviewScheduleDTO> getInterviewsForCandidate(UUID candidateId) {
         return interviewRepository
@@ -31,11 +39,26 @@ public class InterviewService {
                         i.getScore(),
                         i.getFeedback()
                 ))
-                .toList();    }
+                .toList();
+    }
 
     @Transactional
     public InterviewSchedule scheduleInterview(InterviewSchedule interview) {
-        return interviewRepository.save(interview);
+        InterviewSchedule saved = interviewRepository.save(interview);
+
+        // NOTIFICATION: Notify the interviewer (if they are an internal employee)
+        if (saved.getInterviewer() != null) {
+            notificationService.send(
+                    saved.getInterviewer().getId(),
+                    NotificationType.INTERVIEW_SCHEDULED,
+                    "Interview Scheduled: Round " + saved.getRoundNumber(),
+                    "You have been assigned to interview candidate \"" + saved.getCandidate().getFullName() + "\" for Round " + saved.getRoundNumber() + " on " + saved.getScheduledAt() + " (" + saved.getMode() + ").",
+                    saved.getId(),
+                    "InterviewSchedule"
+            );
+        }
+
+        return saved;
     }
 
     @Transactional
@@ -48,6 +71,21 @@ public class InterviewService {
         interview.setStatus(InterviewStatus.COMPLETED);
         interview.setCompletedAt(LocalDateTime.now());
 
-        return interviewRepository.save(interview);
+        InterviewSchedule saved = interviewRepository.save(interview);
+
+
+        employeeRepository.findAll().stream()
+                .filter(e -> e.getRoles().stream()
+                        .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN")))
+                .forEach(hr -> notificationService.send(
+                        hr.getId(),
+                        NotificationType.INTERVIEW_FEEDBACK_SUBMITTED,
+                        "Interview Feedback Submitted: " + interview.getCandidate().getFullName(),
+                        "Feedback for candidate \"" + interview.getCandidate().getFullName() + "\" (Round " + interview.getRoundNumber() + ") has been submitted by " + interview.getInterviewer().getFirstName() + ". Score: " + score,
+                        saved.getId(),
+                        "InterviewSchedule"
+                ));
+
+        return saved;
     }
 }

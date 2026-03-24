@@ -4,10 +4,7 @@ import com.ucocs.worksphere.dto.TaskCreateRequest;
 import com.ucocs.worksphere.dto.TaskStatusUpdate;
 import com.ucocs.worksphere.dto.hr.TicketCommentResponse;
 import com.ucocs.worksphere.entity.*;
-import com.ucocs.worksphere.enums.EvidenceStatus;
-import com.ucocs.worksphere.enums.GrievanceStatus;
-import com.ucocs.worksphere.enums.TaskPriority;
-import com.ucocs.worksphere.enums.TaskStatus;
+import com.ucocs.worksphere.enums.*;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.*;
 import lombok.extern.slf4j.Slf4j;
@@ -18,12 +15,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -38,12 +30,13 @@ public class TaskService {
     private final TaskCommentRepository taskCommentRepository;
     private final GrievanceTicketRepository grievanceTicketRepository;
     private final TicketCommentRepository ticketCommentRepository;
-
+    private final NotificationService notificationService; // ADDED
 
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
-            TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
-            TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
-                       TicketCommentRepository ticketCommentRepository) {
+                       TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
+                       TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
+                       TicketCommentRepository ticketCommentRepository,
+                       NotificationService notificationService) {           // ADDED
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceRepository = taskEvidenceRepository;
@@ -51,6 +44,7 @@ public class TaskService {
         this.taskCommentRepository = taskCommentRepository;
         this.grievanceTicketRepository = grievanceTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
+        this.notificationService = notificationService;         // ADDED
     }
 
     public Task createTask(TaskCreateRequest request, UUID managerId) {
@@ -59,11 +53,9 @@ public class TaskService {
         Employee assignee = employeeRepository.findById(request.assignedToId())
                 .orElseThrow(() -> new ResourceNotFoundException("Assignee not found"));
 
-        // Generate Task Code First
         long count = taskRepository.count();
         String generatedCode = "TSK-" + (1000 + count + 1);
 
-        // Convert string priority from DTO to Enum safely
         TaskPriority priorityEnum;
         try {
             priorityEnum = TaskPriority.valueOf(request.priority());
@@ -71,7 +63,6 @@ public class TaskService {
             priorityEnum = TaskPriority.MEDIUM;
         }
 
-        // 1. Use the new strict Constructor
         Task newTask = new Task(
                 generatedCode,
                 request.title(),
@@ -82,10 +73,18 @@ public class TaskService {
                 priorityEnum);
 
         newTask.setRequiresEvidence(request.requiresEvidence());
-
         Task savedTask = taskRepository.save(newTask);
-
         logHistory(savedTask, manager, "Created Task", "ROLE_MANAGER", null, TaskStatus.TODO);
+
+        // NOTIFICATION: Notify the assignee that a task was assigned to them
+        notificationService.send(
+                assignee.getId(),
+                NotificationType.TASK_ASSIGNED,
+                "New Task Assigned: " + savedTask.getTitle(),
+                manager.getFirstName() + " " + manager.getLastName() + " has assigned you a new task: \"" + savedTask.getTitle() + "\" (" + generatedCode + "). Due: " + request.dueDate() + ".",
+                savedTask.getId(),
+                "Task"
+        );
 
         return savedTask;
     }
@@ -108,14 +107,12 @@ public class TaskService {
                 && task.getAssignedTo().getManager().getId().equals(currentUser.getId());
         boolean hasOversight = isAdmin || isAssigner || isDirectManager;
 
-        // --- ROLE PROTECTIONS ---
         if ((newStatus == TaskStatus.COMPLETED || newStatus == TaskStatus.CANCELLED) && !hasOversight) {
             throw new AccessDeniedException(
                     "Only the Assigner, Direct Manager, or Admin can complete or cancel tasks.");
         }
 
-        // --- WIP LIMIT ENFORCEMENT ---
-        if (newStatus == TaskStatus.IN_PROGRESS && !hasOversight) { // Managers can bypass WIP limits if needed
+        if (newStatus == TaskStatus.IN_PROGRESS && !hasOversight) {
             long currentWip = taskRepository.countByAssignedTo_IdAndStatus(task.getAssignedTo().getId(),
                     TaskStatus.IN_PROGRESS);
             if (currentWip >= 3) {
@@ -124,7 +121,6 @@ public class TaskService {
             }
         }
 
-        // --- EVIDENCE GATEKEEPERS ---
         if (!hasOversight && newStatus == TaskStatus.IN_REVIEW) {
             if (task.isRequiresEvidence()) {
                 boolean hasEvidence = taskEvidenceRepository.existsByTask_Id(taskId);
@@ -137,13 +133,11 @@ public class TaskService {
         if (newStatus == TaskStatus.COMPLETED && task.isRequiresEvidence()) {
             boolean hasAcceptedEvidence = taskEvidenceRepository.findAllByTaskId(taskId).stream()
                     .anyMatch(e -> e.getStatus() == EvidenceStatus.ACCEPTED);
-
             if (!hasAcceptedEvidence) {
                 throw new IllegalStateException("Cannot complete task: No accepted evidence found.");
             }
         }
 
-        // --- EXECUTE BUSINESS METHODS ---
         switch (newStatus) {
             case IN_PROGRESS -> task.startProgress();
             case IN_REVIEW -> task.submitForReview();
@@ -151,7 +145,7 @@ public class TaskService {
             case CANCELLED -> task.cancelTask();
             case TODO -> {
                 if (hasOversight)
-                    task.kickBackToInProgress(); // Adjust based on your business logic
+                    task.kickBackToInProgress();
             }
         }
 
@@ -184,8 +178,48 @@ public class TaskService {
                 log.info("Auto-synced Ticket {} status to {}", ticket.getTicketNumber(), ticket.getStatus());
             }
         }
+
         String roleSnapshot = isAdmin ? "ROLE_ADMIN" : "ROLE_EMPLOYEE";
         logHistory(savedTask, currentUser, updateDTO.comment(), roleSnapshot, oldStatus, newStatus);
+
+        // NOTIFICATION: Notify relevant parties of the status change
+        String friendlyStatus = newStatus.name().replace("_", " ");
+
+        // If a manager/admin changed the status, notify the assignee
+        if (hasOversight && !currentUser.getId().equals(task.getAssignedTo().getId())) {
+            notificationService.send(
+                    task.getAssignedTo().getId(),
+                    NotificationType.TASK_STATUS_UPDATED,
+                    "Task \"" + task.getTitle() + "\" marked as " + friendlyStatus,
+                    currentUser.getFirstName() + " " + currentUser.getLastName() + " updated your task \"" + task.getTitle() + "\" to " + friendlyStatus + (updateDTO.comment() != null && !updateDTO.comment().isBlank() ? ". Comment: " + updateDTO.comment() : "."),
+                    savedTask.getId(),
+                    "Task"
+            );
+        }
+
+        // If the assignee moved the task to IN_REVIEW, notify the assigner
+        if (newStatus == TaskStatus.IN_REVIEW && isAssignee) {
+            notificationService.send(
+                    task.getAssigner().getId(),
+                    NotificationType.TASK_STATUS_UPDATED,
+                    "Task ready for review: \"" + task.getTitle() + "\"",
+                    task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName() + " has submitted task \"" + task.getTitle() + "\" (" + task.getTaskCode() + ") for your review.",
+                    savedTask.getId(),
+                    "Task"
+            );
+        }
+
+        // If task is completed, also send a TASK_COMPLETED notification to the assignee
+        if (newStatus == TaskStatus.COMPLETED) {
+            notificationService.send(
+                    task.getAssignedTo().getId(),
+                    NotificationType.TASK_COMPLETED,
+                    "Task Completed: \"" + task.getTitle() + "\"",
+                    "Task \"" + task.getTitle() + "\" (" + task.getTaskCode() + ") has been marked as completed.",
+                    savedTask.getId(),
+                    "Task"
+            );
+        }
 
         return taskRepository.findByIdWithRelations(taskId)
                 .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));
@@ -208,16 +242,25 @@ public class TaskService {
             throw new AccessDeniedException("Only the Assigner, Direct Manager, or Admin can rate tasks.");
         }
 
-        // Calculate score based on lateness
         double score = task.isOverdue() ? 0.0 : 50.0;
         if (rating != null) {
             score += (rating * 10.0);
         }
 
-        // Use the new entity method
         task.rateTask(rating, score);
+        Task savedTask = taskRepository.save(task);
 
-        return taskRepository.save(task);
+        // NOTIFICATION: Notify the assignee that their task was rated
+        notificationService.send(
+                task.getAssignedTo().getId(),
+                NotificationType.TASK_RATED,
+                "Your task has been rated",
+                currentUser.getFirstName() + " " + currentUser.getLastName() + " rated your task \"" + task.getTitle() + "\" " + rating + "/5 (score: " + (int) score + ").",
+                savedTask.getId(),
+                "Task"
+        );
+
+        return savedTask;
     }
 
     public Task flagTask(UUID taskId, String reason) {
@@ -229,9 +272,7 @@ public class TaskService {
             throw new AccessDeniedException("Only Auditors can flag tasks.");
         }
 
-        // Use the new entity method
         task.flagForAudit(reason, currentUser);
-
         logHistory(task, currentUser, "Flagged: " + reason, "ROLE_AUDITOR", task.getStatus(), task.getStatus());
 
         return taskRepository.save(task);
@@ -244,7 +285,6 @@ public class TaskService {
     }
 
     public List<Task> getTeamTasks(UUID employeeId) {
-        // Ask Spring Security for your roles directly from the authenticated token
         boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication())
                 .getAuthorities().stream()
                 .anyMatch(a -> {
@@ -258,8 +298,6 @@ public class TaskService {
             return taskRepository.findAllWithRelations();
         }
 
-        // If not a global viewer, they must be a Manager. Give them their assigned
-        // tasks + tasks given to direct reports
         List<Task> assignedByMe = taskRepository.findByAssigner_Id(employeeId);
         List<Task> assignedToMyTeam = taskRepository.findByAssignedTo_Manager_Id(employeeId);
 
@@ -293,7 +331,7 @@ public class TaskService {
     // --- HELPERS ---
 
     private void logHistory(Task task, Employee actor, String comment, String roleSnapshot,
-            TaskStatus oldStatus, TaskStatus newStatus) {
+                            TaskStatus oldStatus, TaskStatus newStatus) {
         TaskHistory history = new TaskHistory(
                 task,
                 actor,
@@ -321,11 +359,10 @@ public class TaskService {
     }
 
     public Task getTaskById(UUID taskId) {
-        return  taskRepository.findById(taskId)
+        return taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
     }
 
-    // TaskService.java
     @Transactional(readOnly = true)
     public List<TicketCommentResponse> getSourceTicketComments(UUID taskId) {
         Task task = taskRepository.findById(taskId)
@@ -344,5 +381,9 @@ public class TaskService {
                         .createdAt(c.getCreatedAt())
                         .build())
                 .collect(Collectors.toList());
+    }
+
+    public List<Task> getAllTasks() {
+        return taskRepository.findAll();
     }
 }

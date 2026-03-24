@@ -11,3 +11,9 @@ export const getMyProfile = async () => {
   const response = await axiosInstance.get('/employees/me');
   return response.data;
 };
+
+// MANAGER only: fetch direct reports
+export const getMyTeam = async () => {
+  const response = await axiosInstance.get('/employees/my-team');
+  return response.data;
+};

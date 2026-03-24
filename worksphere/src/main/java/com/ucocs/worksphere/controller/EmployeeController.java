@@ -63,6 +63,12 @@ public class EmployeeController {
         return employeeService.getAllEmployees();
     }
 
+    @GetMapping("/my-team")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<EmployeeResponseDTO>> getMyTeam(Principal principal) {
+        return ResponseEntity.ok(employeeService.getMyTeam(principal.getName()));
+    }
+
     @PutMapping("/{id}")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<Void> updateEmployee(
