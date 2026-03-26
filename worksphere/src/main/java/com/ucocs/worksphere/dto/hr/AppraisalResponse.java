@@ -24,6 +24,14 @@ public class AppraisalResponse {
     private Integer tasksCompletedInPeriod;
     private Integer tasksOverdueInPeriod;
     private BigDecimal averageTaskScore;
+
+    // Attendance snapshot (read-only reference data for manager during review)
+    private Integer presentDaysInPeriod;
+    private Integer lateDaysInPeriod;
+    private Integer absentDaysInPeriod;
+    private Integer onLeaveDaysInPeriod;
+    private Integer halfDayDaysInPeriod;
+
     private BigDecimal selfRating;
     private BigDecimal managerRating;
     private String selfComments;

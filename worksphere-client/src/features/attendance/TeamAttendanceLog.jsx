@@ -2,14 +2,25 @@ import { useState, useEffect, useMemo } from 'react';
 import { getAttendanceForEmployee } from '../../api/attendanceApi';
 import { getAllEmployees, getMyTeam } from '../../api/employeeApi';
 import { useAuth } from '../../hooks/useAuth';
-import { Search, Calendar, Clock, Activity, UserX, ChevronLeft, ChevronRight } from 'lucide-react';
+import {
+  Search,
+  Calendar,
+  Clock,
+  Activity,
+  UserX,
+  ChevronLeft,
+  ChevronRight,
+} from 'lucide-react';
 
 const ROWS_PER_PAGE = 15;
 
 // ─── helpers ─────────────────────────────────────────────────────────────────
 const formatTime = (dt) => {
   if (!dt) return '—';
-  return new Date(dt).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
+  return new Date(dt).toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  });
 };
 
 const calcHours = (clockIn, clockOut) => {
@@ -41,7 +52,9 @@ const TeamAttendanceLog = () => {
 
   const hasRole = (roles) => {
     if (!user?.roles) return false;
-    const normalized = user.roles.map((r) => r.replace('ROLE_', '').toUpperCase());
+    const normalized = user.roles.map((r) =>
+      r.replace('ROLE_', '').toUpperCase()
+    );
     return roles.some((r) => normalized.includes(r));
   };
 
@@ -89,7 +102,9 @@ const TeamAttendanceLog = () => {
         setError(null);
         setPage(1);
         const data = await getAttendanceForEmployee(selectedEmployee.id);
-        const sorted = [...data].sort((a, b) => new Date(b.date) - new Date(a.date));
+        const sorted = [...data].sort(
+          (a, b) => new Date(b.date) - new Date(a.date)
+        );
         setRecords(sorted);
       } catch (err) {
         console.error('Failed to load attendance records', err);
@@ -115,7 +130,10 @@ const TeamAttendanceLog = () => {
   }, [employees, search]);
 
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
-  const pageRecords = records.slice((page - 1) * ROWS_PER_PAGE, page * ROWS_PER_PAGE);
+  const pageRecords = records.slice(
+    (page - 1) * ROWS_PER_PAGE,
+    page * ROWS_PER_PAGE
+  );
 
   // ── Stats for selected employee ───────────────────────────────────────────
   const stats = useMemo(() => {
@@ -124,7 +142,8 @@ const TeamAttendanceLog = () => {
     let totalHrs = 0;
     records.forEach((r) => {
       if (r.clockIn && r.clockOut) {
-        totalHrs += (new Date(r.clockOut) - new Date(r.clockIn)) / (1000 * 60 * 60);
+        totalHrs +=
+          (new Date(r.clockOut) - new Date(r.clockIn)) / (1000 * 60 * 60);
       }
     });
     return { presentDays, absentDays, totalHrs: totalHrs.toFixed(1) };
@@ -137,38 +156,50 @@ const TeamAttendanceLog = () => {
       {isHrOrAdmin && (
         <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
           <div className="px-4 py-5 border-b border-gray-100">
-            <h2 className="text-sm font-bold text-gray-800 uppercase tracking-wider">
+            <h2 className="text-sm font-bold text-black uppercase tracking-wider">
               Select Employee
             </h2>
             <div className="mt-3 relative">
-              <Search size={15} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-black"
+              />
               <input
                 type="text"
                 placeholder="Search by name or dept..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               />
             </div>
           </div>
 
           <div className="flex-1 overflow-y-auto">
             {loadingEmployees ? (
-              <div className="p-4 text-sm text-gray-400 animate-pulse">Loading...</div>
+              <div className="p-4 text-sm text-gray-400 animate-pulse">
+                Loading...
+              </div>
             ) : filteredEmployees.length === 0 ? (
-              <div className="p-4 text-sm text-gray-400">No employees found.</div>
+              <div className="p-4 text-sm text-gray-400">
+                No employees found.
+              </div>
             ) : (
               filteredEmployees.map((emp) => (
                 <button
                   key={emp.id}
                   onClick={() => setSelectedEmployee(emp)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-blue-50 transition-colors ${
-                    selectedEmployee?.id === emp.id ? 'bg-blue-50 border-l-4 border-l-blue-500' : ''
+                    selectedEmployee?.id === emp.id
+                      ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                      : ''
                   }`}
                 >
-                  <p className="text-sm font-semibold text-gray-800 truncate">{emp.fullName}</p>
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {emp.firstName} {emp.lastName}
+                  </p>
                   <p className="text-xs text-gray-400 truncate mt-0.5">
-                    {emp.department?.name || 'No Department'} · {emp.jobPosition?.title || emp.position || ''}
+                    {emp.departmentName || 'No Department'} ·{' '}
+                    {emp.jobTitle || emp.position || ''}
                   </p>
                 </button>
               ))
@@ -188,8 +219,8 @@ const TeamAttendanceLog = () => {
             {selectedEmployee
               ? `Showing history for ${selectedEmployee.fullName}`
               : isHrOrAdmin
-              ? 'Select an employee from the list'
-              : 'Loading team members…'}
+                ? 'Select an employee from the list'
+                : 'Loading team members…'}
           </p>
         </header>
 
@@ -201,12 +232,16 @@ const TeamAttendanceLog = () => {
                 Team Member
               </label>
               {loadingEmployees ? (
-                <div className="text-sm text-gray-400 animate-pulse">Loading employees...</div>
+                <div className="text-sm text-gray-400 animate-pulse">
+                  Loading employees...
+                </div>
               ) : (
                 <select
                   value={selectedEmployee?.id || ''}
                   onChange={(e) => {
-                    const emp = employees.find((em) => em.id === e.target.value);
+                    const emp = employees.find(
+                      (em) => em.id === e.target.value
+                    );
                     setSelectedEmployee(emp || null);
                   }}
                   className="w-72 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
@@ -233,7 +268,9 @@ const TeamAttendanceLog = () => {
           {!selectedEmployee && !loadingEmployees && (
             <div className="flex flex-col items-center justify-center h-64 text-gray-400 gap-2">
               <Calendar size={40} className="opacity-50" />
-              <p className="text-sm">Select an employee to view their attendance history.</p>
+              <p className="text-sm">
+                Select an employee to view their attendance history.
+              </p>
             </div>
           )}
 
@@ -274,35 +311,59 @@ const TeamAttendanceLog = () => {
                 <table className="w-full text-left border-collapse">
                   <thead>
                     <tr className="bg-gray-50 border-b border-gray-200">
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Date</th>
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Clock In</th>
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Clock Out</th>
-                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">Hours</th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Date
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Status
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Clock In
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Clock Out
+                      </th>
+                      <th className="px-6 py-3 text-xs font-bold text-gray-500 uppercase tracking-wider">
+                        Hours
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-100">
                     {pageRecords.length === 0 ? (
                       <tr>
-                        <td colSpan={5} className="px-6 py-10 text-center text-sm text-gray-400">
+                        <td
+                          colSpan={5}
+                          className="px-6 py-10 text-center text-sm text-gray-400"
+                        >
                           No attendance records found for this employee.
                         </td>
                       </tr>
                     ) : (
                       pageRecords.map((record) => {
-                        const badge = statusBadge(record.clockIn, record.clockOut);
+                        const badge = statusBadge(
+                          record.clockIn,
+                          record.clockOut
+                        );
                         return (
-                          <tr key={record.id} className="hover:bg-gray-50/60 transition-colors">
+                          <tr
+                            key={record.id}
+                            className="hover:bg-gray-50/60 transition-colors"
+                          >
                             <td className="px-6 py-3.5 text-sm font-medium text-gray-800">
-                              {new Date(record.date).toLocaleDateString('en-US', {
-                                weekday: 'short',
-                                month: 'short',
-                                day: 'numeric',
-                                year: 'numeric',
-                              })}
+                              {new Date(record.date).toLocaleDateString(
+                                'en-US',
+                                {
+                                  weekday: 'short',
+                                  month: 'short',
+                                  day: 'numeric',
+                                  year: 'numeric',
+                                }
+                              )}
                             </td>
                             <td className="px-6 py-3.5">
-                              <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}>
+                              <span
+                                className={`text-xs font-semibold px-2.5 py-1 rounded-full ${badge.cls}`}
+                              >
                                 {badge.label}
                               </span>
                             </td>
@@ -338,7 +399,9 @@ const TeamAttendanceLog = () => {
                       <ChevronLeft size={15} />
                     </button>
                     <button
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      onClick={() =>
+                        setPage((p) => Math.min(totalPages, p + 1))
+                      }
                       disabled={page === totalPages}
                       className="p-2 rounded-lg border border-gray-200 bg-white hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition"
                     >

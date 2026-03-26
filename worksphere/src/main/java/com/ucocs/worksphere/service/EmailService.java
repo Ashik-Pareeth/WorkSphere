@@ -162,4 +162,53 @@ public class EmailService {
 
         sendHtmlEmail(to, subject, html, "Reset Link: " + resetUrl);
     }
+    // ========================= INTERVIEW SCHEDULED EMAIL =========================
+
+    public void sendInterviewScheduledEmail(String to, String candidateName, String jobTitle, String scheduledAt, String mode) {
+        String subject = "Interview Scheduled: " + jobTitle + " - WorkSphere";
+
+        String html = """
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height:1.6;">
+                <h2 style="color:#2c3e50;">Interview Scheduled</h2>
+                <p>Dear %s,</p>
+                <p>We are pleased to inform you that an interview has been scheduled for your application for the <b>%s</b> position.</p>
+                <ul>
+                    <li><b>Date & Time:</b> %s</li>
+                    <li><b>Mode:</b> %s</li>
+                </ul>
+                <p>Please ensure you are available at the scheduled time. If you have any questions, feel free to reply to this email.</p>
+                <br/>
+                <p>Best regards,<br/>
+                <b>HR Team</b><br/>
+                WorkSphere</p>
+            </body>
+            </html>
+        """.formatted(candidateName, jobTitle, scheduledAt, mode);
+
+        sendHtmlEmail(to, subject, html, "Interview scheduled on: " + scheduledAt);
+    }
+
+    // ========================= CANDIDATE STATUS UPDATE EMAIL =========================
+
+    public void sendCandidateStatusUpdateEmail(String to, String candidateName, String jobTitle, String status) {
+        String subject = "Application Update: " + jobTitle + " - WorkSphere";
+
+        String html = """
+            <html>
+            <body style="font-family: Arial, sans-serif; line-height:1.6;">
+                <h2 style="color:#2c3e50;">Application Update</h2>
+                <p>Dear %s,</p>
+                <p>We are writing to inform you that the status of your application for the <b>%s</b> position has been updated to: <b>%s</b>.</p>
+                <p>We will keep you posted regarding any further steps.</p>
+                <br/>
+                <p>Best regards,<br/>
+                <b>HR Team</b><br/>
+                WorkSphere</p>
+            </body>
+            </html>
+        """.formatted(candidateName, jobTitle, status);
+
+        sendHtmlEmail(to, subject, html, "Your application status is now: " + status);
+    }
 }

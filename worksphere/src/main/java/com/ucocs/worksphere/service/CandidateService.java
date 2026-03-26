@@ -36,6 +36,7 @@ public class CandidateService {
     private final JobOpeningRepository jobOpeningRepository;
     private final EmployeeRepository employeeRepository;   // ADDED
     private final NotificationService notificationService; // ADDED
+    private final EmailService emailService;
 
     public List<Candidate> getCandidatesByJobId(UUID jobId) {
         return candidateRepository.findByJobOpeningId(jobId);
@@ -153,6 +154,14 @@ public class CandidateService {
                             saved.getId(),
                             "Candidate"
                     ));
+            if (candidate.getEmail() != null) {
+                emailService.sendCandidateStatusUpdateEmail(
+                        candidate.getEmail(),
+                        candidate.getFullName(),
+                        candidate.getJobOpening().getTitle(),
+                        statusLabel
+                );
+            }
         }
 
         return saved;

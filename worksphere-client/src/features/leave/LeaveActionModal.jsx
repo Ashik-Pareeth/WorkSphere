@@ -64,7 +64,7 @@ const LeaveActionModal = ({ request, action, onClose, onSuccess }) => {
           </div>
 
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1">
+            <label className="block text-sm font-semibold text-black mb-1">
               Manager Comment{' '}
               {isApprove ? (
                 '(Optional)'
@@ -75,7 +75,7 @@ const LeaveActionModal = ({ request, action, onClose, onSuccess }) => {
             <textarea
               value={comment}
               onChange={(e) => setComment(e.target.value)}
-              className="w-full border border-gray-300 rounded-lg p-2.5 h-24 resize-none focus:ring-2 focus:ring-blue-500 outline-none"
+              className="w-full border border-gray-300 rounded-lg p-2.5 h-24 resize-none text-black focus:ring-2 focus:ring-blue-500 outline-none"
               placeholder={
                 isApprove
                   ? 'Add an optional note...'

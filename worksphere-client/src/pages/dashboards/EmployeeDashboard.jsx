@@ -28,6 +28,7 @@ const EmployeeDashboard = () => {
     queryKey: ['leaveBalance'],
     queryFn: getMyBalances,
   });
+  console.log('Leave Balances:', balances);
 
   const leaveBalance = balances?.annualLeave?.balance ?? 0;
 
@@ -41,7 +42,9 @@ const EmployeeDashboard = () => {
           const count = attendance.filter((record) => {
             if (!record.date) return false;
             const d = new Date(record.date);
-            return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+            return (
+              d.getMonth() === currentMonth && d.getFullYear() === currentYear
+            );
           }).length;
           setMonthAttendanceCount(count);
         }
@@ -53,8 +56,10 @@ const EmployeeDashboard = () => {
 
   // Compute Task stats client-side
   const todayStr = new Date().toISOString().split('T')[0];
-  const tasksDueToday = allTasks.filter(t => t.dueDate === todayStr).length;
-  const pendingActionItems = allTasks.filter(t => t.status === 'IN_REVIEW').length;
+  const tasksDueToday = allTasks.filter((t) => t.dueDate === todayStr).length;
+  const pendingActionItems = allTasks.filter(
+    (t) => t.status === 'IN_REVIEW'
+  ).length;
 
   if (loading) return <PageSkeleton />;
 
@@ -72,7 +77,6 @@ const EmployeeDashboard = () => {
 
       {/* --- DASHBOARD GRID --- */}
       <main className="flex-1 p-8 w-full max-w-7xl mx-auto space-y-6">
-        
         {/* TOP METRICS ROW */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           <StatCard

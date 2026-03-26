@@ -50,11 +50,11 @@ const JobOpeningsList = () => {
   return (
     <div className="p-6 space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-gray-100 flex items-center gap-2">
+        <h1 className="text-3xl font-bold tracking-tight text-black flex items-center gap-2">
           <Briefcase className="h-8 w-8 text-blue-500" /> Hiring Pipeline
         </h1>
         <Button
-          className="bg-blue-600 hover:bg-blue-700"
+          className="bg-blue-600 hover:bg-blue-700 text-white"
           onClick={() => setIsCreatingJob(true)}
         >
           <Plus className="mr-2 h-4 w-4" /> New Job Opening

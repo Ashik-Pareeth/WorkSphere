@@ -7,7 +7,7 @@ import {
   fetchCandidatesByJob,
   fetchJobById,
   updateCandidateStatus,
-  fetchInterviewsForCandidate, // <-- Added import
+  fetchInterviewsForCandidate,
 } from '../../api/hiringApi';
 import CandidateDrawer from './CandidateDrawer';
 import RejectionModal from './RejectionModal';
@@ -26,32 +26,38 @@ const COLUMNS = {
   APPLIED: {
     id: 'APPLIED',
     title: 'Applied',
-    color: 'border-l-4 border-gray-400',
+    accent: '#94a3b8',
+    pill: 'bg-slate-100 text-slate-600',
   },
   SHORTLISTED: {
     id: 'SHORTLISTED',
     title: 'Shortlisted',
-    color: 'border-l-4 border-blue-400',
+    accent: '#3b82f6',
+    pill: 'bg-blue-50 text-blue-600',
   },
   INTERVIEWING: {
     id: 'INTERVIEWING',
     title: 'Interviewing',
-    color: 'border-l-4 border-amber-400',
+    accent: '#f59e0b',
+    pill: 'bg-amber-50 text-amber-700',
   },
   OFFERED: {
     id: 'OFFERED',
     title: 'Offered',
-    color: 'border-l-4 border-purple-400',
+    accent: '#8b5cf6',
+    pill: 'bg-violet-50 text-violet-700',
   },
   ACCEPTED: {
     id: 'ACCEPTED',
     title: 'Offer Accepted',
-    color: 'border-l-4 border-green-500',
+    accent: '#22c55e',
+    pill: 'bg-emerald-50 text-emerald-700',
   },
   REJECTED: {
     id: 'REJECTED',
-    title: 'Rejected / Cancelled',
-    color: 'border-l-4 border-red-400',
+    title: 'Rejected',
+    accent: '#ef4444',
+    pill: 'bg-red-50 text-red-600',
   },
 };
 
@@ -85,7 +91,6 @@ const HiringPipelineBoard = () => {
     }
   };
 
-  // Convert handleDragEnd to async to allow API validation before optimistic update
   const handleDragEnd = async (result) => {
     const { destination, source, draggableId } = result;
     if (!destination) return;
@@ -98,7 +103,6 @@ const HiringPipelineBoard = () => {
     const newStatus = destination.droppableId;
     const currentStatus = source.droppableId;
 
-    // RULE: Prevent manual move to ACCEPTED
     if (newStatus === 'ACCEPTED') {
       toast.error('Action Not Allowed', {
         description:
@@ -107,7 +111,6 @@ const HiringPipelineBoard = () => {
       return;
     }
 
-    // RULE: Prevent move to OFFERED without validating interview completion
     if (newStatus === 'OFFERED') {
       if (currentStatus !== 'INTERVIEWING') {
         toast.error('Invalid Transition', {
@@ -117,13 +120,9 @@ const HiringPipelineBoard = () => {
         return;
       }
 
-      // API Validation: Check if the candidate actually has a COMPLETED interview
       try {
         const interviewRes = await fetchInterviewsForCandidate(draggableId);
         const interviews = interviewRes.data;
-
-        // Check if there is at least one COMPLETED interview
-        // (You can also add `&& interview.score >= 3` if you want a strict approval rating)
         const hasPassedInterview = interviews.some(
           (interview) => interview.status === 'COMPLETED'
         );
@@ -133,7 +132,6 @@ const HiringPipelineBoard = () => {
             description:
               'The candidate must have at least one completed and evaluated interview before an offer can be generated.',
           });
-          // By returning here, we skip the state update and the dragged card snaps back to its origin.
           return;
         }
       } catch (error) {
@@ -151,12 +149,10 @@ const HiringPipelineBoard = () => {
       return;
     }
 
-    // Perform optimistic UI update
     setCandidates((prev) =>
       prev.map((c) => (c.id === draggableId ? { ...c, status: newStatus } : c))
     );
 
-    // Persist changes to backend
     updateCandidateStatus(draggableId, newStatus, null)
       .then(() => toast.success('Candidate moved successfully'))
       .catch((error) => {
@@ -209,201 +205,519 @@ const HiringPipelineBoard = () => {
 
   if (loading)
     return (
-      <div className="p-8 text-center text-gray-500">Loading Pipeline...</div>
+      <div
+        style={{ fontFamily: "'Georgia', serif" }}
+        className="p-8 text-center text-stone-400 text-sm tracking-wide"
+      >
+        Loading pipeline…
+      </div>
     );
 
   return (
-    <div className="p-4 h-[calc(100vh-6rem)] flex flex-col">
-      {pendingRejection && pendingCandidate && (
-        <RejectionModal
-          candidateName={pendingCandidate.fullName}
-          onConfirm={confirmRejection}
-          onCancel={cancelRejection}
-        />
-      )}
+    <>
+      {/* ── global page styles injected once ── */}
+      <style>{`
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;600&family=Source+Sans+3:wght@400;500;600&display=swap');
 
-      {/* Header */}
-      <div className="flex justify-between items-center mb-4 flex-wrap gap-2">
-        <div className="flex items-center gap-3">
-          <Button
-            variant="ghost"
-            onClick={() => navigate('/hiring/jobs')}
-            className="px-2"
-          >
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <div>
-            <h1 className="text-xl font-bold tracking-tight text-gray-900 dark:text-gray-100 leading-tight">
-              {job?.title ?? 'Candidate Pipeline'}
-            </h1>
-            {job?.department?.name && (
-              <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5">
-                {job.department.name}
-              </p>
+        .pipeline-root {
+          --cream: #faf9f6;
+          --paper: #f3f1ec;
+          --border: #e2ddd5;
+          --border-strong: #ccc6bb;
+          --text-primary: #1c1917;
+          --text-secondary: #78716c;
+          --text-muted: #a8a29e;
+          font-family: 'Source Sans 3', sans-serif;
+          background: var(--cream);
+        }
+
+        .pipeline-header-title {
+          font-family: 'Playfair Display', Georgia, serif;
+          font-weight: 600;
+          letter-spacing: -0.01em;
+          color: var(--text-primary);
+        }
+
+        .pipeline-col {
+          background: var(--paper);
+          border: 1px solid var(--border);
+          border-radius: 10px;
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          max-height: 100%;
+          overflow: hidden;
+          transition: box-shadow 0.15s ease;
+        }
+
+        .pipeline-col-header {
+          padding: 10px 12px;
+          border-bottom: 1px solid var(--border);
+          background: #fff;
+          border-radius: 10px 10px 0 0;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 8px;
+        }
+
+        .pipeline-col-title {
+          font-family: 'Source Sans 3', sans-serif;
+          font-size: 12px;
+          font-weight: 600;
+          letter-spacing: 0.08em;
+          text-transform: uppercase;
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          gap: 7px;
+        }
+
+        .col-accent-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          flex-shrink: 0;
+        }
+
+        .col-count-badge {
+          font-size: 11px;
+          font-weight: 600;
+          background: var(--paper);
+          border: 1px solid var(--border);
+          color: var(--text-muted);
+          padding: 1px 7px;
+          border-radius: 20px;
+          line-height: 1.6;
+        }
+
+        .pipeline-card {
+          background: #fff;
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          padding: 10px 11px;
+          cursor: grab;
+          transition: box-shadow 0.12s ease, border-color 0.12s ease;
+          position: relative;
+        }
+
+        .pipeline-card:hover {
+          box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+          border-color: var(--border-strong);
+        }
+
+        .pipeline-card.dragging {
+          box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+          border-color: #a8a29e;
+          cursor: grabbing;
+        }
+
+        .candidate-name {
+          font-size: 13.5px;
+          font-weight: 600;
+          color: var(--text-primary);
+          line-height: 1.3;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .candidate-source {
+          font-size: 11.5px;
+          color: var(--text-muted);
+          margin-top: 2px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        .reject-btn {
+          color: #d4cfc9;
+          background: none;
+          border: none;
+          cursor: pointer;
+          padding: 0;
+          line-height: 1;
+          transition: color 0.15s ease;
+          flex-shrink: 0;
+        }
+
+        .reject-btn:hover {
+          color: #ef4444;
+        }
+
+        .drop-zone {
+          flex: 1;
+          padding: 8px;
+          overflow-y: auto;
+          display: flex;
+          flex-direction: column;
+          gap: 7px;
+          transition: background 0.15s ease;
+          scrollbar-width: thin;
+          scrollbar-color: var(--border) transparent;
+        }
+
+        .drop-zone.over-normal {
+          background: #edf4ff;
+        }
+
+        .drop-zone.over-reject {
+          background: #fff1f1;
+        }
+
+        .drop-zone.disabled {
+          background: #f8f7f4;
+        }
+
+        .btn-ghost-nav {
+          background: none;
+          border: 1px solid var(--border);
+          border-radius: 7px;
+          padding: 5px 9px;
+          cursor: pointer;
+          color: var(--text-secondary);
+          display: flex;
+          align-items: center;
+          gap: 5px;
+          font-size: 13px;
+          font-family: 'Source Sans 3', sans-serif;
+          transition: background 0.12s, border-color 0.12s;
+        }
+
+        .btn-ghost-nav:hover {
+          background: var(--paper);
+          border-color: var(--border-strong);
+        }
+
+        .btn-outline-red {
+          background: #fff;
+          border: 1px solid #fca5a5;
+          color: #dc2626;
+          border-radius: 7px;
+          padding: 5px 11px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-family: 'Source Sans 3', sans-serif;
+          font-weight: 500;
+          transition: background 0.12s, border-color 0.12s;
+        }
+
+        .btn-outline-red:hover {
+          background: #fff5f5;
+        }
+
+        .btn-solid-red {
+          background: #dc2626;
+          border: 1px solid #dc2626;
+          color: #fff;
+          border-radius: 7px;
+          padding: 5px 11px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-family: 'Source Sans 3', sans-serif;
+          font-weight: 500;
+          transition: background 0.12s;
+        }
+
+        .btn-solid-red:hover {
+          background: #b91c1c;
+        }
+
+        .btn-outline-blue {
+          background: #fff;
+          border: 1px solid #bfdbfe;
+          color: #2563eb;
+          border-radius: 7px;
+          padding: 5px 11px;
+          cursor: pointer;
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          font-size: 13px;
+          font-family: 'Source Sans 3', sans-serif;
+          font-weight: 500;
+          transition: background 0.12s;
+        }
+
+        .btn-outline-blue:hover {
+          background: #eff6ff;
+        }
+
+        .rejected-badge {
+          font-size: 11px;
+          font-weight: 700;
+          padding: 1px 6px;
+          border-radius: 20px;
+          margin-left: 6px;
+        }
+
+        .col-automated-tag {
+          font-size: 10px;
+          color: var(--text-muted);
+          font-weight: 400;
+          letter-spacing: 0.04em;
+          text-transform: none;
+        }
+
+        .left-accent-bar {
+          position: absolute;
+          left: 0;
+          top: 0;
+          bottom: 0;
+          width: 3px;
+          border-radius: 8px 0 0 8px;
+        }
+      `}</style>
+
+      <div
+        className="pipeline-root"
+        style={{
+          padding: '20px 20px 16px',
+          height: 'calc(100vh - 6rem)',
+          display: 'flex',
+          flexDirection: 'column',
+        }}
+      >
+        {pendingRejection && pendingCandidate && (
+          <RejectionModal
+            candidateName={pendingCandidate.fullName}
+            onConfirm={confirmRejection}
+            onCancel={cancelRejection}
+          />
+        )}
+
+        {/* ── Header ── */}
+        <div
+          style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '18px',
+            flexWrap: 'wrap',
+            gap: '10px',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <button
+              className="btn-ghost-nav"
+              onClick={() => navigate('/hiring/jobs')}
+            >
+              <ArrowLeft size={15} />
+            </button>
+            <div>
+              <h1
+                className="pipeline-header-title"
+                style={{ fontSize: '20px', margin: 0, lineHeight: 1.2 }}
+              >
+                {job?.title ?? 'Candidate Pipeline'}
+              </h1>
+              {job?.department?.name && (
+                <p
+                  style={{
+                    fontSize: '12px',
+                    color: '#a8a29e',
+                    margin: '2px 0 0',
+                    fontFamily: "'Source Sans 3', sans-serif",
+                  }}
+                >
+                  {job.department.name}
+                </p>
+              )}
+            </div>
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {showRejected ? (
+              <button
+                className="btn-solid-red"
+                onClick={() => setShowRejected(false)}
+              >
+                <EyeOff size={14} />
+                Rejected
+                {rejectedCount > 0 && (
+                  <span
+                    className="rejected-badge"
+                    style={{
+                      background: 'rgba(255,255,255,0.25)',
+                      color: '#fff',
+                    }}
+                  >
+                    {rejectedCount}
+                  </span>
+                )}
+              </button>
+            ) : (
+              <button
+                className="btn-outline-red"
+                onClick={() => setShowRejected(true)}
+              >
+                <Eye size={14} />
+                Rejected
+                {rejectedCount > 0 && (
+                  <span
+                    className="rejected-badge"
+                    style={{ background: '#fee2e2', color: '#dc2626' }}
+                  >
+                    {rejectedCount}
+                  </span>
+                )}
+              </button>
             )}
+
+            <button
+              className="btn-outline-blue"
+              onClick={() => window.open(`/jobs/${id}/apply`, '_blank')}
+            >
+              <Search size={14} />
+              View Public Listing
+            </button>
           </div>
         </div>
 
-        <div className="flex items-center gap-2">
-          <Button
-            variant={showRejected ? 'default' : 'outline'}
-            onClick={() => setShowRejected((prev) => !prev)}
-            size="sm"
-            className={
-              showRejected
-                ? 'bg-red-500 hover:bg-red-600 text-white border-red-500'
-                : 'border-red-200 text-red-500 hover:bg-red-50'
-            }
-          >
-            {showRejected ? (
-              <EyeOff className="mr-2 h-4 w-4" />
-            ) : (
-              <Eye className="mr-2 h-4 w-4" />
-            )}
-            Rejected
-            {rejectedCount > 0 && (
-              <span
-                className={`ml-2 text-xs px-1.5 py-0.5 rounded-full font-semibold ${
-                  showRejected
-                    ? 'bg-red-400 text-white'
-                    : 'bg-red-100 text-red-600'
-                }`}
-              >
-                {rejectedCount}
-              </span>
-            )}
-          </Button>
+        {/* ── Board ── */}
+        <div style={{ flex: 1, overflowX: 'auto', minHeight: 0 }}>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: `repeat(${activeColumns.length}, minmax(0, 1fr))`,
+                minWidth: `${activeColumns.length * 185}px`,
+                gap: '10px',
+                height: '100%',
+                alignItems: 'start',
+                paddingBottom: '12px',
+              }}
+            >
+              {activeColumns.map((columnId) => {
+                const column = COLUMNS[columnId];
+                const columnCandidates = getCandidatesByStatus(columnId);
+                const isDropDisabled = columnId === 'ACCEPTED';
 
-          <Button
-            variant="outline"
-            onClick={() => window.open(`/jobs/${id}/apply`, '_blank')}
-            className="border-blue-200 text-blue-600 hover:bg-blue-50"
-            size="sm"
-          >
-            <Search className="mr-2 h-4 w-4" /> View Public Listing
-          </Button>
-        </div>
-      </div>
-
-      {/* Board */}
-      <div className="flex-1 overflow-x-auto min-h-0">
-        <DragDropContext onDragEnd={handleDragEnd}>
-          <div
-            className="grid h-full items-start pb-4 gap-3"
-            style={{
-              gridTemplateColumns: `repeat(${activeColumns.length}, minmax(0, 1fr))`,
-              minWidth: `${activeColumns.length * 180}px`,
-            }}
-          >
-            {activeColumns.map((columnId) => {
-              const column = COLUMNS[columnId];
-              const columnCandidates = getCandidatesByStatus(columnId);
-              // Disable drop into ACCEPTED column entirely
-              const isDropDisabled = columnId === 'ACCEPTED';
-
-              return (
-                <div
-                  key={columnId}
-                  className={`bg-gray-50/50 dark:bg-gray-900/50 rounded-xl flex flex-col h-full max-h-full border min-w-0 ${
-                    isDropDisabled ? 'opacity-80' : ''
-                  }`}
-                >
-                  <div className="p-3 border-b flex items-center justify-between bg-white dark:bg-gray-800 rounded-t-xl">
-                    <h2 className="font-semibold text-gray-700 dark:text-gray-300 text-sm truncate flex items-center">
-                      {column.title}
-                      {isDropDisabled && (
-                        <span className="ml-2 text-[10px] uppercase text-gray-400 font-normal">
-                          (Automated)
-                        </span>
-                      )}
-                      <span className="ml-auto bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 text-xs px-2 py-0.5 rounded-full">
+                return (
+                  <div
+                    key={columnId}
+                    className="pipeline-col"
+                    style={{ opacity: isDropDisabled ? 0.85 : 1 }}
+                  >
+                    <div className="pipeline-col-header">
+                      <span className="pipeline-col-title">
+                        <span
+                          className="col-accent-dot"
+                          style={{ background: column.accent }}
+                        />
+                        {column.title}
+                        {isDropDisabled && (
+                          <span className="col-automated-tag">(Auto)</span>
+                        )}
+                      </span>
+                      <span className="col-count-badge">
                         {columnCandidates.length}
                       </span>
-                    </h2>
-                  </div>
+                    </div>
 
-                  <Droppable
-                    droppableId={columnId}
-                    isDropDisabled={isDropDisabled}
-                  >
-                    {(provided, snapshot) => (
-                      <div
-                        {...provided.droppableProps}
-                        ref={provided.innerRef}
-                        className={`flex-1 p-2 overflow-y-auto space-y-2 transition-colors ${
-                          snapshot.isDraggingOver
-                            ? columnId === 'REJECTED'
-                              ? 'bg-red-50/60 dark:bg-red-900/20'
-                              : 'bg-blue-50/50 dark:bg-blue-900/20'
-                            : ''
-                        } ${isDropDisabled ? 'bg-gray-100/50 dark:bg-gray-900/30' : ''}`}
-                      >
-                        {columnCandidates.map((candidate, index) => (
-                          <Draggable
-                            key={candidate.id}
-                            draggableId={candidate.id}
-                            index={index}
-                          >
-                            {(provided, snapshot) => (
-                              <Card
-                                ref={provided.innerRef}
-                                {...provided.draggableProps}
-                                {...provided.dragHandleProps}
-                                className={`bg-white dark:bg-gray-800 shadow-sm hover:shadow relative ${column.color} ${
-                                  snapshot.isDragging
-                                    ? 'shadow-lg ring-1 ring-blue-400 z-50'
-                                    : ''
-                                } ${isDropDisabled ? 'cursor-default' : ''}`}
-                                onClick={() => setSelectedCandidate(candidate)}
-                              >
-                                <CardContent className="p-2.5">
-                                  <div className="flex justify-between items-start gap-1">
-                                    <div className="min-w-0">
-                                      <div className="font-medium text-gray-900 dark:text-gray-100 text-sm truncate">
+                    <Droppable
+                      droppableId={columnId}
+                      isDropDisabled={isDropDisabled}
+                    >
+                      {(provided, snapshot) => (
+                        <div
+                          {...provided.droppableProps}
+                          ref={provided.innerRef}
+                          className={`drop-zone ${
+                            snapshot.isDraggingOver
+                              ? columnId === 'REJECTED'
+                                ? 'over-reject'
+                                : 'over-normal'
+                              : ''
+                          } ${isDropDisabled ? 'disabled' : ''}`}
+                        >
+                          {columnCandidates.map((candidate, index) => (
+                            <Draggable
+                              key={candidate.id}
+                              draggableId={candidate.id}
+                              index={index}
+                            >
+                              {(provided, snapshot) => (
+                                <div
+                                  ref={provided.innerRef}
+                                  {...provided.draggableProps}
+                                  {...provided.dragHandleProps}
+                                  className={`pipeline-card ${snapshot.isDragging ? 'dragging' : ''}`}
+                                  onClick={() =>
+                                    setSelectedCandidate(candidate)
+                                  }
+                                >
+                                  {/* left accent bar */}
+                                  <span
+                                    className="left-accent-bar"
+                                    style={{
+                                      background: column.accent,
+                                      opacity: 0.55,
+                                    }}
+                                  />
+
+                                  <div
+                                    style={{
+                                      paddingLeft: '8px',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'flex-start',
+                                      gap: '6px',
+                                    }}
+                                  >
+                                    <div style={{ minWidth: 0 }}>
+                                      <div className="candidate-name">
                                         {candidate.fullName}
                                       </div>
-                                      <div className="text-xs text-gray-500 mt-0.5 truncate">
+                                      <div className="candidate-source">
                                         {candidate.source}
                                       </div>
                                     </div>
                                     {columnId !== 'REJECTED' &&
                                       columnId !== 'ACCEPTED' && (
                                         <button
+                                          className="reject-btn"
                                           onClick={(e) => {
                                             e.stopPropagation();
                                             handleRejectClick(candidate.id);
                                           }}
-                                          className="flex-shrink-0 text-gray-300 hover:text-red-500 transition-colors mt-0.5"
                                           title="Reject candidate"
                                         >
-                                          <XCircle className="h-4 w-4" />
+                                          <XCircle size={15} />
                                         </button>
                                       )}
                                   </div>
-                                </CardContent>
-                              </Card>
-                            )}
-                          </Draggable>
-                        ))}
-                        {provided.placeholder}
-                      </div>
-                    )}
-                  </Droppable>
-                </div>
-              );
-            })}
-          </div>
-        </DragDropContext>
-      </div>
+                                </div>
+                              )}
+                            </Draggable>
+                          ))}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
+                  </div>
+                );
+              })}
+            </div>
+          </DragDropContext>
+        </div>
 
-      {selectedCandidate && (
-        <CandidateDrawer
-          candidate={selectedCandidate}
-          onClose={() => setSelectedCandidate(null)}
-          onCandidateUpdated={loadCandidates}
-        />
-      )}
-    </div>
+        {selectedCandidate && (
+          <CandidateDrawer
+            candidate={selectedCandidate}
+            onClose={() => setSelectedCandidate(null)}
+            onCandidateUpdated={loadCandidates}
+          />
+        )}
+      </div>
+    </>
   );
 };
 

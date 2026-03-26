@@ -3,6 +3,7 @@ import { scheduleInterview } from '../../api/hiringApi';
 import axiosInstance from '../../api/axiosInstance';
 import { Button } from '@/components/ui/button';
 import { X, Calendar as CalendarIcon, Clock, Users } from 'lucide-react';
+import { toast } from 'sonner';
 
 const InterviewScheduleModal = ({ candidate, onClose, onScheduled }) => {
   const [loading, setLoading] = useState(false);
@@ -50,6 +51,9 @@ const InterviewScheduleModal = ({ candidate, onClose, onScheduled }) => {
         status: 'SCHEDULED',
       };
       await scheduleInterview(payload);
+      toast.success(
+        'Interview scheduled successfully! An email has been sent to the candidate.'
+      );
       onScheduled(); // Refresh candidate/pipeline
       onClose();
     } catch (error) {

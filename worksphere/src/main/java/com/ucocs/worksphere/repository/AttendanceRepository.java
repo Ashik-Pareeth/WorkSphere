@@ -2,6 +2,8 @@ package com.ucocs.worksphere.repository;
 
 import com.ucocs.worksphere.entity.Attendance;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.enums.DailyStatus;
+import jakarta.validation.constraints.NotNull;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -24,4 +26,9 @@ public interface AttendanceRepository extends JpaRepository<Attendance, UUID> {
     @Query("SELECT a FROM Attendance a WHERE a.employee = :employee AND a.clockOut IS NULL ORDER BY a.clockIn DESC")
     List<Attendance> findOpenSessionsForEmployee(@Param("employee") Employee employee);
 
+    @Query("SELECT COUNT(a) FROM Attendance a WHERE a.employee.id = :employeeId AND a.date BETWEEN :startDate AND :endDate AND a.dailyStatus = :status")
+    Integer countByStatusInPeriod(@Param("employeeId") UUID employeeId,
+                                  @Param("startDate") java.time.LocalDate startDate,
+                                  @Param("endDate") java.time.LocalDate endDate,
+                                  @Param("status") com.ucocs.worksphere.enums.DailyStatus status);
 }
