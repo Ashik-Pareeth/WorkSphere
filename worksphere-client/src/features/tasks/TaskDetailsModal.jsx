@@ -5,6 +5,7 @@ import {
   uploadTaskEvidence,
   getTaskEvidence,
   reviewTaskEvidence,
+  flagTask,
 } from '../../api/taskApi';
 import AlertMessage from '../../components/common/AlertMessage';
 import axiosInstance from '../../api/axiosInstance';
@@ -95,6 +96,41 @@ const TaskDetailsModal = ({ task, onClose }) => {
       });
     } finally {
       setSendingComment(false);
+    }
+  };
+
+  const [isFlagging, setIsFlagging] = useState(false);
+
+  const handleFlagTask = async () => {
+    // Using a native prompt for simplicity, but you could build a custom modal
+    const reason = window.prompt(
+      'Please enter the reason for flagging this task for audit:'
+    );
+
+    // Cancel if they click cancel or submit an empty string
+    if (!reason || !reason.trim()) return;
+
+    try {
+      setIsFlagging(true);
+      await flagTask(task.id, reason);
+      setAlert({
+        type: 'success',
+        message: 'Task has been flagged for audit.',
+      });
+
+      // Reload the page to reflect the new flagged status on the board
+      setTimeout(() => {
+        onClose();
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message:
+          err.response?.data?.message || err.message || 'Failed to flag task.',
+      });
+    } finally {
+      setIsFlagging(false);
     }
   };
 
@@ -287,12 +323,35 @@ const TaskDetailsModal = ({ task, onClose }) => {
             </div>
           </div>
 
-          <button
-            className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-500"
-            onClick={onClose}
-          >
-            ✕
-          </button>
+          <div className="flex items-center gap-3">
+            {/* Show Flag button only to Auditors/Admins if task is NOT already flagged */}
+            {(storedRoles.includes('ROLE_AUDITOR') ||
+              storedRoles.includes('ROLE_SUPER_ADMIN')) &&
+              !task.isFlagged && (
+                <button
+                  onClick={handleFlagTask}
+                  disabled={isFlagging}
+                  className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
+                >
+                  <span className="text-base">🚩</span>
+                  {isFlagging ? 'Flagging...' : 'Flag Issue'}
+                </button>
+              )}
+
+            {/* If it is already flagged, show a static badge here */}
+            {task.isFlagged && (
+              <span className="px-3 py-1.5 text-sm font-medium text-white bg-rose-500 rounded-lg flex items-center gap-1.5">
+                <span className="text-base">🚩</span> Flagged
+              </span>
+            )}
+
+            <button
+              className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center"
+              onClick={onClose}
+            >
+              ✕
+            </button>
+          </div>
         </div>
 
         {/* BODY */}

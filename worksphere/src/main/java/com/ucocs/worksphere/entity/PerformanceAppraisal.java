@@ -52,6 +52,36 @@ public class PerformanceAppraisal extends BaseEntity {
     @Column(precision = 4, scale = 2)
     private BigDecimal averageTaskScore;
 
+    /* Attendance metrics  snapshotted from Attendance module at appraisal creation.
+     * These give the manager objective punctuality/reliability context during review.
+     *
+     * Status breakdown (set by AttendanceService on clock-in/out, and MidnightAbsenteeJob):
+     *   PRESENT     → clocked in within grace period
+     *   LATE        → clocked in but past grace period
+     *   ABSENT      → never clocked in AND no approved leave
+     *   ON_LEAVE    → never clocked in BUT has an approved leave request (MidnightAbsenteeJob)
+     *   HALF_DAY_*  → clocked in/out but worked < 100% of shift (set on clock-out)
+     */
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer presentDaysInPeriod = 0;   // PRESENT only — on time
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer lateDaysInPeriod = 0;       // LATE — arrived past grace period
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer absentDaysInPeriod = 0;     // ABSENT — genuine no-show, no leave approval
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer onLeaveDaysInPeriod = 0;    // ON_LEAVE — approved leave (paid or unpaid)
+
+    @Builder.Default
+    @Column(nullable = false)
+    private Integer halfDayDaysInPeriod = 0;    // HALF_DAY_MORNING + HALF_DAY_AFTERNOON combined
+
     /* Ratings */
     @Column(precision = 4, scale = 2)
     private BigDecimal selfRating;

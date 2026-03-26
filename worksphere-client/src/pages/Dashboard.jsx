@@ -730,7 +730,7 @@ const HRDashboard = ({ user }) => {
           <StatCard
             title="Net Pay (Month)"
             value={
-              payrollTotal > 0 ? `$${(payrollTotal / 1000).toFixed(0)}k` : '—'
+              payrollTotal > 0 ? `₹${(payrollTotal / 1000).toFixed(0)}k` : '—'
             }
             icon={Icons.Dollar}
             colorClass="text-emerald-600"
@@ -1241,8 +1241,12 @@ const roleDashboardMap = {
 const Dashboard = () => {
   const { user } = useAuth();
 
-  const highestRole = getHighestRole(user?.roles ?? []);
+  const highestRole = user?.roles?.[0]?.replace('ROLE_', '') || 'EMPLOYEE';
   const RoleDashboard = roleDashboardMap[highestRole] ?? EmployeeDashboard;
+
+  console.log('USER:', user);
+  console.log('ROLES:', user?.roles);
+  console.log('HIGHEST ROLE:', getHighestRole(user?.roles ?? []));
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 max-w-7xl mx-auto">

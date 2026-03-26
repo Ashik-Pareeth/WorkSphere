@@ -140,7 +140,7 @@ export default function PayrollStatusBand({ onPayrollDataLoaded }) {
         <p
           className={`text-3xl font-bold font-mono tracking-tighter ${processed ? 'text-emerald-700' : 'text-amber-600'}`}
         >
-          $
+          ₹
           {total.toLocaleString(undefined, {
             minimumFractionDigits: 0,
             maximumFractionDigits: 0,

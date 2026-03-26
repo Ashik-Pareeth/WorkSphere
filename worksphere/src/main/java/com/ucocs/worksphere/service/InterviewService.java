@@ -23,6 +23,7 @@ public class InterviewService {
     private final CandidateRepository candidateRepository;   // ADDED
     private final NotificationService notificationService;   // ADDED
     private final EmployeeRepository employeeRepository;
+    private final EmailService emailService;
 
 
     public List<InterviewScheduleDTO> getInterviewsForCandidate(UUID candidateId) {
@@ -55,6 +56,20 @@ public class InterviewService {
                     "You have been assigned to interview candidate \"" + saved.getCandidate().getFullName() + "\" for Round " + saved.getRoundNumber() + " on " + saved.getScheduledAt() + " (" + saved.getMode() + ").",
                     saved.getId(),
                     "InterviewSchedule"
+            );
+        }
+
+        if (saved.getCandidate() != null && saved.getCandidate().getEmail() != null) {
+            // Optional: Format the LocalDateTime to look nicer
+            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy - hh:mm a");
+            String formattedDate = saved.getScheduledAt().format(formatter);
+
+            emailService.sendInterviewScheduledEmail(
+                    saved.getCandidate().getEmail(),
+                    saved.getCandidate().getFullName(),
+                    saved.getCandidate().getJobOpening().getTitle(),
+                    formattedDate,
+                    saved.getMode().name()
             );
         }
 
