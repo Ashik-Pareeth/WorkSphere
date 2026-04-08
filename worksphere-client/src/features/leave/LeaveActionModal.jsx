@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { approveLeaveRequest, rejectLeaveRequest } from '../../api/leaveApi';
+import { toast } from 'sonner';
 
 const LeaveActionModal = ({ request, action, onClose, onSuccess }) => {
   const [comment, setComment] = useState('');
@@ -19,7 +20,7 @@ const LeaveActionModal = ({ request, action, onClose, onSuccess }) => {
       onSuccess(); // Refresh the table and close modal
     } catch (error) {
       console.error(`Failed to ${action} request:`, error);
-      alert(error.response?.data?.message || `Failed to ${action} request.`);
+      toast.error(error.response?.data?.message || `Failed to ${action} request.`);
     } finally {
       setIsLoading(false);
     }

@@ -61,8 +61,8 @@ const PayrollDashboard = () => {
       setLoading(true);
       setError(null);
       const res = await generatePayroll({ month, year });
-      setRecords(res.data);
-      setSuccess(`Generated ${res.data.length} payroll records.`);
+      setRecords(res.data.records);
+      setSuccess(`Generated ${res.data.records.length} payroll records.`);
       setTimeout(() => setSuccess(null), 4000);
     } catch (err) {
       setError(

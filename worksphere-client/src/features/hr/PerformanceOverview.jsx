@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { fetchAllAppraisals, createAppraisal } from '../../api/hrApi';
 import { getAllEmployees } from '../../api/employeeApi';
+import { toast } from 'sonner';
 
 const PerformanceOverview = () => {
   const [appraisals, setAppraisals] = useState([]);
@@ -53,7 +54,7 @@ const PerformanceOverview = () => {
       setIsModalOpen(false);
       loadAppraisals();
     } catch (err) {
-      alert(err.response?.data?.message || 'Error creating appraisal');
+      toast.error(err.response?.data?.message || 'Error creating appraisal');
     }
   };
 

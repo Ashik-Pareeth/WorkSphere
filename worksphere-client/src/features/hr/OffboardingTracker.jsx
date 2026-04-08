@@ -1,6 +1,12 @@
-import React, { useState, useEffect } from "react";
-import { fetchAllOffboardingRecords, initiateOffboarding, updateOffboardingClearance } from "../../api/hrApi";
-import { getAllEmployees } from "../../api/employeeApi";
+import React, { useState, useEffect } from 'react';
+import {
+  fetchAllOffboardingRecords,
+  initiateOffboarding,
+  updateOffboardingClearance,
+} from '../../api/hrApi';
+import { getAllEmployees } from '../../api/employeeApi';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
+import { toast } from 'sonner';
 
 const OffboardingTracker = () => {
   const [records, setRecords] = useState([]);
@@ -10,11 +16,24 @@ const OffboardingTracker = () => {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [formData, setFormData] = useState({
-    employeeId: "",
-    reason: "RESIGNATION",
-    lastWorkingDay: "",
-    remarks: "",
+    employeeId: '',
+    reason: 'RESIGNATION',
+    lastWorkingDay: '',
+    remarks: '',
   });
+
+  // --- Confirm Dialog State ---
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    description: '',
+    confirmLabel: 'Confirm',
+    variant: 'default',
+    action: null,
+  });
+
+  const closeConfirm = () =>
+    setConfirmConfig((prev) => ({ ...prev, isOpen: false }));
 
   const loadRecords = async () => {
     try {
@@ -22,7 +41,9 @@ const OffboardingTracker = () => {
       const res = await fetchAllOffboardingRecords();
       setRecords(res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load offboarding records");
+      setError(
+        err.response?.data?.message || 'Failed to load offboarding records'
+      );
     } finally {
       setLoading(false);
     }
@@ -33,7 +54,7 @@ const OffboardingTracker = () => {
       const res = await getAllEmployees();
       setEmployees(res);
     } catch (err) {
-      console.error("Failed to load employees", err);
+      console.error('Failed to load employees', err);
     }
   };
 
@@ -46,35 +67,88 @@ const OffboardingTracker = () => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleInitiate = async (e) => {
+  // --- INTERCEPTOR: Initiate Offboarding ---
+  const handleInitiateSubmit = (e) => {
     e.preventDefault();
-    try {
-      await initiateOffboarding(formData);
-      setIsModalOpen(false);
-      loadRecords();
-      setFormData({ employeeId: "", reason: "RESIGNATION", lastWorkingDay: "", remarks: "" });
-    } catch (err) {
-      alert(err.response?.data?.message || "Error initiating offboarding");
-    }
+
+    // Find employee name for the prompt
+    const emp = employees.find((e) => e.id === formData.employeeId);
+    const empName = emp ? `${emp.firstName} ${emp.lastName}` : 'this employee';
+
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Initiate Offboarding?',
+      description: `Are you sure you want to initiate offboarding for ${empName}? This will immediately send notifications to the employee and their manager.`,
+      variant: 'destructive',
+      confirmLabel: 'Yes, Initiate',
+      action: async () => {
+        try {
+          await initiateOffboarding(formData);
+          setIsModalOpen(false);
+          loadRecords();
+          setFormData({
+            employeeId: '',
+            reason: 'RESIGNATION',
+            lastWorkingDay: '',
+            remarks: '',
+          });
+        } catch (err) {
+          toast.error(err.response?.data?.message || 'Error initiating offboarding');
+        } finally {
+          closeConfirm();
+        }
+      },
+    });
   };
 
-  const toggleClearance = async (id, dept, currentValue) => {
-    try {
-      await updateOffboardingClearance(id, dept, !currentValue);
-      loadRecords();
-    } catch (err) {
-      alert(err.response?.data?.message || `Error updating ${dept} clearance`);
+  // --- INTERCEPTOR: Clearance Toggles ---
+  const promptToggleClearance = (id, dept, currentValue) => {
+    const isGranting = !currentValue;
+
+    let description = `Are you sure you want to ${isGranting ? 'grant' : 'revoke'} ${dept} clearance?`;
+    if (isGranting && dept === 'IT') {
+      description +=
+        ' Ensure all physical and digital assets have been returned.';
+    } else if (isGranting && dept === 'FINANCE') {
+      description += ' Ensure Full and Final (FnF) settlement is completed.';
     }
+
+    if (isGranting) {
+      description +=
+        " Granting the final clearance will permanently terminate the employee's system access.";
+    }
+
+    setConfirmConfig({
+      isOpen: true,
+      title: `${isGranting ? 'Grant' : 'Revoke'} ${dept} Clearance`,
+      description: description,
+      variant: isGranting ? 'default' : 'destructive',
+      confirmLabel: isGranting ? `Grant ${dept} Clearance` : 'Revoke Clearance',
+      action: async () => {
+        try {
+          await updateOffboardingClearance(id, dept, isGranting);
+          loadRecords();
+        } catch (err) {
+          toast.error(
+            err.response?.data?.message || `Error updating ${dept} clearance`
+          );
+        } finally {
+          closeConfirm();
+        }
+      },
+    });
   };
 
   const statusBadge = (status) => {
     const colors = {
-      INITIATED: "bg-blue-100 text-blue-800",
-      IN_PROGRESS: "bg-yellow-100 text-yellow-800",
-      COMPLETED: "bg-green-100 text-green-800",
+      INITIATED: 'bg-blue-100 text-blue-800',
+      IN_PROGRESS: 'bg-yellow-100 text-yellow-800',
+      COMPLETED: 'bg-green-100 text-green-800',
     };
     return (
-      <span className={`px-2 py-1 text-xs rounded-full font-medium ${colors[status] || "bg-gray-100 text-gray-800"}`}>
+      <span
+        className={`px-2 py-1 text-xs rounded-full font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}
+      >
         {status}
       </span>
     );
@@ -85,7 +159,7 @@ const OffboardingTracker = () => {
       <input
         type="checkbox"
         checked={isCleared}
-        onChange={() => toggleClearance(recordId, dept, isCleared)}
+        onChange={() => promptToggleClearance(recordId, dept, isCleared)}
         className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
       />
       <span className="text-sm text-gray-700">{dept}</span>
@@ -98,8 +172,12 @@ const OffboardingTracker = () => {
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Offboarding Tracker</h1>
-          <p className="text-gray-500 text-sm mt-1">Manage employee departures and clearances.</p>
+          <h1 className="text-2xl font-bold text-gray-900">
+            Offboarding Tracker
+          </h1>
+          <p className="text-gray-500 text-sm mt-1">
+            Manage employee departures and clearances.
+          </p>
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
@@ -109,18 +187,30 @@ const OffboardingTracker = () => {
         </button>
       </div>
 
-      {error && <div className="mb-4 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">{error}</div>}
+      {error && (
+        <div className="mb-4 text-red-600 bg-red-50 p-3 rounded-lg border border-red-200">
+          {error}
+        </div>
+      )}
 
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="p-4 text-sm font-semibold text-gray-600">Employee</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">
+                  Employee
+                </th>
                 <th className="p-4 text-sm font-semibold text-gray-600">LWD</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">Reason</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">Clearances Status</th>
-                <th className="p-4 text-sm font-semibold text-gray-600">Overall Status</th>
+                <th className="p-4 text-sm font-semibold text-gray-600">
+                  Reason
+                </th>
+                <th className="p-4 text-sm font-semibold text-gray-600">
+                  Clearances Status
+                </th>
+                <th className="p-4 text-sm font-semibold text-gray-600">
+                  Overall Status
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-200">
@@ -133,14 +223,16 @@ const OffboardingTracker = () => {
               ) : (
                 records.map((r) => (
                   <tr key={r.id} className="hover:bg-gray-50">
-                    <td className="p-4 font-medium text-gray-900">{r.employeeName}</td>
+                    <td className="p-4 font-medium text-gray-900">
+                      {r.employeeName}
+                    </td>
                     <td className="p-4 text-gray-600">{r.lastWorkingDay}</td>
                     <td className="p-4 text-sm text-gray-500">{r.reason}</td>
                     <td className="p-4">
                       <div className="flex space-x-4">
-                        {clearanceCheckbox(r.id, "IT", r.itClearance)}
-                        {clearanceCheckbox(r.id, "HR", r.hrClearance)}
-                        {clearanceCheckbox(r.id, "FINANCE", r.financeClearance)}
+                        {clearanceCheckbox(r.id, 'IT', r.itClearance)}
+                        {clearanceCheckbox(r.id, 'HR', r.hrClearance)}
+                        {clearanceCheckbox(r.id, 'FINANCE', r.financeClearance)}
                       </div>
                     </td>
                     <td className="p-4">{statusBadge(r.status)}</td>
@@ -152,13 +244,18 @@ const OffboardingTracker = () => {
         </div>
       </div>
 
+      {/* INITIATE OFFBOARDING MODAL */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
+        <div className="fixed inset-0 z-40 flex items-center justify-center bg-black/50 backdrop-blur-sm">
           <div className="bg-white rounded-xl shadow-xl p-6 w-full max-w-md mx-4">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">Initiate Offboarding</h2>
-            <form onSubmit={handleInitiate} className="space-y-4">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">
+              Initiate Offboarding
+            </h2>
+            <form onSubmit={handleInitiateSubmit} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Employee</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Employee
+                </label>
                 <select
                   name="employeeId"
                   required
@@ -166,16 +263,21 @@ const OffboardingTracker = () => {
                   onChange={handleChange}
                   className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white"
                 >
-                  <option value="" disabled>Select mapping employee...</option>
-                  {employees.map(emp => (
+                  <option value="" disabled>
+                    Select mapping employee...
+                  </option>
+                  {employees.map((emp) => (
                     <option key={emp.id} value={emp.id}>
-                      {emp.firstName} {emp.lastName} {emp.department?.name ? `(${emp.department.name})` : ''}
+                      {emp.firstName} {emp.lastName}{' '}
+                      {emp.department?.name ? `(${emp.department.name})` : ''}
                     </option>
                   ))}
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Reason</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Reason
+                </label>
                 <select
                   name="reason"
                   value={formData.reason}
@@ -189,7 +291,9 @@ const OffboardingTracker = () => {
                 </select>
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Last Working Day</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Last Working Day
+                </label>
                 <input
                   type="date"
                   name="lastWorkingDay"
@@ -200,7 +304,9 @@ const OffboardingTracker = () => {
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
+                <label className="block text-sm font-medium text-gray-700 mb-1">
+                  Remarks
+                </label>
                 <textarea
                   name="remarks"
                   value={formData.remarks}
@@ -229,6 +335,17 @@ const OffboardingTracker = () => {
           </div>
         </div>
       )}
+
+      {/* GLOBAL CONFIRM DIALOG */}
+      <ConfirmDialog
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        confirmLabel={confirmConfig.confirmLabel}
+        variant={confirmConfig.variant}
+        onConfirm={confirmConfig.action}
+        onCancel={closeConfirm}
+      />
     </div>
   );
 };

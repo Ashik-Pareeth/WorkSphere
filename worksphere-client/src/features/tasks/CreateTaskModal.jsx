@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { getAllEmployees } from '../../api/employeeApi';
 import { createTask } from '../../api/taskApi';
+import { toast } from 'sonner';
 
 const CreateTaskModal = ({ onClose, onTaskCreated }) => {
   const [employees, setEmployees] = useState([]);
@@ -37,7 +38,7 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
       onTaskCreated();
       onClose();
     } catch (error) {
-      alert('Failed to create task :' + error);
+      toast.error('Failed to create task: ' + (error?.response?.data?.message || error?.message || 'Unknown error'));
     } finally {
       setLoading(false);
     }

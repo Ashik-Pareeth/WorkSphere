@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { submitLeaveRequest } from '../../api/leaveApi';
+import { toast } from 'sonner';
 
 const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +24,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
       onSuccess(); // Tell the parent to close the modal and refresh data
     } catch (error) {
       console.error('Failed to submit leave request:', error);
-      alert('Error submitting request. Please try again.');
+      toast.error(error?.response?.data?.message || 'Error submitting request. Please try again.');
     } finally {
       setIsLoading(false);
     }

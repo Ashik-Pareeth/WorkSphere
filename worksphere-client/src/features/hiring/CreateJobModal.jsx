@@ -1,12 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { createJobOpening } from '../../api/hiringApi';
 import axiosInstance from '../../api/axiosInstance';
-import { useAuth } from '../../hooks/useAuth';
-import { Button } from '@/components/ui/button';
+import { Button, Alert } from '@/components/ui/button';
 import { X, Briefcase, Building2, Users } from 'lucide-react';
 
 const CreateJobModal = ({ onClose, onJobCreated }) => {
-  const { user } = useAuth();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [jobPositions, setJobPositions] = useState([]);
@@ -63,7 +61,7 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
       onClose();
     } catch (error) {
       console.error('Failed to create job opening', error);
-      alert('Failed to create job opening. Check console for details.');
+      Alert('Failed to create job opening. Check console for details.');
     } finally {
       setLoading(false);
     }
