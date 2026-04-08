@@ -35,5 +35,8 @@ public enum NotificationType {
 
     // --- Attendance ---
     ATTENDANCE_LATE,
-    TIMESHEET_MANUALLY_ADJUSTED
+    TIMESHEET_MANUALLY_ADJUSTED,
+
+    // --- Bulletin ---
+    NEW_ANNOUNCEMENT
 }

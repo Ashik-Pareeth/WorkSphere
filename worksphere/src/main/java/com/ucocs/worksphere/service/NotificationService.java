@@ -50,6 +50,26 @@ public class NotificationService {
     }
 
     /**
+     * Broadcast an in-app notification to all employees.
+     */
+    @Transactional
+    public void sendToAll(NotificationType type, String title, String message, UUID referenceId, String referenceType) {
+        List<Employee> allEmployees = employeeRepository.findAll();
+        for (Employee emp : allEmployees) {
+            Notification notification = new Notification();
+            notification.setRecipient(emp);
+            notification.setType(type);
+            notification.setTitle(title);
+            notification.setMessage(message);
+            notification.setReferenceId(referenceId);
+            notification.setReferenceType(referenceType);
+            notification.setIsRead(false);
+            notificationRepository.save(notification);
+        }
+        log.info("Broadcast notification sent to {} employees. Type: [{}] Title: {}", allEmployees.size(), type, title);
+    }
+
+    /**
      * Fetch all notifications for the authenticated user by username.
      */
     public List<NotificationResponse> getNotificationsForUsername(String username) {

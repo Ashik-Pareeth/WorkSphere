@@ -436,21 +436,27 @@ const ROLE_HIERARCHY = {
 };
 
 function getHighestRole(roles = []) {
-  const names = roles.map((r) => (typeof r === 'string' ? r : r.roleName));
+  const names = roles.map((r) => {
+    const name = typeof r === 'string' ? r : r.roleName;
+    return name ? name.replace(/^ROLE_/, '') : ''; // Strip ROLE_ prefix
+  });
   return names.reduce((best, r) => {
     if (!best) return r;
     return (ROLE_HIERARCHY[r] ?? -1) > (ROLE_HIERARCHY[best] ?? -1) ? r : best;
   }, null);
 }
+
 function canManage(viewerRank, targetRoles = []) {
   const targetHighest = getHighestRole(targetRoles);
   const targetRank = ROLE_HIERARCHY[targetHighest] ?? 1;
   return viewerRank > targetRank;
 }
+
 function assignableRoles(allRoles = [], viewerRank) {
-  return allRoles.filter(
-    (r) => (ROLE_HIERARCHY[r.roleName] ?? -1) < viewerRank
-  );
+  return allRoles.filter((r) => {
+    const cleanName = r.roleName ? r.roleName.replace(/^ROLE_/, '') : '';
+    return (ROLE_HIERARCHY[cleanName] ?? -1) < viewerRank;
+  });
 }
 
 /* ═══════════════════════════════════════════════════════════════
@@ -542,7 +548,9 @@ function StatusPill({ status }) {
 }
 
 function RolePill({ roleName }) {
-  const s = ROLE_STYLE[roleName] ?? { bg: '#f3f4f6', color: '#374151' };
+  const cleanName = roleName ? roleName.replace(/^ROLE_/, '') : '';
+  const s = ROLE_STYLE[cleanName] ?? { bg: '#f3f4f6', color: '#374151' };
+
   return (
     <span
       className="el-pill"
@@ -552,7 +560,7 @@ function RolePill({ roleName }) {
         boxShadow: `0 0 0 1px ${s.color}33`,
       }}
     >
-      {roleName.replace('_', ' ')}
+      {cleanName.replace('_', ' ')}
     </span>
   );
 }
@@ -917,7 +925,10 @@ function EditTab({ emp, onSaved, viewerRank }) {
           <div className="el-role-chips">
             {allRoles.map((r) => {
               const active = form.roles.includes(r.id);
-              const s = ROLE_STYLE[r.roleName] ?? {
+              const cleanName = r.roleName
+                ? r.roleName.replace(/^ROLE_/, '')
+                : '';
+              const s = ROLE_STYLE[cleanName] ?? {
                 bg: '#e5e7eb',
                 color: '#374151',
               };
@@ -937,7 +948,7 @@ function EditTab({ emp, onSaved, viewerRank }) {
                       : {}
                   }
                 >
-                  {r.roleName}
+                  {cleanName}
                 </button>
               );
             })}

@@ -107,37 +107,32 @@ public class AttendanceService {
         Employee employee = getEmployeeByUsername(username);
 
         List<Attendance> openSessions = attendanceRepository.findOpenSessionsForEmployee(employee);
-        if (openSessions.isEmpty()) {
+
+        // FIX: Filter the list to find the actual active session
+        // (where they HAVE clocked in, but HAVE NOT clocked out)
+        Attendance activeSession = openSessions.stream()
+                .filter(a -> a.getClockIn() != null && a.getClockOut() == null)
+                .findFirst()
+                .orElse(null);
+
+        if (activeSession == null) {
             throw new IllegalStateException("You cannot clock out because you haven't clocked in.");
         }
 
-        Attendance attendance = openSessions.get(0);
-
-        if (attendance.getClockOut() != null) {
-            throw new IllegalStateException("You have already clocked out.");
-        }
-
-        // --- ADDED FIX: Null safety check for clock-in ---
-        if (attendance.getClockIn() == null) {
-            throw new IllegalStateException("Cannot process clock-out: Clock-in time is missing for this session. Please contact HR or your manager to manually adjust your timesheet.");
-        }
-        // -------------------------------------------------
-
         LocalDateTime now = LocalDateTime.now();
-        attendance.setClockOut(now);
+        activeSession.setClockOut(now);
 
-        WorkSchedule schedule = attendance.getWorkSchedule();
-        long totalMinutes = Duration.between(attendance.getClockIn(), now).toMinutes();
+        WorkSchedule schedule = activeSession.getWorkSchedule();
+        long totalMinutes = Duration.between(activeSession.getClockIn(), now).toMinutes();
 
         int breakMin = 0;
         if (schedule != null && schedule.getBreakDurationMin() != null && totalMinutes >= 240) {
             breakMin = schedule.getBreakDurationMin();
         }
 
-        attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
-        attendanceRepository.save(attendance);
-    }
-    @Transactional(readOnly = true)
+        activeSession.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
+        attendanceRepository.save(activeSession);
+    }    @Transactional(readOnly = true)
     public List<AttendanceDTO> getEmployeeAttendanceHistory(String username) {
         Employee employee = getEmployeeByUsername(username);
         return attendanceRepository.findByEmployee(employee)

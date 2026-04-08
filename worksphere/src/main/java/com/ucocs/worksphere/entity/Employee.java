@@ -56,6 +56,12 @@ public class Employee extends BaseEntity {
     @ManyToMany(fetch = FetchType.EAGER)
     private Set<Role> roles;
 
+    @Column(name = "anonymous_alias")
+    private String anonymousAlias;
+
+    @Column(name = "chat_anonymous", nullable = false, columnDefinition = "boolean default false")
+    private boolean chatAnonymous = false;
+
     @Column(nullable = true)
     private LocalDateTime joiningDate;
 

@@ -146,6 +146,14 @@ public class OffboardingService {
             record.setStatus(OffboardingStatus.COMPLETED);
         }
 
+        Employee offboardedEmployee = record.getEmployee();
+        if (record.getReason() == com.ucocs.worksphere.enums.OffboardingReason.TERMINATION) {
+            offboardedEmployee.setEmployeeStatus(com.ucocs.worksphere.enums.EmployeeStatus.TERMINATED);
+        } else {
+            offboardedEmployee.setEmployeeStatus(com.ucocs.worksphere.enums.EmployeeStatus.RESIGNED);
+        }
+        employeeRepository.save(offboardedEmployee);
+
         OffboardingRecord saved = offboardingRepository.save(record);
 
         auditService.log("OffboardingRecord", saved.getId(), AuditAction.UPDATED,

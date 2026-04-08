@@ -99,6 +99,10 @@ export default function Sidebar() {
             <CheckSquare size={18} />
             {!collapsed && <span>My Tasks</span>}
           </NavLink>
+          <NavLink to="/bulletin" className={navLinkClass}>
+            <Star size={18} />
+            {!collapsed && <span>Bulletin Board</span>}
+          </NavLink>
           <NavLink to="/attendance-log" className={navLinkClass}>
             <Clock size={18} />
             {!collapsed && <span>Attendance</span>}

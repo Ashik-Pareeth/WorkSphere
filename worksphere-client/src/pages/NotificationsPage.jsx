@@ -54,6 +54,8 @@ const getRouteForNotification = (type, referenceId) => {
     case 'TASK_UPDATED':
     case 'TASK_OVERDUE':
       return `/tasks?open=${referenceId}`;
+    case 'NEW_ANNOUNCEMENT':
+      return '/bulletin';
     default:
       return '/dashboard';
   }
@@ -64,6 +66,7 @@ const getCategoryForType = (type) => {
   if (type.includes('LEAVE')) return 'Leave';
   if (type.includes('TASK')) return 'Tasks';
   if (type.includes('PAYSLIP') || type.includes('PAYROLL')) return 'Payroll';
+  if (type === 'NEW_ANNOUNCEMENT') return 'Bulletin';
   return 'System';
 };
 
@@ -78,6 +81,8 @@ const getIconForCategory = (category, isUnread) => {
       return <CreditCard className={`w-5 h-5 ${color}`} />;
     case 'System':
       return <ShieldAlert className={`w-5 h-5 ${color}`} />;
+    case 'Bulletin':
+      return <Bell className={`w-5 h-5 ${color}`} />;
     default:
       return <Bell className={`w-5 h-5 ${color}`} />;
   }
@@ -177,6 +182,7 @@ export default function NotificationsPage() {
             <TabsTrigger value="Leave">Leave</TabsTrigger>
             <TabsTrigger value="Tasks">Tasks</TabsTrigger>
             <TabsTrigger value="Payroll">Payroll</TabsTrigger>
+            <TabsTrigger value="Bulletin">Bulletin</TabsTrigger>
             <TabsTrigger value="System">System</TabsTrigger>
           </TabsList>
 

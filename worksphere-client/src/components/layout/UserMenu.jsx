@@ -2,6 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LogOut, User, ChevronDown } from 'lucide-react';
+import { AnonymousToggle } from '../../features/bulletin/AnonymousToggle';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
@@ -79,6 +80,13 @@ export default function UserMenu() {
             <span className="text-[10px] uppercase font-bold text-gray-400 tracking-wider">
               {highestRole}
             </span>
+          </div>
+
+          <div className="border-b border-gray-50 pb-1">
+            <AnonymousToggle 
+              user={user} 
+              onUpdate={() => window.location.reload()} 
+            />
           </div>
           
           <NavLink
