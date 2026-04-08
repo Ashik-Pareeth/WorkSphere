@@ -15,6 +15,7 @@ public record EmployeeResponseDTO(
         String lastName,
         String email,
         double salary,
+        String phoneNumber,
 
         // ADDED: IDs for Editing
         UUID departmentId,
@@ -36,7 +37,9 @@ public record EmployeeResponseDTO(
 
         String profilePic,
         LocalDateTime joiningDate,
-        EmployeeStatus employeeStatus) {
+        EmployeeStatus employeeStatus,
+        boolean chatAnonymous,
+        String anonymousAlias) {
 
         // Simple record to hold Role data inside this DTO
         public record SimpleRoleDTO(UUID id, String roleName) {
@@ -50,6 +53,7 @@ public record EmployeeResponseDTO(
                         employee.getLastName(),
                         employee.getEmail(),
                         employee.getSalary(),
+                        employee.getPhoneNumber(),
 
                         // Map IDs (Handle nulls)
                         employee.getDepartment() != null ? employee.getDepartment().getId() : null,
@@ -77,6 +81,8 @@ public record EmployeeResponseDTO(
 
                         employee.getProfilePic(),
                         employee.getJoiningDate(),
-                        employee.getEmployeeStatus());
+                        employee.getEmployeeStatus(),
+                        employee.isChatAnonymous(),
+                        employee.getAnonymousAlias());
         }
 }

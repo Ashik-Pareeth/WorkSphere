@@ -41,6 +41,7 @@ import Unauthorized from './pages/Unauthorized';
 import MyAttendanceLog from './features/attendance/MyAttendanceLog';
 import TeamAttendanceLog from './features/attendance/TeamAttendanceLog';
 import NotificationsPage from './pages/NotificationsPage';
+import BulletinPage from './pages/BulletinPage';
 
 // Hiring Pipeline
 import JobOpeningsList from './features/hiring/JobOpeningsList';
@@ -142,6 +143,7 @@ function App() {
                 <Route path="/my-appraisals" element={<MyAppraisals />} />
                 <Route path="/my-compensation" element={<MyCompensation />} />
                 <Route path="/notifications" element={<NotificationsPage />} />
+                <Route path="/bulletin" element={<BulletinPage />} />
               </Route>
 
               {/* --- TIER 1.5: MANAGERS, HR, SUPER_ADMINS --- */}

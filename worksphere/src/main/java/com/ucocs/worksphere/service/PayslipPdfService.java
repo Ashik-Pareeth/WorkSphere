@@ -150,7 +150,7 @@ public class PayslipPdfService {
                 """
                 .formatted(
                         monthName, record.getYear(),
-                        empName, employee.getUserName(),
+                        empName, employee.getId().toString(),
                         department, position,
                         record.getWorkingDays(), record.getPresentDays(),
                         record.getLopDays(),

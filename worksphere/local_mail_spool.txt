@@ -43,3 +43,9 @@ Reset Link: http://localhost:5173/reset-password?token=642459b2-a14f-4afd-99bb-c
 To: ashik@worksphere.com
 Reset Link: http://localhost:5173/reset-password?token=4c72eefb-9371-4283-8901-5e19cdda3aa7
 
+To: suku@gmail.com
+Your application status is now: SHORTLISTED
+
+To: suku@gmail.com
+Your application status is now: INTERVIEWING
+

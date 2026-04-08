@@ -82,7 +82,9 @@ export const AuthProvider = ({ children }) => {
               profilePic: profile.profilePic,
               department: profile.department,
               designation: profile.jobTitle || null,
-              workSchedule: profile.workSchedule || null, // Add work schedule to context for attendance computations
+              workSchedule: profile.workSchedule || null,
+              chatAnonymous: profile.chatAnonymous,
+              anonymousAlias: profile.anonymousAlias,
             }));
           }
         } catch (error) {
@@ -130,6 +132,8 @@ export const AuthProvider = ({ children }) => {
         profilePic: profile.profilePic,
         department: profile.department,
         designation: profile.jobPosition?.title || null,
+        chatAnonymous: profile.chatAnonymous,
+        anonymousAlias: profile.anonymousAlias,
       }));
     } catch (err) {
       console.error('Failed to fetch profile during login', err);
