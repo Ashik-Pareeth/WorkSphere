@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { submitInterviewFeedback } from '../../api/hiringApi';
 import { Button } from '@/components/ui/button';
 import { X, Star } from 'lucide-react';
+import { toast } from 'sonner';
 
 const InterviewFeedbackModal = ({ interview, onClose, onFeedbackSubmitted }) => {
     const [loading, setLoading] = useState(false);
@@ -10,7 +11,7 @@ const InterviewFeedbackModal = ({ interview, onClose, onFeedbackSubmitted }) => 
 
     const handleSubmit = async (e) => {
         e.preventDefault();
-        if (score === 0) return alert('Please select a score from 1 to 5');
+        if (score === 0) { toast.warning('Please select a score from 1 to 5'); return; }
         
         setLoading(true);
         try {

@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from "react";
-import { fetchMyPayroll } from "../../api/hrApi";
-import PayslipViewerModal from "./PayslipViewerModal";
+import React, { useState, useEffect } from 'react';
+import { fetchMyPayroll } from '../../api/hrApi';
+import PayslipViewerModal from './PayslipViewerModal';
 
 const MyCompensation = () => {
   const [records, setRecords] = useState([]);
@@ -17,8 +17,11 @@ const MyCompensation = () => {
       setLoading(true);
       const res = await fetchMyPayroll();
       setRecords(res.data);
+      console.log('Payroll data loaded:', res.data);
     } catch (err) {
-      setError(err.response?.data?.message || "Failed to load compensation data");
+      setError(
+        err.response?.data?.message || 'Failed to load compensation data'
+      );
     } finally {
       setLoading(false);
     }
@@ -26,26 +29,36 @@ const MyCompensation = () => {
 
   const fmt = (val) =>
     val != null
-      ? Number(val).toLocaleString("en-IN", {
+      ? Number(val).toLocaleString('en-IN', {
           minimumFractionDigits: 2,
           maximumFractionDigits: 2,
         })
-      : "0.00";
+      : '0.00';
 
   const monthNames = [
-    "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-    "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
   ];
 
   const statusBadge = (status) => {
     const colors = {
-      DRAFT: "bg-yellow-100 text-yellow-800",
-      PROCESSED: "bg-blue-100 text-blue-800",
-      PAID: "bg-green-100 text-green-800",
+      DRAFT: 'bg-yellow-100 text-yellow-800',
+      PROCESSED: 'bg-blue-100 text-blue-800',
+      PAID: 'bg-green-100 text-green-800',
     };
     return (
       <span
-        className={`px-2 py-1 text-xs rounded-full font-medium ${colors[status] || "bg-gray-100 text-gray-800"}`}
+        className={`px-2 py-1 text-xs rounded-full font-medium ${colors[status] || 'bg-gray-100 text-gray-800'}`}
       >
         {status}
       </span>

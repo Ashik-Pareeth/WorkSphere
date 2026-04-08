@@ -12,6 +12,7 @@ import {
   LayoutDashboard,
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
+import { toast } from 'sonner';
 
 export default function PublicJobDetails() {
   const { id } = useParams();
@@ -121,7 +122,7 @@ export default function PublicJobDetails() {
               className="h-12 w-12 border-slate-200 dark:border-white/10 dark:hover:bg-white/5"
               onClick={() => {
                 navigator.clipboard.writeText(window.location.href);
-                alert('Link copied to clipboard!');
+                toast.success('Link copied to clipboard!');
               }}
             >
               <Share2 className="w-5 h-5 text-slate-500" />

@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import LeaveBalanceCard from '../features/leave/LeaveBalanceCard';
 import LeaveRequestForm from '../features/leave/LeaveRequestForm';
 import MyLeaveRequestsTable from '../features/leave/MyLeaveRequestsTable';
-import MyLeaveLedgerTable from '../features/leave/MyLeaveLedgerTable'; // <-- Your original ledger table
+import MyLeaveLedgerTable from '../features/leave/MyLeaveRequestsTable'; // <-- Your original ledger table
 import {
   getMyBalances,
   getMyLedger,

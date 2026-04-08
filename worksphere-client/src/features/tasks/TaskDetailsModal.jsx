@@ -8,6 +8,7 @@ import {
   flagTask,
 } from '../../api/taskApi';
 import AlertMessage from '../../components/common/AlertMessage';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import axiosInstance from '../../api/axiosInstance';
 import {
   Tabs,
@@ -50,6 +51,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
   const [reviewingEvidence, setReviewingEvidence] = useState(false);
 
   const [alert, setAlert] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', description: '', onConfirm: null });
 
   useEffect(() => {
     if (task?.id) loadData();
@@ -183,31 +185,32 @@ const TaskDetailsModal = ({ task, onClose }) => {
     }
   };
 
-  const handleCancelTask = async () => {
-    if (
-      !window.confirm(
-        'Cancel this task? This removes it from the active workflow.'
-      )
-    )
-      return;
-    try {
-      setIsCanceling(true);
-      await axiosInstance.patch(`/tasks/${task.id}/status`, {
-        status: 'CANCELLED',
-      });
-      setAlert({ type: 'success', message: 'Task cancelled.' });
-      setTimeout(() => {
-        onClose();
-        window.location.reload();
-      }, 1500);
-    } catch (err) {
-      setAlert({
-        type: 'error',
-        message: err.response?.data?.message || 'Failed to cancel task.',
-      });
-    } finally {
-      setIsCanceling(false);
-    }
+  const handleCancelTask = () => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Cancel Task',
+      description: 'Cancel this task? This removes it from the active workflow.',
+      onConfirm: async () => {
+        try {
+          setIsCanceling(true);
+          await axiosInstance.patch(`/tasks/${task.id}/status`, {
+            status: 'CANCELLED',
+          });
+          setAlert({ type: 'success', message: 'Task cancelled.' });
+          setTimeout(() => {
+            onClose();
+            window.location.reload();
+          }, 1500);
+        } catch (err) {
+          setAlert({
+            type: 'error',
+            message: err.response?.data?.message || 'Failed to cancel task.',
+          });
+        } finally {
+          setIsCanceling(false);
+        }
+      }
+    });
   };
 
   const handleFileSelect = (e) => {
@@ -429,6 +432,19 @@ const TaskDetailsModal = ({ task, onClose }) => {
           </Tabs>
         </div>
       </div>
+      
+      <ConfirmDialog
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        onConfirm={() => {
+          if (confirmConfig.onConfirm) confirmConfig.onConfirm();
+          setConfirmConfig({ ...confirmConfig, isOpen: false });
+        }}
+        onCancel={() =>
+          setConfirmConfig({ ...confirmConfig, isOpen: false })
+        }
+      />
     </div>
   );
 };

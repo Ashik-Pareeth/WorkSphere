@@ -1,6 +1,7 @@
 import { useEffect, useState, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import AlertMessage from '../../components/common/AlertMessage';
+import ConfirmDialog from '../../components/common/ConfirmDialog';
 import { useAuth } from '../../hooks/useAuth';
 
 function AddEmployee() {
@@ -41,6 +42,7 @@ function AddEmployee() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
+  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', description: '', onConfirm: null });
 
   // --- 1. FETCH ALL DATA ---
   const fetchAllData = useCallback(async () => {
@@ -158,20 +160,21 @@ function AddEmployee() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const handleDelete = async (id) => {
-    if (
-      !window.confirm(
-        'Are you sure you want to delete this employee? This cannot be undone.'
-      )
-    )
-      return;
-    try {
-      await axiosInstance.delete(`/employees/${id}`);
-      setSuccess('Employee deleted successfully.');
-      fetchAllData(); // Refresh list
-    } catch (err) {
-      setError(err);
-    }
+  const handleDelete = (id) => {
+    setConfirmConfig({
+      isOpen: true,
+      title: 'Delete Employee',
+      description: 'Are you sure you want to delete this employee? This cannot be undone.',
+      onConfirm: async () => {
+        try {
+          await axiosInstance.delete(`/employees/${id}`);
+          setSuccess('Employee deleted successfully.');
+          fetchAllData(); // Refresh list
+        } catch (err) {
+          setError(err.message || 'Failed to delete employee.');
+        }
+      }
+    });
   };
 
   const saveEmployee = async (e) => {
@@ -528,6 +531,19 @@ function AddEmployee() {
           </table>
         </div>
       </div>
+
+      <ConfirmDialog
+        isOpen={confirmConfig.isOpen}
+        title={confirmConfig.title}
+        description={confirmConfig.description}
+        onConfirm={() => {
+          if (confirmConfig.onConfirm) confirmConfig.onConfirm();
+          setConfirmConfig({ ...confirmConfig, isOpen: false });
+        }}
+        onCancel={() =>
+          setConfirmConfig({ ...confirmConfig, isOpen: false })
+        }
+      />
     </div>
   );
 }

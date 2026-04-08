@@ -4,6 +4,7 @@ import {
   submitSelfAppraisal,
   acknowledgeAppraisal,
 } from '../../api/hrApi';
+import { toast } from 'sonner';
 
 const MyAppraisals = () => {
   const [appraisals, setAppraisals] = useState([]);
@@ -48,7 +49,7 @@ const MyAppraisals = () => {
       setSelectedAppraisal(null);
       loadAppraisals();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit self evaluation');
+      toast.error(err.response?.data?.message || 'Failed to submit self evaluation');
     }
   };
 
@@ -57,7 +58,7 @@ const MyAppraisals = () => {
       await acknowledgeAppraisal(id);
       loadAppraisals();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to acknowledge appraisal');
+      toast.error(err.response?.data?.message || 'Failed to acknowledge appraisal');
     }
   };
 

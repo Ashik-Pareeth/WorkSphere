@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { fetchTeamAppraisals, submitManagerAppraisal } from '../../api/hrApi';
+import { toast } from 'sonner';
 
 const TeamAppraisals = () => {
   const [appraisals, setAppraisals] = useState([]);
@@ -43,7 +44,7 @@ const TeamAppraisals = () => {
       setSelectedAppraisal(null);
       loadAppraisals();
     } catch (err) {
-      alert(err.response?.data?.message || 'Failed to submit manager review');
+      toast.error(err.response?.data?.message || 'Failed to submit manager review');
     }
   };
 
