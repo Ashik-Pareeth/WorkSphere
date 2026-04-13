@@ -74,6 +74,12 @@ public class AttendanceController {
         return ResponseEntity.ok(attendanceService.getDailyRoster(principal.getName()));
     }
 
+    @GetMapping("/roster/global-today")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    public ResponseEntity<List<com.ucocs.worksphere.dto.DailyRosterDTO>> getGlobalDailyRoster() {
+        return ResponseEntity.ok(attendanceService.getGlobalDailyRoster());
+    }
+
     @GetMapping("/employee/{employeeId}")
     @PreAuthorize("hasAnyRole('HR', 'MANAGER', 'SUPER_ADMIN')")
     public ResponseEntity<List<AttendanceDTO>> getAttendanceForEmployee(@PathVariable UUID employeeId) {

@@ -162,25 +162,23 @@ public class LeaveRequestService {
                 return saved;
         }
 
-        // 4. Get Pending Requests (for Manager/HR/Admin approval flow)
+        // 4. Get Pending Requests (strictly for Manager team flow)
         @Transactional(readOnly = true)
         public List<LeaveRequest> getPendingRequests(String username) {
                 Employee reviewer = employeeRepository.findByUserName(username)
                         .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
-
-                boolean isHrOrAdmin = reviewer.getRoles().stream()
-                        .anyMatch(r -> r.getRoleName().endsWith("HR")
-                                || r.getRoleName().endsWith("ADMIN"));
-
-                if (isHrOrAdmin) {
-                        return leaveRequestRepository.findAllByStatusWithDetails(LeaveRequestStatus.PENDING);
-                }
 
                 if (reviewer.getDepartment() == null) {
                         throw new AccessDeniedException("Cannot determine your department for approvals.");
                 }
                 return leaveRequestRepository.findByDepartmentAndStatusWithDetails(
                         reviewer.getDepartment().getId(), LeaveRequestStatus.PENDING);
+        }
+
+        // 5. Get All Pending Requests (strictly for HR/Admin global flow)
+        @Transactional(readOnly = true)
+        public List<LeaveRequest> getAllPendingRequests() {
+                return leaveRequestRepository.findAllByStatusWithDetails(LeaveRequestStatus.PENDING);
         }
 
         private void validateReviewerAuthorization(Employee manager, LeaveRequest request) {

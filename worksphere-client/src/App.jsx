@@ -42,6 +42,9 @@ import MyAttendanceLog from './features/attendance/MyAttendanceLog';
 import TeamAttendanceLog from './features/attendance/TeamAttendanceLog';
 import NotificationsPage from './pages/NotificationsPage';
 import BulletinPage from './pages/BulletinPage';
+import GlobalLeaveApprovalsPage from './pages/GlobalLeaveApprovalsPage';
+import GlobalAttendanceLog from './features/attendance/GlobalAttendanceLog';
+import GlobalRosterPage from './pages/GlobalRosterPage';
 
 // Hiring Pipeline
 import JobOpeningsList from './features/hiring/JobOpeningsList';
@@ -146,11 +149,11 @@ function App() {
                 <Route path="/bulletin" element={<BulletinPage />} />
               </Route>
 
-              {/* --- TIER 1.5: MANAGERS, HR, SUPER_ADMINS --- */}
+              {/* --- TIER 1.5: MANAGERS ONLY --- */}
               <Route
                 element={
                   <PrivateRoute
-                    allowedRoles={['MANAGER', 'HR', 'SUPER_ADMIN']}
+                    allowedRoles={['MANAGER']}
                   />
                 }
               >
@@ -199,6 +202,9 @@ function App() {
                   path="/hiring/jobs/:id/pipeline"
                   element={<HiringPipelineBoard />}
                 />
+                <Route path="/hr/roster" element={<GlobalRosterPage />} />
+                <Route path="/hr/leave-approvals" element={<GlobalLeaveApprovalsPage />} />
+                <Route path="/hr/attendance-log" element={<GlobalAttendanceLog />} />
               </Route>
 
               {/* FALLBACK ROUTE */}

@@ -27,7 +27,7 @@ import {
 } from 'lucide-react';
 
 export default function Sidebar() {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
   const [collapsed, setCollapsed] = useState(() => {
     return localStorage.getItem('sidebarCollapsed') === 'true';
   });
@@ -44,10 +44,9 @@ export default function Sidebar() {
     return roles.some((r) => userRoles.includes(r.toUpperCase()));
   };
 
-  const isManagerOrAbove = hasRole(['MANAGER', 'HR', 'SUPER_ADMIN']);
+  const isManagerStrict = hasRole(['MANAGER']);
   const isHrOrAbove = hasRole(['HR', 'SUPER_ADMIN']);
   const isSuperAdmin = hasRole(['SUPER_ADMIN']);
-  const isAuditor = hasRole(['AUDITOR']);
 
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mt-1 ${
@@ -128,8 +127,8 @@ export default function Sidebar() {
             {!collapsed && <span>My Appraisals</span>}
           </NavLink>
 
-          {/* MANAGER & ABOVE */}
-          {isManagerOrAbove && (
+          {/* MANAGER ONLY */}
+          {isManagerStrict && (
             <>
               {renderSectionHeader('Management')}
               <NavLink to="/roster" className={navLinkClass}>
@@ -155,9 +154,21 @@ export default function Sidebar() {
           {isHrOrAbove && (
             <>
               {renderSectionHeader('HR Operations')}
+              <NavLink to="/hr/roster" className={navLinkClass}>
+                <Users size={18} />
+                {!collapsed && <span>Company Live Roster</span>}
+              </NavLink>
               <NavLink to="/employee-list" className={navLinkClass}>
                 <Users size={18} />
-                {!collapsed && <span>Employee List</span>}
+                {!collapsed && <span>Employee Directory</span>}
+              </NavLink>
+              <NavLink to="/hr/leave-approvals" className={navLinkClass}>
+                <CheckCircle size={18} />
+                {!collapsed && <span>Global Leave Approvals</span>}
+              </NavLink>
+              <NavLink to="/hr/attendance-log" className={navLinkClass}>
+                <Clock size={18} />
+                {!collapsed && <span>Global Attendance</span>}
               </NavLink>
               <NavLink to="/hiring/jobs" className={navLinkClass}>
                 <Briefcase size={18} />

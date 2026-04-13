@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import { getAttendanceForEmployee } from '../../api/attendanceApi';
-import { getMyTeam } from '../../api/employeeApi';
+import { getAllEmployees, getMyTeam } from '../../api/employeeApi';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Search,
@@ -50,8 +50,19 @@ const MiniStat = ({ icon, label, value, colorCls }) => (
 const TeamAttendanceLog = () => {
   const { user } = useAuth();
 
+  const hasRole = (roles) => {
+    if (!user?.roles) return false;
+    const normalized = user.roles.map((r) =>
+      r.replace('ROLE_', '').toUpperCase()
+    );
+    return roles.some((r) => normalized.includes(r));
+  };
+
+  const isHrOrAdmin = hasRole(['HR', 'SUPER_ADMIN']);
+
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [search, setSearch] = useState('');
   const [records, setRecords] = useState([]);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [loadingRecords, setLoadingRecords] = useState(false);
@@ -63,11 +74,12 @@ const TeamAttendanceLog = () => {
     const fetchEmployees = async () => {
       try {
         setLoadingEmployees(true);
-        const data = await getMyTeam();
+        // Managers only see their direct reports; HR/Admin see everyone
+        const data = isHrOrAdmin ? await getAllEmployees() : await getMyTeam();
         setEmployees(data);
 
         // For managers: auto-select first team member if available
-        if (data.length > 0) {
+        if (!isHrOrAdmin && data.length > 0) {
           setSelectedEmployee(data[0]);
         }
       } catch (err) {
@@ -106,6 +118,17 @@ const TeamAttendanceLog = () => {
     fetchRecords();
   }, [selectedEmployee]);
 
+  // ── Filtering + Pagination ────────────────────────────────────────────────
+  const filteredEmployees = useMemo(() => {
+    const q = search.toLowerCase();
+    return employees.filter(
+      (e) =>
+        e.fullName?.toLowerCase().includes(q) ||
+        e.email?.toLowerCase().includes(q) ||
+        e.department?.name?.toLowerCase().includes(q)
+    );
+  }, [employees, search]);
+
   const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
   const pageRecords = records.slice(
     (page - 1) * ROWS_PER_PAGE,
@@ -129,51 +152,110 @@ const TeamAttendanceLog = () => {
   // ─────────────────────────────────────────────────────────────────────────
   return (
     <div className="flex h-screen bg-gray-50 font-sans overflow-hidden">
-      {/* ── Left Panel removed for managers (using Dropdown) ── */}
+      {/* ── Left Panel: Employee picker (only for HR/Admin, managers see all by default) ── */}
+      {isHrOrAdmin && (
+        <aside className="w-72 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col h-full">
+          <div className="px-4 py-5 border-b border-gray-100">
+            <h2 className="text-sm font-bold text-black uppercase tracking-wider">
+              Select Employee
+            </h2>
+            <div className="mt-3 relative">
+              <Search
+                size={15}
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-black"
+              />
+              <input
+                type="text"
+                placeholder="Search by name or dept..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-8 pr-3 py-2 text-sm border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
+              />
+            </div>
+          </div>
+
+          <div className="flex-1 overflow-y-auto">
+            {loadingEmployees ? (
+              <div className="p-4 text-sm text-gray-400 animate-pulse">
+                Loading...
+              </div>
+            ) : filteredEmployees.length === 0 ? (
+              <div className="p-4 text-sm text-gray-400">
+                No employees found.
+              </div>
+            ) : (
+              filteredEmployees.map((emp) => (
+                <button
+                  key={emp.id}
+                  onClick={() => setSelectedEmployee(emp)}
+                  className={`w-full text-left px-4 py-3 border-b border-gray-50 hover:bg-blue-50 transition-colors ${
+                    selectedEmployee?.id === emp.id
+                      ? 'bg-blue-50 border-l-4 border-l-blue-500'
+                      : ''
+                  }`}
+                >
+                  <p className="text-sm font-semibold text-gray-800 truncate">
+                    {emp.firstName} {emp.lastName}
+                  </p>
+                  <p className="text-xs text-gray-400 truncate mt-0.5">
+                    {emp.departmentName || 'No Department'} ·{' '}
+                    {emp.jobTitle || emp.position || ''}
+                  </p>
+                </button>
+              ))
+            )}
+          </div>
+        </aside>
+      )}
 
       {/* ── Right Panel: Attendance records ─────────────────────────────────── */}
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Header */}
         <header className="flex-none bg-white border-b border-gray-200 px-8 py-5">
           <h1 className="text-xl font-bold text-gray-900 tracking-tight">
-            Team Attendance Log
+            {isHrOrAdmin ? 'All Attendance Records' : 'Team Attendance Log'}
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
             {selectedEmployee
               ? `Showing history for ${selectedEmployee.fullName}`
-              : 'Loading team members…'}
+              : isHrOrAdmin
+                ? 'Select an employee from the list'
+                : 'Loading team members…'}
           </p>
         </header>
 
         <main className="flex-1 overflow-y-auto px-8 py-6">
-          {/* Manager: Employee picker as dropdown */}
-          <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Team Member
-            </label>
-            {loadingEmployees ? (
-              <div className="text-sm text-gray-400 animate-pulse">
-                Loading employees...
-              </div>
-            ) : (
-              <select
-                value={selectedEmployee?.id || ''}
-                onChange={(e) => {
-                  const emp = employees.find((em) => em.id === e.target.value);
-                  setSelectedEmployee(emp || null);
-                }}
-                className="w-72 border border-gray-200 text-black rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
-              >
-                <option value="">— Select employee —</option>
-                {employees.map((emp) => (
-                  <option key={emp.id} value={emp.id}>
-                    {emp.firstName} {emp.lastName} (
-                    {emp.departmentName || 'N/A'})
-                  </option>
-                ))}
-              </select>
-            )}
-          </div>
+          {/* Manager: Employee picker as dropdown (simpler than sidebar) */}
+          {!isHrOrAdmin && (
+            <div className="mb-6">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Team Member
+              </label>
+              {loadingEmployees ? (
+                <div className="text-sm text-gray-400 animate-pulse">
+                  Loading employees...
+                </div>
+              ) : (
+                <select
+                  value={selectedEmployee?.id || ''}
+                  onChange={(e) => {
+                    const emp = employees.find(
+                      (em) => em.id === e.target.value
+                    );
+                    setSelectedEmployee(emp || null);
+                  }}
+                  className="w-72 border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                >
+                  <option value="">— Select employee —</option>
+                  {employees.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.fullName} ({emp.department?.name || 'N/A'})
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          )}
 
           {/* Error banner */}
           {error && (

@@ -36,7 +36,7 @@ public class LeaveRequestController {
     }
 
     @PutMapping("/{requestId}/approve")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'SUPER_ADMIN')")
     public ResponseEntity<LeaveRequestResponseDTO> approveRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
@@ -46,7 +46,7 @@ public class LeaveRequestController {
     }
 
     @PutMapping("/{requestId}/reject")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'SUPER_ADMIN')")
     public ResponseEntity<LeaveRequestResponseDTO> rejectRequest(
             @PathVariable UUID requestId,
             @RequestBody ReviewDTO dto,
@@ -59,6 +59,16 @@ public class LeaveRequestController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<LeaveRequestResponseDTO>> getPendingRequests(Principal principal) {
         List<LeaveRequest> requests = leaveRequestService.getPendingRequests(principal.getName());
+        List<LeaveRequestResponseDTO> dtos = requests.stream()
+                .map(LeaveRequestResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
+
+    @GetMapping("/all-pending")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getAllPendingRequests() {
+        List<LeaveRequest> requests = leaveRequestService.getAllPendingRequests();
         List<LeaveRequestResponseDTO> dtos = requests.stream()
                 .map(LeaveRequestResponseDTO::fromEntity)
                 .toList();
