@@ -4,7 +4,7 @@ import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldO
 
 import { formatSalary, formatDate, getGradient } from './utils/helpers';
 import { canManage, assignableRoles } from '../../utils/rbac';
-import { STATUSES, STATUS_STYLE, ROLE_STYLE, TABS, ATT_STYLE } from './shared/constants';
+import { STATUSES, STATUS_STYLE, ROLE_STYLE, TABS, ATT_STYLE, GLOBAL_STYLES } from './shared/constants';
 import { PermissionBanner, ElToast, FieldLabel, FormInput, FormSelect, SaveBtn, StatusPill, RolePill, ModalAvatar } from './shared/atoms';
 
 /* ═══════════════════════════════════════════════════════════════
@@ -684,6 +684,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
 
   return (
     <div className="el-overlay el-root" onClick={handleBackdrop}>
+      <style>{GLOBAL_STYLES}</style>
       <div className="el-modal" onClick={(e) => e.stopPropagation()}>
         {/* Hero banner */}
         <div

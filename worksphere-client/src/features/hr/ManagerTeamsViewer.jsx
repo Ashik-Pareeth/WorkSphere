@@ -1,6 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { getAllEmployees } from '../../api/employeeApi';
 import { Search, UserCircle, Building2, User } from 'lucide-react';
+import { useAuth } from '../../hooks/useAuth';
+import { getHighestRole, ROLE_HIERARCHY } from '../../utils/rbac';
+import EmployeeModal from '../../components/employees/EmployeeModal';
 
 const API_BASE = 'http://localhost:8080'; // Typically retrieved from environment or axios instance. But we can use relative.
 
@@ -35,6 +38,11 @@ const ManagerTeamsViewer = () => {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedManagerId, setSelectedManagerId] = useState(null);
+  const [selectedEmployee, setSelectedEmployee] = useState(null);
+
+  const { user } = useAuth();
+  const rawRole = getHighestRole(user?.roles ?? []);
+  const viewerRank = ROLE_HIERARCHY[rawRole] ?? 1;
 
   useEffect(() => {
     const fetchData = async () => {
@@ -164,7 +172,10 @@ const ManagerTeamsViewer = () => {
         ) : (
           <div className="p-8 max-w-5xl mx-auto">
             {/* Header Card */}
-            <div className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex items-center gap-6">
+            <div 
+              className="bg-white rounded-2xl shadow-sm border border-gray-200 p-6 mb-8 flex items-center gap-6 cursor-pointer hover:shadow-md transition-shadow"
+              onClick={() => setSelectedEmployee(selectedManager)}
+            >
               <Avatar emp={selectedManager} size={72} />
               <div>
                 <h1 className="text-2xl font-bold text-gray-900 mb-1">
@@ -194,7 +205,11 @@ const ManagerTeamsViewer = () => {
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {teamMembers.map(emp => (
-                  <div key={emp.id} className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow group">
+                  <div 
+                    key={emp.id} 
+                    className="bg-white rounded-xl shadow-sm border border-gray-200 p-5 hover:shadow-md transition-shadow group cursor-pointer"
+                    onClick={() => setSelectedEmployee(emp)}
+                  >
                     <div className="flex items-start gap-4">
                       <Avatar emp={emp} size={48} />
                       <div className="flex-1 min-w-0">
@@ -220,6 +235,18 @@ const ManagerTeamsViewer = () => {
           </div>
         )}
       </main>
+
+      {selectedEmployee && (
+        <EmployeeModal
+          emp={selectedEmployee}
+          onClose={() => setSelectedEmployee(null)}
+          onUpdated={(updated) => {
+            setEmployees(prev => prev.map(e => e.id === updated.id ? updated : e));
+            setSelectedEmployee(updated);
+          }}
+          viewerRank={viewerRank}
+        />
+      )}
     </div>
   );
 };

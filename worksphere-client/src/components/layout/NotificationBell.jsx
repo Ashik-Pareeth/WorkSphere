@@ -12,7 +12,19 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const popoverRef = useRef(null);
 
+  const loadNotifications = async () => {
+    try {
+      const response = await fetchNotifications();
+      const notifs = response.data || [];
+      setNotifications(notifs);
+      setUnreadCount(notifs.filter((n) => !n.isRead).length);
+    } catch (error) {
+      console.error('Failed to fetch notifications:', error);
+    }
+  };
+
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadNotifications();
 
     // Close dropdown when clicking outside
@@ -24,17 +36,6 @@ export default function NotificationBell() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  const loadNotifications = async () => {
-    try {
-      const response = await fetchNotifications();
-      const notifs = response.data || [];
-      setNotifications(notifs);
-      setUnreadCount(notifs.filter((n) => !n.isRead).length);
-    } catch (error) {
-      console.error('Failed to fetch notifications:', error);
-    }
-  };
 
   const handleMarkAsRead = async (id, isCurrentlyRead) => {
     if (isCurrentlyRead) return;
@@ -60,7 +61,8 @@ export default function NotificationBell() {
   };
 
   // Maps backend notification types to your frontend routes
-  const getRouteForNotification = (type, referenceId) => {
+  // eslint-disable-next-line no-unused-vars
+  const getRouteForNotification = (type, _referenceId) => {
     switch (type) {
       case 'PAYSLIP_READY':
         return '/my-compensation';
