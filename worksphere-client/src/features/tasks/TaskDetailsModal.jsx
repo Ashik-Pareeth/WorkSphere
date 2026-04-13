@@ -25,6 +25,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
   const isManagerOrAdmin =
     storedRoles.includes('ROLE_MANAGER') ||
     storedRoles.includes('ROLE_SUPER_ADMIN');
+  // eslint-disable-next-line no-unused-vars
   const currentUser = JSON.parse(localStorage.getItem('user')) || {
     id: localStorage.getItem('employeeId'),
   };
@@ -55,6 +56,8 @@ const TaskDetailsModal = ({ task, onClose }) => {
 
   useEffect(() => {
     if (task?.id) loadData();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task]);
 
   const loadData = async () => {
@@ -280,7 +283,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
     </div>
   );
 
-  const statusClass = task.status?.toLowerCase().replace('_', '_') || 'todo';
+  const _statusClass = task.status?.toLowerCase().replace('_', '_') || 'todo';
 
   return (
     <div

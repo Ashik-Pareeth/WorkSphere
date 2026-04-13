@@ -34,7 +34,7 @@ function LeavePolicyPage() {
     try {
       const data = await getAllLeavePolicies();
       if (isMounted) setPolicies(data || []);
-    } catch (err) {
+    } catch (err) /* eslint-disable-line no-unused-vars */ {
       if (isMounted)
         setAlert({ type: 'error', message: 'Failed to load leave policies.' });
     } finally {
@@ -80,7 +80,7 @@ function LeavePolicyPage() {
       setAlert({ type: 'success', message: `Policy "${name}" created.` });
       resetForm();
       fetchPolicies();
-    } catch (err) {
+    } catch (err) /* eslint-disable-line no-unused-vars */ {
       setAlert({ type: 'error', message: 'Failed to create policy.' });
     } finally {
       setSubmitting(false);

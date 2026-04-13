@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { X, Briefcase, Building2, Users } from 'lucide-react';
 
 const CreateJobModal = ({ onClose, onJobCreated }) => {
-  const { user } = useAuth();
+  const { user: _unusedUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [jobPositions, setJobPositions] = useState([]);

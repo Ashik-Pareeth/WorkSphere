@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 import React, { useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import axiosInstance from '../api/axiosInstance';

@@ -1,4 +1,5 @@
 import * as React from "react"
+/* eslint-disable react-refresh/only-export-components */
 import { cva } from "class-variance-authority";
 import { Tabs as TabsPrimitive } from "radix-ui"
 

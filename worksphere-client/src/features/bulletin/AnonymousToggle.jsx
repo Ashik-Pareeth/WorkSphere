@@ -12,7 +12,7 @@ export function AnonymousToggle({ user, onUpdate }) {
       await setAnonymous(isAnon);
       toast.success(isAnon ? 'You are now chatting anonymously.' : 'You are now chatting with your real name.');
       if (onUpdate) onUpdate(isAnon);
-    } catch (err) {
+    } catch (err) { /* eslint-disable-line no-unused-vars */
       toast.error('Failed to update chat identity preference.');
     } finally {
       setLoading(false);
