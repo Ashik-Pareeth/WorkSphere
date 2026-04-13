@@ -45,6 +45,7 @@ import BulletinPage from './pages/BulletinPage';
 import GlobalLeaveApprovalsPage from './pages/GlobalLeaveApprovalsPage';
 import GlobalAttendanceLog from './features/attendance/GlobalAttendanceLog';
 import GlobalRosterPage from './pages/GlobalRosterPage';
+import ManagerTeamsViewer from './features/hr/ManagerTeamsViewer';
 
 // Hiring Pipeline
 import JobOpeningsList from './features/hiring/JobOpeningsList';
@@ -205,6 +206,7 @@ function App() {
                 <Route path="/hr/roster" element={<GlobalRosterPage />} />
                 <Route path="/hr/leave-approvals" element={<GlobalLeaveApprovalsPage />} />
                 <Route path="/hr/attendance-log" element={<GlobalAttendanceLog />} />
+                <Route path="/hr/manager-teams" element={<ManagerTeamsViewer />} />
               </Route>
 
               {/* FALLBACK ROUTE */}

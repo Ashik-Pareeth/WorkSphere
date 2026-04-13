@@ -23,7 +23,8 @@ import {
   LogOut,
   Landmark,
   ShieldAlert,
-  ClipboardList
+  ClipboardList,
+  Network
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -161,6 +162,10 @@ export default function Sidebar() {
               <NavLink to="/employee-list" className={navLinkClass}>
                 <Users size={18} />
                 {!collapsed && <span>Employee Directory</span>}
+              </NavLink>
+              <NavLink to="/hr/manager-teams" className={navLinkClass}>
+                <Network size={18} />
+                {!collapsed && <span>Manager Teams</span>}
               </NavLink>
               <NavLink to="/hr/leave-approvals" className={navLinkClass}>
                 <CheckCircle size={18} />
