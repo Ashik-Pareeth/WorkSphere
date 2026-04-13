@@ -240,22 +240,34 @@ public class AttendanceService {
     public List<com.ucocs.worksphere.dto.DailyRosterDTO> getDailyRoster(String username) {
         Employee reviewer = getEmployeeByUsername(username);
 
-        boolean isGodMode = reviewer.getRoles().stream()
-                .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
-
-        List<Attendance> todayRecords;
-        LocalDate today = LocalDate.now();
-
-        if (isGodMode) {
-            todayRecords = attendanceRepository.findByDate(today);
-        } else {
-            if (reviewer.getDepartment() == null) {
-                throw new org.springframework.security.access.AccessDeniedException(
-                        "Cannot determine your department for roster access.");
-            }
-            todayRecords = attendanceRepository.findByDateAndEmployee_Department_Id(
-                    today, reviewer.getDepartment().getId());
+        if (reviewer.getDepartment() == null) {
+            throw new org.springframework.security.access.AccessDeniedException(
+                    "Cannot determine your department for roster access.");
         }
+        
+        LocalDate today = LocalDate.now();
+        List<Attendance> todayRecords = attendanceRepository.findByDateAndEmployee_Department_Id(
+                today, reviewer.getDepartment().getId());
+
+        return todayRecords.stream().map(att -> {
+            Employee emp = att.getEmployee();
+            return new com.ucocs.worksphere.dto.DailyRosterDTO(
+                    emp.getId(),
+                    emp.getFirstName(),
+                    emp.getLastName(),
+                    emp.getJobPosition() != null ? emp.getJobPosition().getPositionName() : "Employee",
+                    att.getDailyStatus().name(),
+                    att.getClockIn(),
+                    att.getClockOut(),
+                    att.getId(),
+                    att.getIsManuallyAdjusted());
+        }).toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<com.ucocs.worksphere.dto.DailyRosterDTO> getGlobalDailyRoster() {
+        LocalDate today = LocalDate.now();
+        List<Attendance> todayRecords = attendanceRepository.findByDate(today);
 
         return todayRecords.stream().map(att -> {
             Employee emp = att.getEmployee();
