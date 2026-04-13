@@ -36,7 +36,7 @@ const PayrollDashboard = React.lazy(
   () => import('./features/hr/PayrollDashboard')
 );
 import MyCompensation from './features/hr/MyCompensation';
-const EmployeeList = React.lazy(() => import('./features/hr/EmployeeList'));
+const EmployeeList = React.lazy(() => import('./components/employees/EmployeeList'));
 import Unauthorized from './pages/Unauthorized';
 import MyAttendanceLog from './features/attendance/MyAttendanceLog';
 import TeamAttendanceLog from './features/attendance/TeamAttendanceLog';
