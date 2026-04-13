@@ -177,6 +177,7 @@ function useElapsed(clockInTime) {
   const [elapsed, setElapsed] = useState('');
   useEffect(() => {
     if (!clockInTime) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsed('');
       return;
     }

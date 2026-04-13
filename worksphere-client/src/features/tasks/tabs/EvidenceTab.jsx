@@ -36,7 +36,7 @@ export default function EvidenceTab({
   isAuditor,
   rating,
   setRating,
-  handleLateRating,
+  // handleLateRating removed
   isCompleting,
   handleApproveAndComplete,
   handleCancelTask,

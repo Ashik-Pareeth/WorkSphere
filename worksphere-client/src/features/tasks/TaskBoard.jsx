@@ -31,7 +31,7 @@ const PlusIcon = () => (
 );
 
 const TaskBoard = () => {
-  const [tasks, setTasks] = useState([]);
+  
   const [error, setError] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [selectedTask, setSelectedTask] = useState(null);

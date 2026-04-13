@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import {
   updateCandidateStatus,
   fetchInterviewsForCandidate,
-  getCandidateResumeUrl,
   downloadCandidateResume,
 } from '../../api/hiringApi';
 import InterviewScheduleModal from './InterviewScheduleModal';
@@ -35,6 +34,8 @@ const CandidateDrawer = ({ candidate, onClose, onCandidateUpdated }) => {
 
   useEffect(() => {
     if (candidate) loadInterviews();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [candidate]);
 
   const loadInterviews = async () => {

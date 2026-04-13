@@ -39,7 +39,7 @@ const typeIcon = (t) =>
   })[t] || '📦';
 
 const AssetDirectory = () => {
-  const { user } = useAuth();
+  const { user: _unusedUser } = useAuth();
   const [assets, setAssets] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);

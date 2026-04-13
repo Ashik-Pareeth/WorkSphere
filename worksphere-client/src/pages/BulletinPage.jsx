@@ -38,6 +38,7 @@ export default function BulletinPage() {
 
   useEffect(() => {
     load();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab]);
 
   const handleChat = async () => {

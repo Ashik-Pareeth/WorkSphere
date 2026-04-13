@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import axiosInstance from '../../api/axiosInstance';
+
 import { X, Download, Loader2 } from 'lucide-react';
 import { downloadPayslip } from '../../api/hrApi';
 
@@ -12,6 +12,7 @@ export default function PayslipViewerModal({ isOpen, onClose, payrollId }) {
     let objectUrl = null;
 
     if (isOpen && payrollId) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setLoading(true);
       setError(null);
 

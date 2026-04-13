@@ -54,7 +54,7 @@ const PublicApplyForm = () => {
       try {
         // Basic URL validation
         new URL(formData.resumeUrl);
-      } catch (_) {
+      } catch (_) { // eslint-disable-line no-unused-vars
         setError('Please enter a valid Resume Link URL (e.g., https://...).');
         return;
       }

@@ -48,7 +48,7 @@ const MiniStat = ({ icon, label, value, colorCls }) => (
 
 // ─── Main component ───────────────────────────────────────────────────────────
 const TeamAttendanceLog = () => {
-  const { user } = useAuth();
+  const { user: _unusedUser } = useAuth();
 
   const [employees, setEmployees] = useState([]);
   const [selectedEmployee, setSelectedEmployee] = useState(null);

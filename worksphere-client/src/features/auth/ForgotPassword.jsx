@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import axiosInstance from '../../api/axiosInstance';
 import AlertMessage from '../../components/common/AlertMessage';
 import { Input } from '@/components/ui/input';
