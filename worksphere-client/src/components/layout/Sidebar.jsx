@@ -191,10 +191,10 @@ export default function Sidebar() {
                 <HeartHandshake size={18} />
                 {!collapsed && <span>HR Helpdesk</span>}
               </NavLink>
-              <NavLink to="/hr/appraisals" className={navLinkClass}>
-                <Star size={18} />
-                {!collapsed && <span>Appraisals</span>}
-              </NavLink>
+                <NavLink to="/hr/appraisals" className={navLinkClass}>
+                  <Star size={18} />
+                  {!collapsed && <span>Appraisals</span>}
+                </NavLink>
               <NavLink to="/hr/offboarding" className={navLinkClass}>
                 <LogOut size={18} />
                 {!collapsed && <span>Offboarding</span>}

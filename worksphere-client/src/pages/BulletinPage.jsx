@@ -88,6 +88,9 @@ export default function BulletinPage() {
 
   if (!user) return null;
 
+  const isManager = user?.roles?.some((r) => r.replace('ROLE_', '').toUpperCase() === 'MANAGER');
+  const hasTeam = isManager || !!user?.managerId;
+
   return (
     <div className="max-w-3xl mx-auto py-8 space-y-6 px-4 md:px-0">
       <div className="mb-8">
@@ -158,49 +161,67 @@ export default function BulletinPage() {
         </div>
       )}
 
-      {/* Chat composer — all roles */}
-      <div className="flex gap-2 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
-        <textarea
-          placeholder={
-            user.chatAnonymous
-              ? `Chatting as ${user.anonymousAlias || 'anonymous'}...`
-              : 'Write a message...'
-          }
-          value={chatInput}
-          onChange={(e) => setChatInput(e.target.value)}
-          rows={2}
-          className="flex-1 rounded-md border text-black border-gray-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-gray-400 py-2 resize-none"
-        />
-        <button
-          onClick={handleChat}
-          disabled={loading || !chatInput.trim()}
-          className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors self-end disabled:opacity-50"
-        >
-          Send
-        </button>
-      </div>
-
-      {/* Feed */}
-      <div className="space-y-4 pt-4">
-        {posts.length === 0 ? (
-          <div className="text-center py-10 text-gray-500">
-            No posts yet. Be the first to say hello!
+      {/* Chat logic check */}
+      {activeTab === 'team' && !hasTeam ? (
+        <div className="bg-white p-10 rounded-xl border border-gray-200 shadow-sm text-center">
+          <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-indigo-50 mb-4">
+            <svg className="w-8 h-8 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path></svg>
           </div>
-        ) : (
-          posts.map((post) =>
-            post.type === 'ANNOUNCEMENT' ? (
-              <AnnouncementCard
-                key={post.id}
-                post={post}
-                user={user}
-                onTogglePin={handleTogglePin}
-              />
+          <h3 className="text-lg font-bold text-gray-900 mb-2">Team Chat Unavailable</h3>
+          <p className="text-gray-500 font-medium max-w-md mx-auto">
+            You are not currently assigned to a specific team reporting structure.
+          </p>
+          <p className="text-sm text-gray-400 mt-2 max-w-md mx-auto">
+            Team chat unlocks automatically when you join a department under a manager, or become a manager yourself.
+          </p>
+        </div>
+      ) : (
+        <>
+          {/* Chat composer — all roles */}
+          <div className="flex gap-2 bg-white p-4 rounded-lg border border-gray-200 shadow-sm">
+            <textarea
+              placeholder={
+                user.chatAnonymous
+                  ? `Chatting as ${user.anonymousAlias || 'anonymous'}...`
+                  : 'Write a message...'
+              }
+              value={chatInput}
+              onChange={(e) => setChatInput(e.target.value)}
+              rows={2}
+              className="flex-1 rounded-md border text-black border-gray-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 placeholder:text-gray-400 py-2 resize-none"
+            />
+            <button
+              onClick={handleChat}
+              disabled={loading || !chatInput.trim()}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 px-5 rounded-md text-sm transition-colors self-end disabled:opacity-50"
+            >
+              Send
+            </button>
+          </div>
+
+          {/* Feed */}
+          <div className="space-y-4 pt-4">
+            {posts.length === 0 ? (
+              <div className="text-center py-10 text-gray-500">
+                No posts yet. Be the first to say hello!
+              </div>
             ) : (
-              <ChatBubble key={post.id} post={post} />
-            )
-          )
-        )}
-      </div>
+              posts.map((post) =>
+                post.type === 'ANNOUNCEMENT' ? (
+                  <AnnouncementCard
+                    key={post.id}
+                    post={post}
+                    user={user}
+                    onTogglePin={handleTogglePin}
+                  />
+                ) : (
+                  <ChatBubble key={post.id} post={post} />
+                )
+              )
+            )}
+          </div>
+        </>
+      )}
     </div>
   );
 }
