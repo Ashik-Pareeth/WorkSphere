@@ -386,4 +386,13 @@ public class TaskService {
     public List<Task> getAllTasks() {
         return taskRepository.findAll();
     }
+
+    /**
+     * Returns all system-wide flagged tasks, sorted by flaggedAt (newest first).
+     * Intended for the Auditor dashboard.
+     */
+    @Transactional(readOnly = true)
+    public List<Task> getFlaggedTasks() {
+        return taskRepository.findAllFlaggedTasks();
+    }
 }

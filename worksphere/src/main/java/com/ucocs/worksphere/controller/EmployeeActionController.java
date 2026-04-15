@@ -69,6 +69,15 @@ public class EmployeeActionController {
     }
 
     /**
+     * HR / SUPER_ADMIN / AUDITOR: read-only view of all action records for compliance audit.
+     */
+    @GetMapping("/all-records")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'AUDITOR')")
+    public ResponseEntity<List<EmployeeActionResponse>> getAllActionRecords() {
+        return ResponseEntity.ok(actionService.getAllActions());
+    }
+
+    /**
      * HR / SUPER_ADMIN / MANAGER (own reports): get action history for an employee.
      */
     @GetMapping("/employee/{employeeId}")

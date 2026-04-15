@@ -197,6 +197,19 @@ public class EmployeeActionService {
 
     // ── Queries ──────────────────────────────────────────────────────────────
 
+    /**
+     * Returns all employee action records (most recent first).
+     * Used by Auditor/HR/SUPER_ADMIN for compliance review.
+     */
+    public List<EmployeeActionResponse> getAllActions() {
+        return actionRepo.findAll().stream()
+                .sorted(java.util.Comparator.comparing(
+                        com.ucocs.worksphere.entity.EmployeeActionRecord::getCreatedAt,
+                        java.util.Comparator.nullsLast(java.util.Comparator.reverseOrder())))
+                .map(this::toResponse)
+                .toList();
+    }
+
     public List<EmployeeActionResponse> getActionsForEmployee(UUID employeeId) {
         return actionRepo.findByEmployeeIdOrderByCreatedAtDesc(employeeId)
                 .stream().map(this::toResponse).toList();

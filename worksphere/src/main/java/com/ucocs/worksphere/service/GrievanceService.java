@@ -80,6 +80,26 @@ public class GrievanceService {
         }
 
         /**
+         * Get all tickets for Auditor review — internal HR comments excluded.
+         */
+        @Transactional(readOnly = true)
+        public List<TicketResponse> getAllTicketsForAudit() {
+                return ticketRepository.findAll().stream()
+                                .map(t -> toResponse(t, false))
+                                .collect(Collectors.toList());
+        }
+
+        /**
+         * Get tickets by status for Auditor review — internal HR comments excluded.
+         */
+        @Transactional(readOnly = true)
+        public List<TicketResponse> getTicketsByStatusForAudit(GrievanceStatus status) {
+                return ticketRepository.findByStatus(status).stream()
+                                .map(t -> toResponse(t, false))
+                                .collect(Collectors.toList());
+        }
+
+        /**
          * Get tickets raised by the authenticated employee.
          */
         @Transactional(readOnly = true)
