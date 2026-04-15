@@ -1,6 +1,6 @@
 # Full-Stack Audit: Backend-to-Frontend Endpoint Connectivity
 
-**Date**: April 15, 2026  
+**Date**: April 15, 2026 _(Updated: April 15, 2026 — post-fix revision)_  
 **Scope**: Complete mapping of 80+ backend endpoints to 11 frontend API modules  
 **Total Backend Controllers**: 28  
 **Total Frontend API Files**: 11
@@ -9,12 +9,12 @@
 
 ## Executive Summary
 
-**Connectivity Status**:
+**Connectivity Status** _(as of post-fix revision)_:
 
-- ✅ **Fully Connected**: ~65 endpoints (81%)
-- ⚠️ **Partially Connected**: ~5 endpoints (6%)
-- ❌ **Unused / Dead Code**: ~10 endpoints (13%)
-- 🔴 **Broken Connections**: ~2 issues found
+- ✅ **Fully Connected**: ~70 endpoints (87%)
+- ⚠️ **Partially Connected**: ~3 endpoints (4%)
+- ❌ **Unused / Dead Code**: ~6 endpoints (9%)
+- 🔴 **Broken Connections**: 0
 
 ---
 
@@ -80,10 +80,10 @@
 
 #### ⚠️ PARTIALLY CONNECTED OR ISSUES
 
-| Endpoint                                     | Issue                     | Status                                                                                                        |
-| -------------------------------------------- | ------------------------- | ------------------------------------------------------------------------------------------------------------- |
-| `GET /tasks/flagged`                         | Backend exists (line 164) | Frontend: `getFlaggedTasks()` in taskApi but NOT called in FlaggedTasksFeed.jsx (uses `getMyTasks()` instead) |
-| `GET /tasks/{taskId}/source-ticket/comments` | Backend exists (line 185) | ❌ No frontend call found                                                                                     |
+| Endpoint                                     | Issue                     | Status                                                                                                         |
+| -------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `GET /tasks/flagged`                         | ~~Backend exists (line 164)~~ | ✅ **FIXED** — `FlaggedTasksFeed.jsx` now imports and calls `getFlaggedTasks()` correctly                   |
+| `GET /tasks/{taskId}/source-ticket/comments` | Backend exists (line 185) | ❌ No frontend call found — still unused                                                                      |
 
 ---
 
@@ -189,9 +189,9 @@
 
 #### ⚠️ PARTIALLY CONNECTED
 
-| Endpoint                        | Issue                                   |
-| ------------------------------- | --------------------------------------- | --------------------------------------------------- |
-| `GET /api/hr/tickets/all-audit` | Backend exists (GrievanceController:38) | **Not called from frontend** - Intended for Auditor |
+| Endpoint                        | Issue                                                                                    |
+| ------------------------------- | ---------------------------------------------------------------------------------------- |
+| `GET /api/hr/tickets/all-audit` | ✅ **Backend FIXED** — `GrievanceController:43` now has `AUDITOR` in `@PreAuthorize`. ❌ **Frontend still not wired** — no Auditor page/component calls this endpoint yet. |
 
 ---
 
@@ -222,12 +222,12 @@
 | `PUT /api/hr/payroll/{id}/mark-paid` | PayrollController:73 | hrApi.js:178                       | Mark as paid     |
 | `GET /api/hr/payroll/{id}/payslip`   | PayrollController:83 | (Called in PayrollPage.jsx direct) | Download payslip |
 
-#### ⚠️ PARTIALLY CONNECTED
+#### ✅ NOW FULLY CONNECTED
 
-| Endpoint                                    | Issue                                  |
-| ------------------------------------------- | -------------------------------------- | ---------------------------- |
-| `POST /api/hr/payroll/salary-structure`     | Backend exists (PayrollController:100) | **Not called from frontend** |
-| `GET /api/hr/payroll/salary-structure/{id}` | Backend exists (PayrollController:110) | **Not called from frontend** |
+| Endpoint                                    | Issue                                                                            |
+| ------------------------------------------- | -------------------------------------------------------------------------------- |
+| `POST /api/hr/payroll/salary-structure`     | ✅ **FIXED** — `hrApi.js:158` now exports `createSalaryStructure()` function    |
+| `GET /api/hr/payroll/salary-structure/{id}` | ✅ **FIXED** — `hrApi.js:162` now exports `getSalaryStructure()` function       |
 
 ---
 
@@ -363,9 +363,9 @@
 
 #### ⚠️ PARTIALLY CONNECTED
 
-| Endpoint                                | Issue                                        |
-| --------------------------------------- | -------------------------------------------- | --------------------------------------------------- |
-| `GET /api/employee-actions/all-records` | Backend exists (EmployeeActionController:74) | **Not called from frontend** - Intended for Auditor |
+| Endpoint                                | Issue                                                                                                  |
+| --------------------------------------- | ------------------------------------------------------------------------------------------------------ |
+| `GET /api/employee-actions/all-records` | Backend exists (EmployeeActionController:74). ❌ **No frontend call** — still not wired to Auditor view |
 
 ---
 
@@ -383,14 +383,14 @@
 
 ### GAP 1: Auditor Dashboard Failures
 
-**Severity**: HIGH
+**Severity**: HIGH → ⬇️ MEDIUM (partial fixes applied)
 
-| Issue                                   | Location                              | Status                                                       |
-| --------------------------------------- | ------------------------------------- | ------------------------------------------------------------ |
-| Cannot access `/tasks/all-tasks`        | Dashboard.jsx:1025, TaskController:82 | 403 Forbidden (AUDITOR not authorized)                       |
-| FlaggedTasksFeed uses wrong endpoint    | FlaggedTasksFeed.jsx:26               | Uses `getMyTasks()` instead of dedicated `getFlaggedTasks()` |
-| Cannot view `/api/hr/tickets/all-audit` | GrievanceController:38                | Backend exists, frontend never calls                         |
-| Cannot view `/api/hr/offboarding`       | OffboardingController:33              | No Auditor authorization                                     |
+| Issue                                   | Location                              | Status                                                                    |
+| --------------------------------------- | ------------------------------------- | ------------------------------------------------------------------------- |
+| ~~Cannot access `/tasks/all-tasks`~~    | TaskController:82                     | ✅ **FIXED** — `AUDITOR` added to `@PreAuthorize` on `getAllTasks()`      |
+| ~~FlaggedTasksFeed uses wrong endpoint~~| FlaggedTasksFeed.jsx                  | ✅ **FIXED** — Now calls `getFlaggedTasks()` correctly                    |
+| `/api/hr/tickets/all-audit` backend OK  | GrievanceController:43                | ✅ Backend auth fixed. ❌ **Frontend still not wired**                    |
+| `/api/employee-actions/all-records`     | EmployeeActionController:74           | ❌ **Still not called from any Auditor UI component**                     |
 
 **Reference**: See [AUDITOR_ROLE_ANALYSIS.md](AUDITOR_ROLE_ANALYSIS.md) for details
 
@@ -398,18 +398,18 @@
 
 ### GAP 2: Unused Backend Endpoints (Dead Code)
 
-| Endpoint                                | Backend                  | Issue                                      | Line |
-| --------------------------------------- | ------------------------ | ------------------------------------------ | ---- |
-| `/api/leave-requests/{id}/cancel`       | LeaveRequestController   | No frontend call                           | 78   |
-| `/api/hr/payroll/salary-structure`      | PayrollController        | No frontend call                           | 100  |
-| `/api/hr/payroll/salary-structure/{id}` | PayrollController        | No frontend call                           | 110  |
-| `/api/employee-actions/all-records`     | EmployeeActionController | No frontend call                           | 74   |
-| `/api/hr/tickets/all-audit`             | GrievanceController      | No frontend call                           | 38   |
-| `GET /tasks/flagged`                    | TaskController           | Called but FlaggedTasksFeed doesn't use it | 164  |
-| `/api/audit-logs`                       | AuditLogController       | No frontend call (complete)                | 38   |
-| `/tasks/{id}/source-ticket/comments`    | TaskController           | No frontend call                           | 185  |
-| `POST /employees/finalize-hire`         | EmployeeController       | No frontend call                           | 100  |
-| `PATCH /employees/{id}/roles`           | EmployeeController       | Limited testing                            | 83   |
+| Endpoint                                | Backend                  | Issue                                               | Line | Status     |
+| --------------------------------------- | ------------------------ | --------------------------------------------------- | ---- | ---------- |
+| `/api/leave-requests/{id}/cancel`       | LeaveRequestController   | No frontend call                                    | 78   | ❌ Unused  |
+| `/api/hr/payroll/salary-structure`      | PayrollController        | ~~No frontend call~~                                | 100  | ✅ Fixed   |
+| `/api/hr/payroll/salary-structure/{id}` | PayrollController        | ~~No frontend call~~                                | 110  | ✅ Fixed   |
+| `/api/employee-actions/all-records`     | EmployeeActionController | No frontend call                                    | 74   | ❌ Unused  |
+| `/api/hr/tickets/all-audit`             | GrievanceController      | Backend auth fixed; frontend still not wired        | 43   | ⚠️ Partial |
+| `GET /tasks/flagged`                    | TaskController           | ~~FlaggedTasksFeed doesn't use it~~                 | 164  | ✅ Fixed   |
+| `/api/audit-logs`                       | AuditLogController       | No frontend call (complete)                         | 38   | ❌ Unused  |
+| `/tasks/{id}/source-ticket/comments`    | TaskController           | No frontend call                                    | 185  | ❌ Unused  |
+| `POST /employees/finalize-hire`         | EmployeeController       | ~~No frontend call~~                                | 100  | ✅ Fixed   |
+| `PATCH /employees/{id}/roles`           | EmployeeController       | Limited testing                                     | 83   | ⚠️ Partial |
 
 ---
 
@@ -456,31 +456,29 @@ No broken links from frontend → backend detected.
 
 ---
 
-## 🔧 Recommended Actions
+## 🔧 Recommended Actions _(Updated)_
 
-### Priority 1: Remove Dead Code
+### ✅ Priority 1: Already Done — Remove Dead Code
 
-1. Delete `/api/leave-requests/{id}/cancel` - unused
-2. Delete `POST /employees/finalize-hire` - unused
-3. Delete `/api/audit-logs` GET endpoint - never surfaced
-4. Delete salary structure endpoints (PayrollController:100, 110)
+1. ~~Delete `POST /employees/finalize-hire` - unused~~ → ✅ Now wired via `FinalizeHireModal.jsx`
+2. ~~Delete salary structure endpoints (PayrollController:100, 110)~~ → ✅ Now wired in `hrApi.js`
+3. ~~Fix FlaggedTasksFeed to use dedicated `/tasks/flagged`~~ → ✅ Done
 
-### Priority 2: Connect Unused Auditor Endpoints
+### 🔴 Priority 2: Still Outstanding — Connect Auditor Endpoints
 
-1. Wire `GET /api/hr/tickets/all-audit` to Auditor dashboard
-2. Create Auditor-specific read-only endpoint for `/api/employee-actions/all-records`
-3. Fix FlaggedTasksFeed to use dedicated `/tasks/flagged` endpoint
+1. **Wire `GET /api/hr/tickets/all-audit` to Auditor dashboard** — Backend is ready (`AUDITOR` authorized), no frontend component calls it
+2. **Wire `GET /api/employee-actions/all-records` to Auditor dashboard** — No frontend call exists
+3. **Wire `GET /api/audit-logs` to Auditor dashboard** — Completely unused by frontend
 
-### Priority 3: Fix Authorization
+### 🟡 Priority 3: Still Outstanding — Dead Code Cleanup
 
-1. Add AUDITOR role to `/tasks/all-tasks` (GrievanceController:82)
-2. Update role hierarchy in SecurityConfig.java
-3. Test Auditor dashboard end-to-end
+1. Delete or implement `PUT /api/leave-requests/{id}/cancel` — no frontend call exists
+2. Delete `GET /tasks/{taskId}/source-ticket/comments` — no frontend call, or add a UI entry point
 
-### Priority 4: Low-Risk Backend Cleanup
+### 🟡 Priority 4: Low-Risk Cleanup
 
-- Remove `leaveApi.js:55` cancelLeaveRequest function (if exists)
-- Remove unused payload constructors in services
+- Verify `PATCH /employees/{id}/roles` works end-to-end for SuperAdmin
+- Clean up any leftover unused API helper functions in `leaveApi.js`
 
 ---
 
@@ -532,8 +530,8 @@ No broken links from frontend → backend detected.
 
 ---
 
-## 🎯 Conclusion
+## 🎯 Conclusion _(Updated)_
 
-The codebase is **81% fully connected** with acceptable integration.  
-No critical broken links detected, but several unused endpoints should be cleaned up.  
-**Auditor functionality is incomplete** and requires the fixes documented in AUDITOR_ROLE_ANALYSIS.md.
+The codebase is now **~87% fully connected** following recent fixes.  
+Key Auditor role authorization issues on `/tasks/all-tasks`, `/tasks/flagged`, and `/api/hr/tickets/all-audit` backend have been resolved.  
+**Remaining work**: Wire the auditor-ready backend endpoints (`/api/hr/tickets/all-audit`, `/api/employee-actions/all-records`, `/api/audit-logs`) to Auditor dashboard UI components.

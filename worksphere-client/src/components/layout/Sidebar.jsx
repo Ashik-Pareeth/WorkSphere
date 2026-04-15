@@ -24,7 +24,9 @@ import {
   Landmark,
   ShieldAlert,
   ClipboardList,
-  Network
+  Network,
+  AlertCircle,
+  Search
 } from 'lucide-react';
 
 export default function Sidebar() {
@@ -48,6 +50,7 @@ export default function Sidebar() {
   const isManagerStrict = hasRole(['MANAGER']);
   const isHrOrAbove = hasRole(['HR', 'SUPER_ADMIN']);
   const isSuperAdmin = hasRole(['SUPER_ADMIN']);
+  const isAuditor = hasRole(['AUDITOR', 'SUPER_ADMIN']);
 
   const navLinkClass = ({ isActive }) =>
     `flex items-center gap-3 px-3 py-2 rounded-lg text-sm transition-colors mt-1 ${
@@ -224,6 +227,25 @@ export default function Sidebar() {
               <NavLink to="/holidays" className={navLinkClass}>
                 <Calendar size={18} />
                 {!collapsed && <span>Holidays</span>}
+              </NavLink>
+            </>
+          )}
+
+          {/* AUDITOR & SUPER_ADMIN */}
+          {isAuditor && (
+            <>
+              {renderSectionHeader('Audit & Compliance')}
+              <NavLink to="/audit/logs" className={navLinkClass}>
+                <Shield size={18} />
+                {!collapsed && <span>System Audit Logs</span>}
+              </NavLink>
+              <NavLink to="/audit/grievances" className={navLinkClass}>
+                <Search size={18} />
+                {!collapsed && <span>Grievance Audit</span>}
+              </NavLink>
+              <NavLink to="/audit/actions" className={navLinkClass}>
+                <AlertCircle size={18} />
+                {!collapsed && <span>Action Compliance</span>}
               </NavLink>
             </>
           )}

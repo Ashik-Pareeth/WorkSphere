@@ -34,6 +34,11 @@ export const fetchAllTickets = (status) => {
   return axiosInstance.get('/api/hr/tickets', { params });
 };
 
+export const fetchAllTicketsForAudit = (status) => {
+  const params = status ? { status } : {};
+  return axiosInstance.get('/api/hr/tickets/all-audit', { params });
+};
+
 export const createTicket = (data) => {
   return axiosInstance.post('/api/hr/tickets', data);
 };
