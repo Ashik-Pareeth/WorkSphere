@@ -40,4 +40,7 @@ public class Attendance extends BaseEntity {
 
     @Column(nullable = false, columnDefinition = "boolean default false")
     private Boolean isManuallyAdjusted = false;
+
+    @Column(nullable = true, columnDefinition = "integer default 0")
+    private Integer overtimeMinutes = 0;
 }

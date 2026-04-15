@@ -16,22 +16,14 @@ import java.util.Locale;
 
 import com.openhtmltopdf.pdfboxout.PdfRendererBuilder;
 
-/**
- * Generates payslip PDF documents from PayrollRecord data.
- * Uses openhtmltopdf to render an HTML template into a PDF file.
- */
 @Slf4j
 @Service
 public class PayslipPdfService {
 
     private static final String PAYSLIP_BASE_DIR = "uploads/payslips";
 
-    /**
-     * Generate a payslip PDF for the given payroll record and return the file path.
-     */
     public String generatePayslip(PayrollRecord record, Employee employee) {
         try {
-            // Build the directory structure: uploads/payslips/{year}/{month}/
             String dirPath = String.format("%s/%d/%02d", PAYSLIP_BASE_DIR, record.getYear(), record.getMonth());
             Path dir = Paths.get(dirPath);
             Files.createDirectories(dir);
@@ -63,104 +55,225 @@ public class PayslipPdfService {
         String department = employee.getDepartment() != null ? employee.getDepartment().getName() : "N/A";
         String position = employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : "N/A";
 
+        BigDecimal overtimePay = record.getOvertimePay() != null ? record.getOvertimePay() : BigDecimal.ZERO;
+        BigDecimal totalEarnings = record.getGrossPay().add(overtimePay);
+        BigDecimal totalDeductions = record.getLopDeduction()
+                .add(record.getPfDeduction())
+                .add(record.getTaxDeduction())
+                .add(record.getProfessionalTax())
+                .add(record.getOtherDeductions());
+
+        String overtimeRow = overtimePay.compareTo(BigDecimal.ZERO) > 0
+                ? "<tr><td style='color:#059669;font-weight:600;'>Overtime Pay <span style='font-size:9px;color:#059669;'>(1.5x hourly rate)</span></td><td style='text-align:right;color:#059669;font-weight:700;'>"
+                        + formatCurrency(overtimePay) + "</td></tr>"
+                : "";
+
         return """
-                <!DOCTYPE html>
-                <html>
+                <?xml version="1.0" encoding="UTF-8"?>
+                <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+                    "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+                <html xmlns="http://www.w3.org/1999/xhtml">
                 <head>
-                <style>
-                    body { font-family: Arial, sans-serif; margin: 0; padding: 20px; color: #333; }
-                    .header { text-align: center; border-bottom: 3px solid #2563eb; padding-bottom: 15px; margin-bottom: 20px; }
-                    .header h1 { margin: 0; color: #1e40af; font-size: 24px; }
-                    .header p { margin: 5px 0; color: #64748b; font-size: 12px; }
-                    .info-grid { display: flex; justify-content: space-between; margin-bottom: 20px; }
-                    .info-section { width: 48%%; }
-                    .info-section table { width: 100%%; border-collapse: collapse; }
-                    .info-section td { padding: 4px 8px; font-size: 12px; }
-                    .info-section td:first-child { font-weight: bold; color: #475569; width: 40%%; }
-                    .pay-table { width: 100%%; border-collapse: collapse; margin-top: 15px; }
-                    .pay-table th { background: #2563eb; color: white; text-align: left; padding: 10px; font-size: 12px; }
-                    .pay-table td { padding: 8px 10px; border-bottom: 1px solid #e2e8f0; font-size: 12px; }
-                    .pay-table tr:nth-child(even) { background: #f8fafc; }
-                    .total-row { font-weight: bold; background: #eff6ff !important; }
-                    .total-row td { border-top: 2px solid #2563eb; font-size: 13px; }
-                    .footer { margin-top: 30px; text-align: center; color: #94a3b8; font-size: 10px; }
-                    .net-pay-box { background: #2563eb; color: white; text-align: center; padding: 15px; margin-top: 15px; border-radius: 6px; }
-                    .net-pay-box .label { font-size: 12px; opacity: 0.9; }
-                    .net-pay-box .amount { font-size: 28px; font-weight: bold; }
+                <meta http-equiv="Content-Type" content="text/html; charset=UTF-8"/>
+                <style type="text/css">
+                    * { box-sizing: border-box; margin: 0; padding: 0; }
+                    body { font-family: Arial, sans-serif; color: #1e293b; background: #f4f6fa; padding: 28px; }
+                    .slip { background: #fff; border: 1px solid #dde1e9; border-radius: 10px; overflow: hidden; font-size: 11px; }
+
+                    .header { padding: 22px 28px 18px 28px; border-bottom: 2px solid #e8eaf2; }
+                    .header-inner { display: table; width: 100%%; }
+                    .header-left { display: table-cell; vertical-align: bottom; }
+                    .header-right { display: table-cell; vertical-align: bottom; text-align: right; }
+                    .brand { font-size: 20px; font-weight: bold; color: #1a1a2e; }
+                    .brand-sub { font-size: 9px; color: #94a3b8; margin-top: 3px; letter-spacing: 1px; }
+                    .period-badge { background: #f1f5ff; border: 1px solid #c7d2fe; border-radius: 6px; padding: 7px 14px; display: inline-block; text-align: right; }
+                    .period-label { font-size: 9px; color: #6366f1; letter-spacing: 1px; font-weight: bold; }
+                    .period-val { font-size: 16px; font-weight: bold; color: #1a1a2e; margin-top: 2px; }
+
+                    .info-section { padding: 16px 28px 16px 28px; border-bottom: 1px solid #f1f5f9; }
+                    .info-table { width: 100%%; border-collapse: collapse; }
+                    .info-table td { padding: 5px 0; font-size: 11px; border-bottom: 1px dashed #f1f5f9; vertical-align: middle; }
+                    .info-divider { width: 1px; background: #f1f5f9; padding: 0 10px; }
+                    .info-lbl { color: #94a3b8; font-size: 10px; font-weight: bold; width: 110px; }
+                    .info-val { color: #1e293b; font-weight: bold; }
+                    .info-lbl-r { color: #94a3b8; font-size: 10px; font-weight: bold; width: 110px; padding-left: 20px; }
+                    .info-val-r { color: #1e293b; font-weight: bold; }
+                    .status-badge { background: #ecfdf5; color: #059669; border: 1px solid #6ee7b7; border-radius: 4px; padding: 2px 8px; font-size: 10px; font-weight: bold; }
+
+                    .tables-section { padding: 16px 28px 16px 28px; border-bottom: 1px solid #f1f5f9; }
+                    .tables-wrap { display: table; width: 100%%; border-collapse: separate; border-spacing: 16px 0; margin-left: -16px; margin-right: -16px; }
+                    .tbl-cell { display: table-cell; width: 50%%; vertical-align: top; }
+                    .tbl-title { font-size: 9px; font-weight: bold; color: #6366f1; margin-bottom: 8px; letter-spacing: 1px; }
+                    table.pay-table { width: 100%%; border-collapse: collapse; border: 1px solid #e8eaf2; }
+                    table.pay-table thead tr { background: #f8f9ff; }
+                    table.pay-table th { padding: 7px 10px; font-size: 10px; font-weight: bold; color: #6366f1; text-align: left; border-bottom: 1px solid #e8eaf2; }
+                    table.pay-table th.amount { text-align: right; }
+                    table.pay-table td { padding: 6px 10px; font-size: 11px; color: #334155; border-bottom: 1px solid #f8fafc; }
+                    table.pay-table td.amount { text-align: right; font-weight: bold; }
+                    table.pay-table tbody tr:last-child td { border-bottom: none; }
+                    table.pay-table tfoot td { padding: 7px 10px; font-size: 11px; font-weight: bold; background: #f8f9ff; border-top: 1px solid #e8eaf2; color: #1a1a2e; }
+                    table.pay-table tfoot td.amount { text-align: right; color: #6366f1; }
+
+                    .net-bar { margin: 0px 28px 18px 28px; background: #1a1a2e; border-radius: 8px; padding: 16px 20px; }
+                    .net-bar-inner { display: table; width: 100%%; }
+                    .net-left { display: table-cell; vertical-align: middle; }
+                    .net-right { display: table-cell; vertical-align: middle; text-align: right; }
+                    .net-lbl { font-size: 9px; color: #94a3b8; letter-spacing: 1px; font-weight: bold; }
+                    .net-amt { font-size: 24px; font-weight: bold; color: #ffffff; margin-top: 4px; }
+                    .net-row { font-size: 10px; color: #94a3b8; margin-top: 3px; }
+                    .net-row-val { color: #c7d2fe; font-weight: bold; }
+
+                    .footer { padding: 12px 28px 12px 28px; background: #f8f9ff; border-top: 1px solid #e8eaf2; }
+                    .footer-inner { display: table; width: 100%%; }
+                    .footer-left { display: table-cell; vertical-align: middle; }
+                    .footer-right { display: table-cell; vertical-align: middle; text-align: right; }
+                    .footer p { font-size: 9px; color: #94a3b8; }
                 </style>
                 </head>
                 <body>
+                <div class="slip">
+
+                    <!-- Header -->
                     <div class="header">
-                        <h1>WorkSphere</h1>
-                        <p>Payslip for %s %d</p>
+                        <div class="header-inner">
+                            <div class="header-left">
+                                <div class="brand">WorkSphere</div>
+                                <div class="brand-sub">OFFICIAL PAYSLIP &#8212; CONFIDENTIAL</div>
+                            </div>
+                            <div class="header-right">
+                                <div class="period-badge">
+                                    <div class="period-label">PAY PERIOD</div>
+                                    <div class="period-val">%s %d</div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
-                    <table style="width:100%%; border-collapse:collapse; margin-bottom:15px;">
-                        <tr>
-                            <td style="padding:4px 8px; font-size:12px; width:15%%; font-weight:bold; color:#475569;">Employee</td>
-                            <td style="padding:4px 8px; font-size:12px; width:35%%;">%s</td>
-                            <td style="padding:4px 8px; font-size:12px; width:15%%; font-weight:bold; color:#475569;">Employee ID</td>
-                            <td style="padding:4px 8px; font-size:12px; width:35%%;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:4px 8px; font-size:12px; font-weight:bold; color:#475569;">Department</td>
-                            <td style="padding:4px 8px; font-size:12px;">%s</td>
-                            <td style="padding:4px 8px; font-size:12px; font-weight:bold; color:#475569;">Designation</td>
-                            <td style="padding:4px 8px; font-size:12px;">%s</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:4px 8px; font-size:12px; font-weight:bold; color:#475569;">Working Days</td>
-                            <td style="padding:4px 8px; font-size:12px;">%d</td>
-                            <td style="padding:4px 8px; font-size:12px; font-weight:bold; color:#475569;">Present</td>
-                            <td style="padding:4px 8px; font-size:12px;">%d</td>
-                        </tr>
-                        <tr>
-                            <td style="padding:4px 8px; font-size:12px; font-weight:bold; color:#475569;">LOP Days</td>
-                            <td style="padding:4px 8px; font-size:12px;">%d</td>
-                            <td style="padding:4px 8px; font-size:12px;"></td>
-                            <td style="padding:4px 8px; font-size:12px;"></td>
-                        </tr>
-                    </table>
-
-                    <table class="pay-table">
-                        <tr><th style="width:60%%">Earnings</th><th style="text-align:right">Amount (INR)</th></tr>
-                        <tr><td>Gross Pay</td><td style="text-align:right">%s</td></tr>
-                    </table>
-
-                    <table class="pay-table" style="margin-top:10px;">
-                        <tr><th style="width:60%%">Deductions</th><th style="text-align:right">Amount (INR)</th></tr>
-                        <tr><td>LOP Deduction</td><td style="text-align:right">%s</td></tr>
-                        <tr><td>Provident Fund (Employee)</td><td style="text-align:right">%s</td></tr>
-                        <tr><td>Tax Deduction (TDS)</td><td style="text-align:right">%s</td></tr>
-                        <tr><td>Professional Tax</td><td style="text-align:right">%s</td></tr>
-                        <tr><td>Other Deductions</td><td style="text-align:right">%s</td></tr>
-                    </table>
-
-                    <div class="net-pay-box">
-                        <div class="label">Net Pay</div>
-                        <div class="amount">INR %s</div>
+                    <!-- Employee Info -->
+                    <div class="info-section">
+                        <table class="info-table">
+                            <tr>
+                                <td class="info-lbl">Employee Name</td>
+                                <td class="info-val">%s</td>
+                                <td class="info-divider">&#160;</td>
+                                <td class="info-lbl-r">Working Days</td>
+                                <td class="info-val-r">%d</td>
+                            </tr>
+                            <tr>
+                                <td class="info-lbl">Employee ID</td>
+                                <td class="info-val">%s</td>
+                                <td class="info-divider">&#160;</td>
+                                <td class="info-lbl-r">Present Days</td>
+                                <td class="info-val-r">%d</td>
+                            </tr>
+                            <tr>
+                                <td class="info-lbl">Department</td>
+                                <td class="info-val">%s</td>
+                                <td class="info-divider">&#160;</td>
+                                <td class="info-lbl-r">LOP Days</td>
+                                <td class="info-val-r">%d</td>
+                            </tr>
+                            <tr>
+                                <td class="info-lbl">Designation</td>
+                                <td class="info-val">%s</td>
+                                <td class="info-divider">&#160;</td>
+                                <td class="info-lbl-r">Pay Status</td>
+                                <td class="info-val-r"><span class="status-badge">%s</span></td>
+                            </tr>
+                        </table>
                     </div>
 
+                    <!-- Earnings and Deductions -->
+                    <div class="tables-section">
+                        <div class="tables-wrap">
+                            <div class="tbl-cell">
+                                <div class="tbl-title">EARNINGS</div>
+                                <table class="pay-table">
+                                    <thead>
+                                        <tr><th>Component</th><th class="amount">Amount (INR)</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>Basic / Gross Pay</td><td class="amount">%s</td></tr>
+                                        %s
+                                    </tbody>
+                                    <tfoot>
+                                        <tr><td>Total Earnings</td><td class="amount">%s</td></tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                            <div class="tbl-cell">
+                                <div class="tbl-title">DEDUCTIONS</div>
+                                <table class="pay-table">
+                                    <thead>
+                                        <tr><th>Component</th><th class="amount">Amount (INR)</th></tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr><td>LOP Deduction</td><td class="amount">%s</td></tr>
+                                        <tr><td>Provident Fund (Employee)</td><td class="amount">%s</td></tr>
+                                        <tr><td>Tax Deduction (TDS)</td><td class="amount">%s</td></tr>
+                                        <tr><td>Professional Tax</td><td class="amount">%s</td></tr>
+                                        <tr><td>Other Deductions</td><td class="amount">%s</td></tr>
+                                    </tbody>
+                                    <tfoot>
+                                        <tr><td>Total Deductions</td><td class="amount">%s</td></tr>
+                                    </tfoot>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Net Pay -->
+                    <div class="net-bar">
+                        <div class="net-bar-inner">
+                            <div class="net-left">
+                                <div class="net-lbl">NET PAY (TAKE HOME)</div>
+                                <div class="net-amt">INR %s</div>
+                            </div>
+                            <div class="net-right">
+                                <div class="net-row">Total Earnings:&#160;<span class="net-row-val">INR %s</span></div>
+                                <div class="net-row">Total Deductions:&#160;<span class="net-row-val">INR %s</span></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Footer -->
                     <div class="footer">
-                        <p>This is a system-generated payslip. No signature required.</p>
-                        <p>WorkSphere HCM — Confidential</p>
+                        <div class="footer-inner">
+                            <div class="footer-left">
+                                <p>System-generated payslip. No signature required.</p>
+                            </div>
+                            <div class="footer-right">
+                                <p>WorkSphere HCM &#160;|&#160; Confidential</p>
+                            </div>
+                        </div>
                     </div>
+
+                </div>
                 </body>
                 </html>
                 """
                 .formatted(
                         monthName, record.getYear(),
-                        empName, employee.getId().toString(),
-                        department, position,
-                        record.getWorkingDays(), record.getPresentDays(),
+                        empName,
+                        record.getWorkingDays(),
+                        employee.getId().toString(),
+                        record.getPresentDays(),
+                        department,
                         record.getLopDays(),
+                        position,
+                        "PAID",
                         formatCurrency(record.getGrossPay()),
+                        overtimeRow,
+                        formatCurrency(totalEarnings),
                         formatCurrency(record.getLopDeduction()),
                         formatCurrency(record.getPfDeduction()),
                         formatCurrency(record.getTaxDeduction()),
                         formatCurrency(record.getProfessionalTax()),
                         formatCurrency(record.getOtherDeductions()),
-                        formatCurrency(record.getNetPay()));
+                        formatCurrency(totalDeductions),
+                        formatCurrency(record.getNetPay()),
+                        formatCurrency(totalEarnings),
+                        formatCurrency(totalDeductions));
     }
 
     private String formatCurrency(BigDecimal amount) {

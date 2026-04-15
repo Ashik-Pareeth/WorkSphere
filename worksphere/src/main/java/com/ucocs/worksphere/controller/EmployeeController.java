@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.ActivateAccountRequest;
 import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.dto.UpdateStatusRequest;
+import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
@@ -119,11 +120,15 @@ public class EmployeeController {
 
     @PatchMapping("/{id}/status")
     @PreAuthorize("hasRole('HR')")
-    public ResponseEntity<Void> updateEmployeeStatus(
+    public ResponseEntity<EmployeeResponseDTO> updateEmployeeStatus(
             @PathVariable UUID id,
-            @RequestBody UpdateStatusRequest request) {
-        employeeService.updateEmployeeStatus(id, request.status());
-        return ResponseEntity.noContent().build();
+            @RequestBody UpdateStatusRequest request,
+            Principal principal) {
+        // Resolve the authenticated user's UUID using the existing pattern
+        UUID performedBy = employeeService.getCurrentEmployee(principal.getName()).id();
+        Employee saved = employeeService.updateEmployeeStatus(id, request.status(), performedBy);
+        EmployeeResponseDTO dto = EmployeeResponseDTO.fromEntity(saved);
+        return ResponseEntity.ok(dto);
     }
 
 }

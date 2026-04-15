@@ -122,15 +122,7 @@ public class AttendanceService {
         LocalDateTime now = LocalDateTime.now();
         activeSession.setClockOut(now);
 
-        WorkSchedule schedule = activeSession.getWorkSchedule();
-        long totalMinutes = Duration.between(activeSession.getClockIn(), now).toMinutes();
-
-        int breakMin = 0;
-        if (schedule != null && schedule.getBreakDurationMin() != null && totalMinutes >= 240) {
-            breakMin = schedule.getBreakDurationMin();
-        }
-
-        activeSession.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
+        recomputeDerivedMinutes(activeSession);
         attendanceRepository.save(activeSession);
     }    @Transactional(readOnly = true)
     public List<AttendanceDTO> getEmployeeAttendanceHistory(String username) {
@@ -195,14 +187,7 @@ public class AttendanceService {
         }
 
         attendance.setIsManuallyAdjusted(true);
-        if (attendance.getClockIn() != null && attendance.getClockOut() != null) {
-            long totalMinutes = Duration.between(attendance.getClockIn(), attendance.getClockOut()).toMinutes();
-            int breakMin = 0;
-            if (attendance.getWorkSchedule() != null && attendance.getWorkSchedule().getBreakDurationMin() != null && totalMinutes >= 240) {
-                breakMin = attendance.getWorkSchedule().getBreakDurationMin();
-            }
-            attendance.setTotalWorkMinutes(Math.max(0, (int) (totalMinutes - breakMin)));
-        }
+        recomputeDerivedMinutes(attendance);
 
         Attendance saved = attendanceRepository.save(attendance);
 
@@ -229,6 +214,28 @@ public class AttendanceService {
         log.setNewValue(newVal);
         log.setReason(reason);
         auditLogRepository.save(log);
+    }
+
+    private void recomputeDerivedMinutes(Attendance att) {
+        if (att.getClockIn() == null || att.getClockOut() == null) return;
+
+        WorkSchedule schedule = att.getWorkSchedule();
+        long totalMinutes = Duration.between(att.getClockIn(), att.getClockOut()).toMinutes();
+
+        int breakMin = 0;
+        if (schedule != null && schedule.getBreakDurationMin() != null && totalMinutes >= 240) {
+            breakMin = schedule.getBreakDurationMin();
+        }
+
+        att.setTotalWorkMinutes(Math.max(0, (int)(totalMinutes - breakMin)));
+
+        if (schedule != null && schedule.getExpectedEnd() != null) {
+            long clockOutMin = att.getClockOut().toLocalTime().toSecondOfDay() / 60;
+            long expectedEndMin = schedule.getExpectedEnd().toSecondOfDay() / 60;
+            att.setOvertimeMinutes((int) Math.max(0, clockOutMin - expectedEndMin));
+        } else {
+            att.setOvertimeMinutes(0);
+        }
     }
 
     @Transactional(readOnly = true)
