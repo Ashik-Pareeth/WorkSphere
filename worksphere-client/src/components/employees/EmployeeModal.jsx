@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2 } from 'lucide-react';
+import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2, AlertTriangle } from 'lucide-react';
+import HRActionModal from '../../features/hr/HRActionModal';
 
 import { formatSalary, formatDate, getGradient } from './utils/helpers';
 import { canManage, assignableRoles } from '../../utils/rbac';
@@ -654,6 +655,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
   const [emp, setEmp] = useState(initialEmp);
   const [tab, setTab] = useState('view');
   const [refreshing, setRefreshing] = useState(false);
+  const [showActionModal, setShowActionModal] = useState(false);
   const [colors] = useState(() => getGradient(initialEmp.id));
   const canEdit = canManage(viewerRank, emp.roles);
 
@@ -751,19 +753,29 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
         </div>
 
         {/* Identity */}
-        <div className="el-modal-identity">
-          <h2 className="el-modal-name">
-            {emp.firstName} {emp.lastName}
-          </h2>
-          <p className="el-modal-jobtitle">
-            {emp.jobTitle ?? 'No title assigned'}
-          </p>
-          <div className="el-modal-roles">
-            {emp.roles?.map((r) => (
-              <RolePill key={r.id} roleName={r.roleName} />
-            ))}
+          <div className="el-modal-identity">
+            <h2 className="el-modal-name">
+              {emp.firstName} {emp.lastName}
+            </h2>
+            <p className="el-modal-jobtitle">
+              {emp.jobTitle ?? 'No title assigned'}
+            </p>
+            <div className="el-modal-roles flex items-center gap-2 mt-2 flex-wrap">
+              {emp.roles?.map((r) => (
+                <RolePill key={r.id} roleName={r.roleName} />
+              ))}
+              {canEdit && (
+                <button
+                  type="button"
+                  onClick={() => setShowActionModal(true)}
+                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-full text-[11px] font-semibold transition"
+                >
+                  <AlertTriangle size={12} />
+                  Formal Action
+                </button>
+              )}
+            </div>
           </div>
-        </div>
 
         {/* Tabs */}
         <div className="el-tabs">

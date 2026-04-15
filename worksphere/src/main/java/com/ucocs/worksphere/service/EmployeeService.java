@@ -8,10 +8,14 @@ import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.enums.NotificationType;
 import com.ucocs.worksphere.repository.DepartmentRepository;
+import com.ucocs.worksphere.repository.EmployeeActionRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobPositionRepository;
 import com.ucocs.worksphere.repository.RoleRepository;
 import com.ucocs.worksphere.repository.WorkScheduleRepository;
+import com.ucocs.worksphere.entity.EmployeeActionRecord;
+import com.ucocs.worksphere.enums.EmployeeActionType;
+import com.ucocs.worksphere.enums.EmployeeActionStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -69,6 +73,7 @@ public class EmployeeService {
     private final EmailService emailService;
     private final AuditService auditService;
     private final NotificationService notificationService;
+    private final EmployeeActionRepository employeeActionRepository;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
@@ -79,7 +84,8 @@ public class EmployeeService {
             WorkScheduleRepository workScheduleRepository,
             EmailService emailService,
             AuditService auditService,
-            NotificationService notificationService) {
+            NotificationService notificationService,
+            EmployeeActionRepository employeeActionRepository) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
@@ -89,6 +95,7 @@ public class EmployeeService {
         this.emailService = emailService;
         this.auditService = auditService;
         this.notificationService = notificationService;
+        this.employeeActionRepository = employeeActionRepository;
     }
 
     // =========================================================================
@@ -570,6 +577,27 @@ public class EmployeeService {
                 performedBy,
                 oldStatus.name(),
                 status.name());
+
+        // 5.5 Auto-create Action Record for emergency status changes
+        if (status == EmployeeStatus.SUSPENDED && oldStatus != EmployeeStatus.SUSPENDED) {
+            EmployeeActionRecord record = new EmployeeActionRecord();
+            record.setEmployee(saved);
+            record.setInitiatedBy(employeeRepository.findById(performedBy).orElseThrow());
+            record.setActionType(EmployeeActionType.EMERGENCY_SUSPENSION);
+            record.setStatus(EmployeeActionStatus.PENDING);
+            record.setReason("Emergency Suspension via Quick Action. A formal reason and date must follow.");
+            record.setEffectiveDate(java.time.LocalDate.now());
+            employeeActionRepository.save(record);
+        } else if (status == EmployeeStatus.ACTIVE && oldStatus == EmployeeStatus.SUSPENDED) {
+            EmployeeActionRecord record = new EmployeeActionRecord();
+            record.setEmployee(saved);
+            record.setInitiatedBy(employeeRepository.findById(performedBy).orElseThrow());
+            record.setActionType(EmployeeActionType.REINSTATEMENT);
+            record.setStatus(EmployeeActionStatus.COMPLETED);
+            record.setReason("Reinstated via Quick Action.");
+            record.setEffectiveDate(java.time.LocalDate.now());
+            employeeActionRepository.save(record);
+        }
 
         // 6. In-app notification — only for status changes the employee should know about
         // TODO: add NotificationType.EMPLOYEE_STATUS_CHANGED to the enum and replace

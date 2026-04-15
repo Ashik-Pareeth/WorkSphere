@@ -12,12 +12,14 @@ import HiringSnapshotCard from '../components/dashboard/HiringSnapshotCard';
 // --- Common components ---
 import StatCard from '../components/common/StatCard';
 import { Skeleton } from '../components/ui/skeleton';
+import HRActionModal from '../features/hr/HRActionModal';
 
 // --- API ---
 import { getMyTasks, getTeamTasks } from '../api/taskApi';
 import { getMyBalances, getPendingLeaveRequests } from '../api/leaveApi';
 import { getAllEmployees, getMyTeam } from '../api/employeeApi';
 import { getAttendanceHistory } from '../api/attendanceApi';
+import { getPendingReports } from '../api/employeeActionApi';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // ROLE PRIORITY — mirrors the getHighestRole helper used in NavBar / PrivateRoute
@@ -245,7 +247,7 @@ function getGreeting() {
 // ─────────────────────────────────────────────────────────────────────────────
 // QUICK ACTION BUTTON
 // ─────────────────────────────────────────────────────────────────────────────
-const QuickAction = ({ label, to, icon, color = 'blue' }) => {
+const QuickAction = ({ label, to, icon, color = 'blue', onClick }) => {
   const navigate = useNavigate();
   const colorMap = {
     blue: 'bg-blue-50 text-blue-700 border-blue-100 hover:bg-blue-100',
@@ -259,7 +261,14 @@ const QuickAction = ({ label, to, icon, color = 'blue' }) => {
   };
   return (
     <button
-      onClick={() => navigate(to)}
+      onClick={(e) => {
+        if (onClick) {
+          e.preventDefault();
+          onClick(e);
+        } else if (to) {
+          navigate(to);
+        }
+      }}
       className={`flex items-center gap-2 px-4 py-2.5 rounded-lg border text-sm font-semibold transition-all active:scale-[0.97] ${colorMap[color] || colorMap.blue}`}
     >
       {icon}
@@ -277,6 +286,56 @@ const SectionHeader = ({ title, subtitle }) => (
     {subtitle && <p className="text-xs text-gray-500 mt-0.5">{subtitle}</p>}
   </div>
 );
+
+// ─────────────────────────────────────────────────────────────────────────────
+// EMPLOYEE SELECTOR MODAL (For Quick Actions)
+// ─────────────────────────────────────────────────────────────────────────────
+const EmployeeSelectorModal = ({ employees, onSelect, onClose }) => {
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const filtered = employees.filter(e => 
+     `${e.firstName} ${e.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
+      <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 flex flex-col max-h-[80vh]">
+         <div className="flex justify-between items-center mb-4">
+           <div>
+             <h3 className="font-bold text-gray-900">Take Formal Action</h3>
+             <p className="text-xs text-gray-500">Search and select an employee</p>
+           </div>
+           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 transition">
+             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
+             </svg>
+           </button>
+         </div>
+         <input 
+           autoFocus
+           type="text" 
+           placeholder="Search by name..." 
+           className="w-full border border-gray-300 p-2 rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
+           value={searchTerm} 
+           onChange={e => setSearchTerm(e.target.value)} 
+         />
+         <div className="overflow-y-auto flex-1 border border-gray-200 rounded-lg divide-y bg-gray-50">
+            {filtered.length === 0 ? (
+               <p className="p-4 text-sm text-center text-gray-500">No employees found.</p>
+            ) : filtered.map(emp => (
+               <div key={emp.id} onClick={() => onSelect(emp)} className="p-3 bg-white hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors group">
+                  <div>
+                    <p className="font-semibold text-sm text-gray-900">{emp.firstName} {emp.lastName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">{emp.jobTitle || 'No position'}</p>
+                  </div>
+                  <span className="text-blue-600 font-bold text-[10px] uppercase opacity-0 group-hover:opacity-100 transition-opacity">Select &rarr;</span>
+               </div>
+            ))}
+         </div>
+      </div>
+    </div>
+  )
+};
 
 // ─────────────────────────────────────────────────────────────────────────────
 // EmployeeDashboard
@@ -650,18 +709,30 @@ const HRDashboard = ({ user }) => {
   const [employees, setEmployees] = useState([]);
   const [payrollTotal, setPayrollTotal] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [showSelector, setShowSelector] = useState(false);
+  const [selectedEmpForAction, setSelectedEmpForAction] = useState(null);
+  const [pendingReports, setPendingReports] = useState([]);
+  const [pendingResolutionId, setPendingResolutionId] = useState(null);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const load = async () => {
       try {
-        const [emp] = await Promise.allSettled([getAllEmployees()]);
+        const [emp, rep] = await Promise.allSettled([getAllEmployees(), getPendingReports()]);
         if (emp.status === 'fulfilled') setEmployees(emp.value ?? []);
+        if (rep.status === 'fulfilled') setPendingReports(rep.value?.data ?? rep.value ?? []);
       } finally {
         setLoading(false);
       }
     };
     load();
-  }, []);
+  }, [refreshTrigger]); // Reload on manual trigger
+
+  const handleResolvePending = (rep) => {
+    setPendingResolutionId(rep.id);
+    const emp = employees.find(e => e.id === rep.employeeId) || { id: rep.employeeId, firstName: rep.employeeName?.split(' ')[0], lastName: rep.employeeName?.split(' ')[1] || '' };
+    setSelectedEmpForAction(emp);
+  };
 
   const headcount = employees.length;
   const pendingOnboarding = employees.filter(
@@ -690,16 +761,22 @@ const HRDashboard = ({ user }) => {
             color="blue"
           />
           <QuickAction
+            label="Take Action"
+            onClick={() => setShowSelector(true)}
+            icon={Icons.Alert}
+            color="red"
+          />
+          <QuickAction
+            label="Compliance"
+            to="/audit/actions"
+            icon={Icons.CheckCircle}
+            color="amber"
+          />
+          <QuickAction
             label="Payroll"
             to="/hr/payroll"
             icon={Icons.Dollar}
             color="green"
-          />
-          <QuickAction
-            label="Hiring"
-            to="/hiring/jobs"
-            icon={Icons.Briefcase}
-            color="purple"
           />
         </div>
       </div>
@@ -809,7 +886,80 @@ const HRDashboard = ({ user }) => {
             )}
           </div>
         </div>
+
+        {/* --- Pending Formal Actions (HR Pipeline) --- */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 bg-red-50/50 flex justify-between items-center">
+            <div>
+              <h2 className="text-base font-bold text-gray-900">Pending Actions</h2>
+              <p className="text-xs text-gray-500 mt-0.5">Emergency actions or Manager Reports</p>
+            </div>
+            <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full">
+              {pendingReports.length}
+            </span>
+          </div>
+          <div className="p-5 flex-1 overflow-y-auto" style={{ maxHeight: 300 }}>
+            {loading ? (
+              <div className="flex flex-col gap-3">
+                 <Skeleton className="h-10 w-full" />
+                 <Skeleton className="h-10 w-full" />
+              </div>
+            ) : pendingReports.length === 0 ? (
+               <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+                 <span className="text-3xl mb-1 mt-2">🎉</span>
+                 <p className="text-sm font-medium">All formal actions are up to date!</p>
+               </div>
+            ) : (
+               <ul className="flex flex-col gap-3">
+                 {pendingReports.map(rep => (
+                   <li key={rep.id} className="p-3 border border-red-100 bg-red-50/20 hover:bg-red-50/50 rounded-lg flex justify-between items-center transition">
+                      <div>
+                        <p className="text-sm font-semibold text-gray-900">{rep.employeeName}</p>
+                        <p className="text-[11px] text-gray-500 mt-0.5">
+                          <span className="font-bold text-red-700 mr-1 uppercase tracking-tight">{rep.actionType.replace(/_/g, ' ')}</span> 
+                          • {rep.reason?.substr(0, 40)}{rep.reason?.length > 40 ? '...' : ''}
+                        </p>
+                      </div>
+                      <button 
+                        onClick={() => handleResolvePending(rep)}
+                        className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition shadow-sm ml-2 shrink-0"
+                      >
+                        Resolve
+                      </button>
+                   </li>
+                 ))}
+               </ul>
+            )}
+          </div>
+        </div>
       </div>
+
+      {/* --- Action Modals --- */}
+      {showSelector && (
+        <EmployeeSelectorModal 
+          employees={employees} 
+          onClose={() => setShowSelector(false)} 
+          onSelect={(emp) => {
+            setShowSelector(false);
+            setSelectedEmpForAction(emp);
+          }}
+        />
+      )}
+      {selectedEmpForAction && (
+        <HRActionModal 
+          employee={selectedEmpForAction} 
+          pendingRecordId={pendingResolutionId}
+          onClose={() => {
+            setSelectedEmpForAction(null);
+            setPendingResolutionId(null);
+          }} 
+          onActionApplied={() => {
+            setSelectedEmpForAction(null);
+            setPendingResolutionId(null);
+            setRefreshTrigger(prev => prev + 1);
+          }} 
+        />
+      )}
     </div>
   );
 };
@@ -1043,13 +1193,29 @@ const AuditorDashboard = ({ user }) => {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">
-          {getGreeting()}, {firstName} 🔍
-        </h1>
-        <p className="text-sm text-gray-500 mt-1">
-          Audit view — flagged tasks and evidence review queue
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">
+            {getGreeting()}, {firstName} 🔍
+          </h1>
+          <p className="text-sm text-gray-500 mt-1">
+            Audit view — flagged tasks and evidence review queue
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <QuickAction
+            label="System Logs"
+            to="/audit/logs"
+            icon={Icons.Settings}
+            color="gray"
+          />
+          <QuickAction
+            label="Action Compliance"
+            to="/audit/actions"
+            icon={Icons.Alert}
+            color="red"
+          />
+        </div>
       </div>
 
       {loading ? (
