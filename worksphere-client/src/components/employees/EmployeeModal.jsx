@@ -414,7 +414,7 @@ function PromoteTab({ emp, onSaved, viewerRank }) {
 /* ═══════════════════════════════════════════════════════════════
    TAB: STATUS
 ═══════════════════════════════════════════════════════════════ */
-function StatusTab({ emp, onSaved, viewerRank }) {
+function StatusTab({ emp, onUpdated, viewerRank }) {
   const isAllowed = canManage(viewerRank, emp.roles);
 
   const [status, setStatus] = useState(emp.employeeStatus);
@@ -428,9 +428,10 @@ function StatusTab({ emp, onSaved, viewerRank }) {
     setLoading(true);
     setToast(null);
     try {
-      await axiosInstance.patch(`/employees/${emp.id}/status`, { status });
+      const response = await axiosInstance.patch(`/employees/${emp.id}/status`, { status });
+      // Endpoint now returns the updated employee — update state directly without a second GET
+      onUpdated(response.data);
       setToast({ msg: `Status updated to ${status}`, type: 'success' });
-      onSaved();
     } catch (err) {
       setToast({
         msg: err?.response?.data?.message ?? 'Status update failed',
@@ -810,7 +811,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
           {tab === 'status' && (
             <StatusTab
               emp={emp}
-              onSaved={handleSaved}
+              onUpdated={onUpdated}
               viewerRank={viewerRank}
             />
           )}

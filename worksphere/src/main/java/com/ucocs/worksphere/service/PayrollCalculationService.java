@@ -140,8 +140,17 @@ public class PayrollCalculationService {
         // Tax deduction (monthly TDS)
         BigDecimal taxDeduction = taxCalculationService.calculateMonthlyTax(grossPay, annualPf);
 
+        // Overtime pay
+        int totalOvertimeMinutes = sumOvertimeMinutes(emp, yearMonth);
+        BigDecimal hourlyRate = grossPay.divide(BigDecimal.valueOf(160), 4, RoundingMode.HALF_UP); // 160 = avg monthly hours
+        BigDecimal overtimePay = hourlyRate
+                .multiply(BigDecimal.valueOf(1.5))
+                .multiply(BigDecimal.valueOf(totalOvertimeMinutes))
+                .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
+
         // Net pay
         BigDecimal netPay = grossPay
+                .add(overtimePay)
                 .subtract(lopDeduction)
                 .subtract(pfDeduction)
                 .subtract(taxDeduction)
@@ -162,10 +171,26 @@ public class PayrollCalculationService {
         record.setTaxDeduction(taxDeduction);
         record.setProfessionalTax(professionalTax);
         record.setOtherDeductions(BigDecimal.ZERO);
+        record.setOvertimePay(overtimePay);
         record.setNetPay(netPay);
         record.setStatus(PayrollStatus.DRAFT);
 
         return payrollRecordRepository.save(record);
+    }
+
+    /**
+     * Sum overtime minutes for an employee across all attendance records within a month.
+     */
+    private int sumOvertimeMinutes(Employee emp, YearMonth yearMonth) {
+        LocalDate start = yearMonth.atDay(1);
+        LocalDate end = yearMonth.atEndOfMonth();
+        return attendanceRepository.findByEmployee(emp).stream()
+                .filter(a -> a.getDate() != null
+                        && !a.getDate().isBefore(start)
+                        && !a.getDate().isAfter(end)
+                        && a.getOvertimeMinutes() != null)
+                .mapToInt(Attendance::getOvertimeMinutes)
+                .sum();
     }
 
     /**
@@ -435,6 +460,7 @@ public class PayrollCalculationService {
                 .taxDeduction(record.getTaxDeduction())
                 .professionalTax(record.getProfessionalTax())
                 .otherDeductions(record.getOtherDeductions())
+                .overtimePay(record.getOvertimePay())
                 .netPay(record.getNetPay())
                 .status(record.getStatus())
                 .processedAt(record.getProcessedAt())

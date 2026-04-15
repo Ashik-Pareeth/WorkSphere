@@ -25,6 +25,7 @@ const PayrollDashboard = () => {
   // Salary Structure Modal
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
     loadEmployees();
@@ -318,62 +319,149 @@ const PayrollDashboard = () => {
                     Number(r.taxDeduction || 0) +
                     Number(r.professionalTax || 0) +
                     Number(r.otherDeductions || 0);
+                  const overtimePay = Number(r.overtimePay || 0);
+                  const totalEarnings = Number(r.grossPay || 0) + overtimePay;
+                  const isExpanded = expandedRow === r.id;
 
                   return (
-                    <tr key={r.id} className="hover:bg-slate-50">
-                      <td className="p-4 font-bold text-slate-900">
-                        {r.employeeName}
-                      </td>
-                      <td className="p-4 text-slate-700 font-medium text-sm">
-                        {r.department}
-                      </td>
-                      <td className="p-4 text-right text-sm font-semibold text-slate-800">
-                        ₹{fmt(r.grossPay)}
-                      </td>
-                      <td className="p-4 text-right text-sm font-semibold text-red-600">
-                        -₹{fmt(totalDeductions)}
-                      </td>
-                      <td className="p-4 text-right font-extrabold text-emerald-700">
-                        ₹{fmt(r.netPay)}
-                      </td>
-                      <td className="p-4 text-sm font-semibold text-slate-700">
-                        {r.presentDays}/{r.workingDays}
-                        {r.lopDays > 0 && (
-                          <span className="text-red-600 font-bold ml-1">
-                            ({r.lopDays} LOP)
-                          </span>
-                        )}
-                      </td>
-                      <td className="p-4">{statusBadge(r.status)}</td>
-                      <td className="p-4">
-                        <div className="flex gap-2">
-                          {r.status === 'DRAFT' && (
-                            <button
-                              onClick={() => handleProcess(r.id)}
-                              className="px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
-                            >
-                              Process
-                            </button>
+                    <>
+                      <tr
+                        key={r.id}
+                        className={`hover:bg-slate-50 cursor-pointer select-none ${isExpanded ? 'bg-indigo-50/60' : ''}`}
+                        onClick={() => setExpandedRow(isExpanded ? null : r.id)}
+                      >
+                        <td className="p-4 font-bold text-slate-900">
+                          <span className="mr-2 text-slate-400 text-xs">{isExpanded ? '▲' : '▼'}</span>
+                          {r.employeeName}
+                        </td>
+                        <td className="p-4 text-slate-700 font-medium text-sm">
+                          {r.department}
+                        </td>
+                        <td className="p-4 text-right text-sm font-semibold text-slate-800">
+                          ₹{fmt(r.grossPay)}
+                          {overtimePay > 0 && (
+                            <span className="block text-[11px] text-emerald-600 font-medium">+₹{fmt(overtimePay)} OT</span>
                           )}
-                          {r.status === 'PROCESSED' && (
-                            <button
-                              onClick={() => handleMarkPaid(r.id)}
-                              className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
-                            >
-                              Mark Paid
-                            </button>
+                        </td>
+                        <td className="p-4 text-right text-sm font-semibold text-red-600">
+                          -₹{fmt(totalDeductions)}
+                        </td>
+                        <td className="p-4 text-right font-extrabold text-emerald-700">
+                          ₹{fmt(r.netPay)}
+                        </td>
+                        <td className="p-4 text-sm font-semibold text-slate-700">
+                          {r.presentDays}/{r.workingDays}
+                          {r.lopDays > 0 && (
+                            <span className="text-red-600 font-bold ml-1">
+                              ({r.lopDays} LOP)
+                            </span>
                           )}
-                          {r.payslipDownloadUrl && (
-                            <button
-                              onClick={() => setViewingPayslipId(r.id)}
-                              className="px-3 py-1.5 text-xs font-bold bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 rounded-md transition-colors cursor-pointer"
-                            >
-                              📄 View Payslip
-                            </button>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
+                        </td>
+                        <td className="p-4">{statusBadge(r.status)}</td>
+                        <td className="p-4" onClick={(e) => e.stopPropagation()}>
+                          <div className="flex gap-2">
+                            {r.status === 'DRAFT' && (
+                              <button
+                                onClick={() => handleProcess(r.id)}
+                                className="px-3 py-1.5 text-xs font-bold bg-blue-600 hover:bg-blue-700 text-white rounded-md transition-colors"
+                              >
+                                Process
+                              </button>
+                            )}
+                            {r.status === 'PROCESSED' && (
+                              <button
+                                onClick={() => handleMarkPaid(r.id)}
+                                className="px-3 py-1.5 text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white rounded-md transition-colors"
+                              >
+                                Mark Paid
+                              </button>
+                            )}
+                            {r.payslipDownloadUrl && (
+                              <button
+                                onClick={() => setViewingPayslipId(r.id)}
+                                className="px-3 py-1.5 text-xs font-bold bg-slate-100 border border-slate-300 hover:bg-slate-200 text-slate-800 rounded-md transition-colors cursor-pointer"
+                              >
+                                📄 View Payslip
+                              </button>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+
+                      {/* ── Expandable Breakdown Panel ── */}
+                      {isExpanded && (
+                        <tr key={`${r.id}-breakdown`} className="bg-indigo-50/40">
+                          <td colSpan="8" className="px-6 py-4">
+                            <div className="grid grid-cols-2 gap-6">
+                              {/* Earnings */}
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-indigo-600 mb-2">Earnings</p>
+                                <table className="w-full text-sm border-collapse">
+                                  <tbody>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">Basic / Gross Pay</td>
+                                      <td className="py-1.5 text-right font-semibold text-slate-800">₹{fmt(r.grossPay)}</td>
+                                    </tr>
+                                    {overtimePay > 0 && (
+                                      <tr className="border-b border-slate-200">
+                                        <td className="py-1.5 text-slate-600">
+                                          Overtime Pay
+                                          <span className="ml-1 text-[10px] text-slate-400">(1.5× hourly rate)</span>
+                                        </td>
+                                        <td className="py-1.5 text-right font-semibold text-emerald-600">+₹{fmt(overtimePay)}</td>
+                                      </tr>
+                                    )}
+                                    <tr className="bg-indigo-100/60">
+                                      <td className="py-2 font-bold text-indigo-800">Total Earnings</td>
+                                      <td className="py-2 text-right font-bold text-indigo-800">₹{fmt(totalEarnings)}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+
+                              {/* Deductions */}
+                              <div>
+                                <p className="text-[10px] font-bold uppercase tracking-widest text-red-500 mb-2">Deductions</p>
+                                <table className="w-full text-sm border-collapse">
+                                  <tbody>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">LOP Deduction</td>
+                                      <td className="py-1.5 text-right text-red-600 font-semibold">-₹{fmt(r.lopDeduction)}</td>
+                                    </tr>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">Provident Fund (Employee)</td>
+                                      <td className="py-1.5 text-right text-red-600 font-semibold">-₹{fmt(r.pfDeduction)}</td>
+                                    </tr>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">Tax Deduction (TDS)</td>
+                                      <td className="py-1.5 text-right text-red-600 font-semibold">-₹{fmt(r.taxDeduction)}</td>
+                                    </tr>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">Professional Tax</td>
+                                      <td className="py-1.5 text-right text-red-600 font-semibold">-₹{fmt(r.professionalTax)}</td>
+                                    </tr>
+                                    <tr className="border-b border-slate-200">
+                                      <td className="py-1.5 text-slate-600">Other Deductions</td>
+                                      <td className="py-1.5 text-right text-red-600 font-semibold">-₹{fmt(r.otherDeductions)}</td>
+                                    </tr>
+                                    <tr className="bg-red-50">
+                                      <td className="py-2 font-bold text-red-700">Total Deductions</td>
+                                      <td className="py-2 text-right font-bold text-red-700">-₹{fmt(totalDeductions)}</td>
+                                    </tr>
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+
+                            {/* Net Pay footer */}
+                            <div className="mt-4 flex items-center justify-between bg-gradient-to-r from-indigo-600 to-blue-600 text-white rounded-lg px-5 py-3">
+                              <div className="text-sm font-semibold opacity-90">NET PAY (Take Home)</div>
+                              <div className="text-xl font-extrabold tracking-tight">₹{fmt(r.netPay)}</div>
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </>
                   );
                 })
               )}

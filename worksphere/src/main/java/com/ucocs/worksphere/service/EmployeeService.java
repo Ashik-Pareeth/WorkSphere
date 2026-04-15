@@ -4,7 +4,9 @@ import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Role;
+import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.EmployeeStatus;
+import com.ucocs.worksphere.enums.NotificationType;
 import com.ucocs.worksphere.repository.DepartmentRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobPositionRepository;
@@ -24,6 +26,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -64,6 +67,8 @@ public class EmployeeService {
     private final RoleRepository roleRepository;
     private final WorkScheduleRepository workScheduleRepository;
     private final EmailService emailService;
+    private final AuditService auditService;
+    private final NotificationService notificationService;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
@@ -72,7 +77,9 @@ public class EmployeeService {
             JobPositionRepository jobPositionRepository,
             RoleRepository roleRepository,
             WorkScheduleRepository workScheduleRepository,
-            EmailService emailService) {
+            EmailService emailService,
+            AuditService auditService,
+            NotificationService notificationService) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
@@ -80,6 +87,8 @@ public class EmployeeService {
         this.roleRepository = roleRepository;
         this.workScheduleRepository = workScheduleRepository;
         this.emailService = emailService;
+        this.auditService = auditService;
+        this.notificationService = notificationService;
     }
 
     // =========================================================================
@@ -523,10 +532,98 @@ public class EmployeeService {
         return savedEmployee;
     }
 
-    public void updateEmployeeStatus(UUID id, EmployeeStatus status) {
+    // =========================================================================
+    // STATUS MANAGEMENT
+    // =========================================================================
+
+    /**
+     * Validates that the requested status transition is legal, persists the new
+     * status, writes an audit entry, and sends an in-app notification to the
+     * affected employee.
+     *
+     * @param id          UUID of the employee whose status is being changed
+     * @param status      The desired target {@link EmployeeStatus}
+     * @param performedBy UUID of the HR/Admin user performing the action
+     * @return the saved {@link Employee} entity
+     */
+    @Transactional
+    public Employee updateEmployeeStatus(UUID id, EmployeeStatus status, UUID performedBy) {
+        // 1. Fetch employee
         Employee employee = employeeRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+        // 2. Capture old status
+        EmployeeStatus oldStatus = employee.getEmployeeStatus();
+
+        // 3. Validate transition
+        validateStatusTransition(oldStatus, status);
+
+        // 4. Persist new status
         employee.setEmployeeStatus(status);
-        employeeRepository.save(employee);
+        Employee saved = employeeRepository.save(employee);
+
+        // 5. Audit log
+        auditService.log(
+                "Employee",
+                saved.getId(),
+                AuditAction.UPDATED,
+                performedBy,
+                oldStatus.name(),
+                status.name());
+
+        // 6. In-app notification — only for status changes the employee should know about
+        // TODO: add NotificationType.EMPLOYEE_STATUS_CHANGED to the enum and replace
+        //       EMPLOYEE_ACTION_APPLIED below once the enum value is available.
+        switch (status) {
+            case ACTIVE -> notificationService.send(
+                    saved.getId(),
+                    NotificationType.EMPLOYEE_ACTION_APPLIED,
+                    "Account Activated",
+                    "Your account status has been set to ACTIVE.",
+                    saved.getId(),
+                    "Employee");
+            case SUSPENDED -> notificationService.send(
+                    saved.getId(),
+                    NotificationType.EMPLOYEE_ACTION_APPLIED,
+                    "Account Suspended",
+                    "Your account has been suspended. Please contact HR for further information.",
+                    saved.getId(),
+                    "Employee");
+            case TERMINATED -> notificationService.send(
+                    saved.getId(),
+                    NotificationType.EMPLOYEE_ACTION_APPLIED,
+                    "Employment Terminated",
+                    "Your employment has been terminated. Please contact HR for further information.",
+                    saved.getId(),
+                    "Employee");
+            default -> { /* no notification for other transitions */ }
+        }
+
+        // TODO: revoke active sessions for SUSPENDED/TERMINATED
+
+        // 7. Return saved entity
+        return saved;
+    }
+
+    /**
+     * Validates that transitioning an employee from {@code from} to {@code to}
+     * is a legally allowed state change in the system.
+     *
+     * @throws IllegalStateException if the transition is not permitted
+     */
+    private void validateStatusTransition(EmployeeStatus from, EmployeeStatus to) {
+        Set<EmployeeStatus> validNext = switch (from) {
+            case PENDING    -> Set.of(EmployeeStatus.ACTIVE, EmployeeStatus.INACTIVE);
+            case ACTIVE     -> Set.of(EmployeeStatus.SUSPENDED, EmployeeStatus.INACTIVE, EmployeeStatus.TERMINATED);
+            case PROBATION  -> Set.of(EmployeeStatus.ACTIVE, EmployeeStatus.TERMINATED, EmployeeStatus.INACTIVE);
+            case SUSPENDED  -> Set.of(EmployeeStatus.ACTIVE, EmployeeStatus.TERMINATED);
+            case INACTIVE   -> Set.of(EmployeeStatus.ACTIVE, EmployeeStatus.TERMINATED);
+            case TERMINATED -> Collections.emptySet();
+            case RESIGNED   -> Collections.emptySet();
+        };
+        if (!validNext.contains(to)) {
+            throw new IllegalStateException(
+                "Invalid status transition: " + from + " → " + to);
+        }
     }
 }

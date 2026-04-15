@@ -66,7 +66,7 @@ const LeaveRequestPage = () => {
 
         <button
           onClick={() => setIsModalOpen(true)}
-          className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-lg font-medium shadow-sm transition"
+          className="bg-blue-600  text-white--500 hover:text-white px-5 py-2 rounded-lg font-medium shadow-sm transition"
         >
           Request Time Off
         </button>

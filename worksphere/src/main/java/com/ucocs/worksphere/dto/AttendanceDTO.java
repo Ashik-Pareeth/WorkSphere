@@ -13,7 +13,8 @@ public record AttendanceDTO(
         LocalDateTime clockOut,
         String dailyStatus,
         Integer totalWorkMinutes,
-        Boolean isManuallyAdjusted
+        Boolean isManuallyAdjusted,
+        Integer overtimeMinutes
 ) {
     public static AttendanceDTO fromEntity(Attendance attendance) {
         return new AttendanceDTO(
@@ -23,7 +24,8 @@ public record AttendanceDTO(
                 attendance.getClockOut(),
                 attendance.getDailyStatus() != null ? attendance.getDailyStatus().name() : null,
                 attendance.getTotalWorkMinutes(),
-                attendance.getIsManuallyAdjusted()
+                attendance.getIsManuallyAdjusted(),
+                attendance.getOvertimeMinutes()
         );
     }
 }
