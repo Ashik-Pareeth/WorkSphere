@@ -4,6 +4,7 @@ public enum EmployeeActionType {
     PROMOTION,
     DEMOTION,
     SUSPENSION,
+    EMERGENCY_SUSPENSION,
     FORCED_LEAVE,
     REINSTATEMENT,
     SALARY_REVISION,

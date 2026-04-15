@@ -182,6 +182,12 @@ function App() {
               >
                 <Route path="/audit/logs" element={<SystemAuditLogs />} />
                 <Route path="/audit/grievances" element={<GrievanceAudit />} />
+              </Route>
+
+              {/* --- TIER 1.95: SHARED COMPLIANCE (HR, AUDITORS, SUPER_ADMIN) --- */}
+              <Route
+                element={<PrivateRoute allowedRoles={['AUDITOR', 'HR', 'SUPER_ADMIN']} />}
+              >
                 <Route path="/audit/actions" element={<ActionCompliance />} />
               </Route>
 

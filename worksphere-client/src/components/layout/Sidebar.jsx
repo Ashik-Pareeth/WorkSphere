@@ -202,6 +202,10 @@ export default function Sidebar() {
                 <LogOut size={18} />
                 {!collapsed && <span>Offboarding</span>}
               </NavLink>
+              <NavLink to="/audit/actions" className={navLinkClass}>
+                <AlertCircle size={18} />
+                {!collapsed && <span>Action Compliance</span>}
+              </NavLink>
 
               {renderSectionHeader('Configuration')}
               <NavLink to="/departments" className={navLinkClass}>

@@ -96,6 +96,7 @@ const ACTION_ICON_MAP = {
   PROMOTION: TrendingUp,
   DEMOTION: TrendingDown,
   SUSPENSION: ShieldOff,
+  EMERGENCY_SUSPENSION: ShieldOff,
   FORCED_LEAVE: Coffee,
   REINSTATEMENT: ShieldCheck,
   SALARY_REVISION: DollarSign,
@@ -104,7 +105,12 @@ const ACTION_ICON_MAP = {
   MANAGER_REPORT: Clock,
 };
 
-export default function HRActionModal({ employee, onClose, onActionApplied }) {
+export default function HRActionModal({
+  employee,
+  pendingRecordId,
+  onClose,
+  onActionApplied,
+}) {
   const [tab, setTab] = useState('action'); // 'action' | 'history'
   const [selectedType, setSelectedType] = useState(null);
   const [form, setForm] = useState({
@@ -141,7 +147,15 @@ export default function HRActionModal({ employee, onClose, onActionApplied }) {
 
   const handleSubmit = async () => {
     if (!selectedType) return setError('Please select an action type.');
-    if (!form.reason.trim()) return setError('Reason is required.');
+    if (!form.reason.trim()) return setError('Reason is strictly required.');
+    if (!form.effectiveDate) return setError('Effective Date is required.');
+
+    if (selected?.needsEndDate && !form.endDate) {
+      return setError(
+        'An End Date must be provided for suspensions or forced leave.'
+      );
+    }
+
     setLoading(true);
     setError(null);
     try {
@@ -155,7 +169,12 @@ export default function HRActionModal({ employee, onClose, onActionApplied }) {
         newDepartment: form.newDepartment || null,
         newSalary: form.newSalary ? parseFloat(form.newSalary) : null,
       });
+      if (pendingRecordId) {
+        const api = await import('../../api/employeeActionApi');
+        await api.reviewReport(pendingRecordId, true, "Formal action applied & formalized.");
+      }
       setSuccess('Action applied successfully.');
+
       onActionApplied?.();
       setTimeout(() => {
         setSuccess(null);
@@ -265,14 +284,14 @@ export default function HRActionModal({ employee, onClose, onActionApplied }) {
                         setForm((f) => ({ ...f, reason: e.target.value }))
                       }
                       placeholder="Provide a clear reason for this action…"
-                      className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+                      className="w-full rounded-lg border text-black border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
                     />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
                     <div>
                       <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                        Effective Date
+                        Effective Date *
                       </label>
                       <input
                         type="date"
@@ -283,13 +302,13 @@ export default function HRActionModal({ employee, onClose, onActionApplied }) {
                             effectiveDate: e.target.value,
                           }))
                         }
-                        className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full rounded-lg border text-black border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
                     </div>
                     {selected.needsEndDate && (
                       <div>
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                          End Date
+                          End Date *
                         </label>
                         <input
                           type="date"
@@ -297,7 +316,7 @@ export default function HRActionModal({ employee, onClose, onActionApplied }) {
                           onChange={(e) =>
                             setForm((f) => ({ ...f, endDate: e.target.value }))
                           }
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className="w-full rounded-lg border text-black border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
                         />
                       </div>
                     )}
