@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import StatCard from '../../components/common/StatCard';
-import { getMyTasks } from '../../api/taskApi';
+import { getAllTasks } from '../../api/taskApi';
 import FlaggedTasksFeed from '../../features/tasks/FlaggedTasksFeed';
 import {
   CheckSquare,
@@ -23,7 +23,8 @@ export default function AuditorDashboard() {
     const fetchAuditStats = async () => {
       setLoading(true);
       try {
-        const tasks = await getMyTasks();
+        // Use getAllTasks — Auditors now have access to GET /tasks/all-tasks
+        const tasks = await getAllTasks();
         if (isMounted) {
           const taskList = Array.isArray(tasks) ? tasks : [];
           setTotalTasks(taskList.length);

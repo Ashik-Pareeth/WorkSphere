@@ -20,6 +20,12 @@ export const getAllTasks = async () => {
   return response.data;
 };
 
+// Auditor: Get all system-wide flagged tasks (sorted newest-first by backend)
+export const getFlaggedTasks = async () => {
+  const response = await axiosInstance.get('/tasks/flagged');
+  return response.data;
+};
+
 // --- WRITE OPERATIONS ---
 
 // Create a new task
