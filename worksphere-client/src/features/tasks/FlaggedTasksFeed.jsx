@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { getMyTasks } from '../../api/taskApi';
+import { getFlaggedTasks } from '../../api/taskApi';
 import TaskDetailsModal from './TaskDetailsModal';
 import { ShieldAlert, Monitor, Clock } from 'lucide-react';
 
@@ -26,14 +26,12 @@ export default function FlaggedTasksFeed() {
 
   const loadFlaggedTasks = async () => {
     try {
-      const allTasks = await getMyTasks();
-      // Filter the tasks specifically for flagged tasks
-      const flagged = allTasks.filter(task => task.isFlagged === true);
-      // Sort newest flags first (assuming flaggedAt exists, fallback to late sorting)
-      flagged.sort((a,b) => new Date(b.flaggedAt || 0) - new Date(a.flaggedAt || 0));
-      setFlaggedTasks(flagged);
+      // Call the dedicated system-wide flagged-tasks endpoint (Auditor + SUPER_ADMIN)
+      const flagged = await getFlaggedTasks();
+      // Backend already sorts by flaggedAt DESC — no client-side sort needed
+      setFlaggedTasks(Array.isArray(flagged) ? flagged : []);
     } catch (err) {
-      console.error(err);
+      console.error('Failed to load flagged tasks', err);
     } finally {
       setLoading(false);
     }
