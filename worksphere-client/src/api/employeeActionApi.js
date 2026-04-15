@@ -12,6 +12,10 @@ export const submitManagerReport = (data) =>
 export const getPendingReports = () =>
   axiosInstance.get('/api/employee-actions/pending-reports');
 
+// AUDITOR / HR / SUPER_ADMIN: get all action records (read-only audit trail)
+export const getAllActionRecords = () =>
+  axiosInstance.get('/api/employee-actions/all-records');
+
 // HR / SUPER_ADMIN: approve or reject a manager report
 export const reviewReport = (id, approve, reviewNotes) =>
   axiosInstance.patch(`/api/employee-actions/${id}/review`, {

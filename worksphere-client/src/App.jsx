@@ -57,6 +57,11 @@ import PublicOfferResponse from './features/hiring/PublicOfferResponse';
 import PublicCareersList from './features/hiring/PublicCareersList';
 import PublicJobDetails from './features/hiring/PublicJobDetails';
 
+// Audit
+const SystemAuditLogs = React.lazy(() => import('./features/audit/SystemAuditLogs'));
+const GrievanceAudit = React.lazy(() => import('./features/audit/GrievanceAudit'));
+const ActionCompliance = React.lazy(() => import('./features/audit/ActionCompliance'));
+
 import { Toaster } from '@/components/ui/sonner';
 import PageSkeleton from './components/common/PageSkeleton';
 
@@ -169,6 +174,15 @@ function App() {
                 <Route path="/roles" element={<RoleForm />} />
                 <Route path="/role-management" element={<RoleManagement />} />
                 <Route path="/register" element={<AddEmployee />} />
+              </Route>
+
+              {/* --- TIER 1.9: AUDITORS & SUPER_ADMINS ONLY --- */}
+              <Route
+                element={<PrivateRoute allowedRoles={['AUDITOR', 'SUPER_ADMIN']} />}
+              >
+                <Route path="/audit/logs" element={<SystemAuditLogs />} />
+                <Route path="/audit/grievances" element={<GrievanceAudit />} />
+                <Route path="/audit/actions" element={<ActionCompliance />} />
               </Route>
 
               {/* --- TIER 2: HR & SUPER_ADMINS ONLY (System Config) --- */}
