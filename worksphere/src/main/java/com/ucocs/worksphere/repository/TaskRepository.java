@@ -56,6 +56,10 @@ public interface TaskRepository extends JpaRepository<Task, UUID> {
         @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner")
         List<Task> findAllWithRelations();
 
+        // 11. Fetch all Flagged Tasks (For Auditor Dashboard)
+        @Query("SELECT t FROM Task t LEFT JOIN FETCH t.assignedTo LEFT JOIN FETCH t.assigner WHERE t.isFlagged = true ORDER BY t.flaggedAt DESC")
+        List<Task> findAllFlaggedTasks();
+
         // --- APPRAISAL METRICS ---
         @Query("SELECT COUNT(t) FROM Task t WHERE t.assignedTo.id = :employeeId AND t.status = 'COMPLETED' AND t.completedAt BETWEEN :startDate AND :endDate")
         Integer countCompletedTasksInPeriod(@Param("employeeId") UUID employeeId,

@@ -79,7 +79,7 @@ public class TaskController {
     }
 
     @GetMapping("/all-tasks")
-    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'AUDITOR')")
     public ResponseEntity<List<TaskResponseDTO>> getAllTasks() {
         List<Task> tasks = taskService.getAllTasks();
         return ResponseEntity.ok(convertToDTOs(tasks));
@@ -154,6 +154,18 @@ public class TaskController {
 
         Task task = taskService.flagTask(taskId, reason);
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
+    }
+
+    /**
+     * Returns all system-wide flagged tasks (AUDITOR / SUPER_ADMIN only).
+     * Dedicated endpoint so the Auditor dashboard works correctly without
+     * relying on /tasks/all-tasks.
+     */
+    @GetMapping("/flagged")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'SUPER_ADMIN')")
+    public ResponseEntity<List<TaskResponseDTO>> getFlaggedTasks() {
+        List<Task> tasks = taskService.getFlaggedTasks();
+        return ResponseEntity.ok(convertToDTOs(tasks));
     }
 
     // --- HELPERS ---

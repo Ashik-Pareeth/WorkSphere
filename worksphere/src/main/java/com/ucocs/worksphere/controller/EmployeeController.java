@@ -59,7 +59,7 @@ public class EmployeeController {
     }
 
     @GetMapping
-    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'SUPER_ADMIN')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR', 'SUPER_ADMIN', 'AUDITOR')")
     public List<EmployeeResponseDTO> getAllEmployee() {
         return employeeService.getAllEmployees();
     }

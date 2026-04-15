@@ -35,6 +35,21 @@ public class GrievanceController {
     }
 
     /**
+     * Read-only grievance view for Auditors — all tickets without internal HR comments.
+     * Auditors can verify SLA compliance and escalation patterns but cannot see
+     * internal HR notes.
+     */
+    @GetMapping("/all-audit")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'AUDITOR')")
+    public ResponseEntity<List<TicketResponse>> getAllTicketsForAudit(
+            @RequestParam(required = false) GrievanceStatus status) {
+        List<TicketResponse> tickets = status != null
+                ? grievanceService.getTicketsByStatusForAudit(status)
+                : grievanceService.getAllTicketsForAudit();
+        return ResponseEntity.ok(tickets);
+    }
+
+    /**
      * Submit a new grievance ticket. Any authenticated employee.
      */
     @PostMapping

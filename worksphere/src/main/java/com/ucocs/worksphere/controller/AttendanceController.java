@@ -59,7 +59,7 @@ public class AttendanceController {
     }
 
     @GetMapping("/{attendanceId}/audit-logs")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'AUDITOR')")
     public ResponseEntity<List<TimesheetAuditLogDTO>> getTimesheetAuditLogs(@PathVariable UUID attendanceId) {
         List<TimesheetAuditLog> logs = attendanceService.getAuditLogsForAttendance(attendanceId);
         List<TimesheetAuditLogDTO> dtos = logs.stream()
