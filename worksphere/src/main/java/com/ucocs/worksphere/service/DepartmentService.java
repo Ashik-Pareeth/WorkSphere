@@ -12,9 +12,22 @@ import java.util.UUID;
 public class DepartmentService {
 
     private final DepartmentRepository departmentRepository;
+    private final com.ucocs.worksphere.repository.EmployeeRepository employeeRepository;
+    private final AuditService auditService;
 
-    public DepartmentService(DepartmentRepository departmentRepository) {
+
+    public DepartmentService(DepartmentRepository departmentRepository,
+                             com.ucocs.worksphere.repository.EmployeeRepository employeeRepository,
+                             AuditService auditService) {
         this.departmentRepository = departmentRepository;
+        this.employeeRepository = employeeRepository;
+        this.auditService = auditService;
+    }
+
+    private com.ucocs.worksphere.entity.Employee getCurrentUser() {
+        String username = org.springframework.security.core.context.SecurityContextHolder.getContext().getAuthentication().getName();
+        return employeeRepository.findByUserName(username)
+                .orElse(null);
     }
 
     public List<Department> getAllDepartments() {
@@ -30,20 +43,36 @@ public class DepartmentService {
         if (departmentRepository.existsByName(department.getName())) {
             throw new IllegalArgumentException("Department with name " + department.getName() + " already exists.");
         }
-        return departmentRepository.save(department);
+        Department saved = departmentRepository.save(department);
+        com.ucocs.worksphere.entity.Employee user = getCurrentUser();
+        if (user != null) {
+            auditService.log("Department", saved.getId(), com.ucocs.worksphere.enums.AuditAction.CREATED, user.getId(), null, saved.getName());
+        }
+        return saved;
     }
 
     public Department updateDepartment(UUID id, Department departmentDetails) {
         Department department = getDepartmentById(id);
 
+        String oldName = department.getName();
         department.setName(departmentDetails.getName());
         department.setDescription(departmentDetails.getDescription());
 
-        return departmentRepository.save(department);
+        Department saved = departmentRepository.save(department);
+        com.ucocs.worksphere.entity.Employee user = getCurrentUser();
+        if (user != null) {
+            auditService.log("Department", saved.getId(), com.ucocs.worksphere.enums.AuditAction.UPDATED, user.getId(), oldName, saved.getName());
+        }
+        return saved;
     }
 
     public void deleteDepartment(UUID id) {
         Department department = getDepartmentById(id);
+        String oldName = department.getName();
         departmentRepository.delete(department);
+        com.ucocs.worksphere.entity.Employee user = getCurrentUser();
+        if (user != null) {
+            auditService.log("Department", id, com.ucocs.worksphere.enums.AuditAction.DELETED, user.getId(), oldName, null);
+        }
     }
 }

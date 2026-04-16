@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.controller;
 
+import com.ucocs.worksphere.dto.hiring.PublicOfferDTO;
 import com.ucocs.worksphere.entity.OfferLetter;
 import com.ucocs.worksphere.service.OfferService;
 import lombok.RequiredArgsConstructor;
@@ -23,7 +24,7 @@ public class OfferController {
     }
 
     @GetMapping("/public/{id}")
-    public ResponseEntity<OfferLetter> getOfferByPublicId(@PathVariable UUID id,@RequestParam String token) {
+    public ResponseEntity<PublicOfferDTO> getOfferByPublicId(@PathVariable UUID id, @RequestParam String token) {
         return ResponseEntity.ok(offerService.getPublicOfferById(id,token));
     }
 

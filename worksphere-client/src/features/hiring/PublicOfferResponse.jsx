@@ -2,7 +2,6 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { fetchPublicOffer, respondToOffer } from '../../api/hiringApi';
 
-// shadcn/ui components (adjust import paths as needed for your project structure)
 import { Button } from '@/components/ui/button';
 import {
   Card,
@@ -27,7 +26,6 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// Icons
 import {
   FileSignature,
   CheckCircle2,
@@ -35,7 +33,7 @@ import {
   Building2,
   Calendar,
   Briefcase,
-  DollarSign,
+  IndianRupee,
   Building,
   Loader2,
   AlertCircle,
@@ -61,6 +59,12 @@ const PublicOfferResponse = () => {
     let mounted = true;
 
     const loadOffer = async () => {
+      if (!token) {
+        setPageError('Invalid or missing access token.');
+        setLoading(false);
+        return;
+      }
+
       try {
         const res = await fetchPublicOffer(offerId, token);
         if (!mounted) return;
@@ -71,17 +75,13 @@ const PublicOfferResponse = () => {
           err.response?.data?.message ||
             'Failed to securely load the offer details.'
         );
-        console.error('Failed to fetch offer:', err);
       } finally {
         if (mounted) setLoading(false);
       }
     };
 
     loadOffer();
-
-    return () => {
-      mounted = false;
-    };
+    return () => (mounted = false);
   }, [offerId, token]);
 
   const initiateAction = (accept) => {
@@ -100,59 +100,44 @@ const PublicOfferResponse = () => {
     } catch (err) {
       setSubmitError(
         err.response?.data?.message ||
-          'Failed to process your response. Please check your connection and try again.'
+          'Failed to process your response. Please try again.'
       );
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // --- LOADING STATE ---
+  // 🔄 Loading
   if (loading) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-        <Card className="w-full max-w-3xl">
-          <CardHeader className="text-center space-y-4">
-            <Skeleton className="h-12 w-12 rounded-full mx-auto" />
-            <Skeleton className="h-8 w-64 mx-auto" />
-            <Skeleton className="h-4 w-48 mx-auto" />
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="w-full max-w-2xl">
+          <CardHeader className="text-center space-y-3">
+            <Skeleton className="h-10 w-40 mx-auto" />
+            <Skeleton className="h-4 w-60 mx-auto" />
           </CardHeader>
-          <CardContent className="space-y-6">
-            <Skeleton className="h-24 w-full" />
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {[1, 2, 3, 4].map((i) => (
-                <Skeleton key={i} className="h-20 w-full" />
-              ))}
-            </div>
+          <CardContent className="space-y-4">
+            <Skeleton className="h-20 w-full" />
+            <Skeleton className="h-20 w-full" />
           </CardContent>
         </Card>
       </div>
     );
   }
 
-  // --- ERROR STATE ---
+  // ❌ Error
   if (pageError && !offer) {
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md border-destructive/50">
-          <CardHeader className="text-center pb-2">
-            <AlertCircle className="w-12 h-12 text-destructive mx-auto mb-4" />
-            <CardTitle className="text-2xl">Access Denied</CardTitle>
-            <CardDescription>Unable to retrieve offer details</CardDescription>
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center border-destructive/40">
+          <CardHeader>
+            <AlertCircle className="mx-auto w-12 h-12 text-destructive mb-2" />
+            <CardTitle>Access Error</CardTitle>
+            <CardDescription>{pageError}</CardDescription>
           </CardHeader>
-          <CardContent>
-            <Alert variant="destructive" className="mt-4">
-              <AlertTitle>Error</AlertTitle>
-              <AlertDescription>{pageError}</AlertDescription>
-            </Alert>
-          </CardContent>
           <CardFooter>
-            <Button
-              variant="outline"
-              onClick={() => navigate('/')}
-              className="w-full"
-            >
-              Return to Corporate Site
+            <Button onClick={() => navigate('/')} className="w-full">
+              Return Home
             </Button>
           </CardFooter>
         </Card>
@@ -160,28 +145,29 @@ const PublicOfferResponse = () => {
     );
   }
 
-  // --- POST-RESPONSE STATE ---
+  // ✅ After response
   if (responseStatus) {
     const isAccepted = responseStatus === 'ACCEPTED';
+
     return (
-      <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md text-center">
+      <div className="min-h-screen flex items-center justify-center p-4">
+        <Card className="max-w-md w-full text-center">
           <CardHeader>
             {isAccepted ? (
-              <CheckCircle2 className="w-16 h-16 text-primary mx-auto mb-4" />
+              <CheckCircle2 className="mx-auto w-14 h-14 text-green-600 mb-3" />
             ) : (
-              <XCircle className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+              <XCircle className="mx-auto w-14 h-14 text-muted-foreground mb-3" />
             )}
-            <CardTitle className="text-2xl">Offer {responseStatus}</CardTitle>
-            <CardDescription className="text-base mt-2">
+            <CardTitle>Offer {responseStatus}</CardTitle>
+            <CardDescription>
               {isAccepted
-                ? 'Congratulations! You have accepted the offer. Our HR team will reach out with your onboarding credentials shortly.'
-                : 'You have declined this offer. We appreciate your time and wish you the best in your future endeavors.'}
+                ? 'Welcome aboard! HR will contact you shortly.'
+                : 'You have declined the offer. We wish you the best.'}
             </CardDescription>
           </CardHeader>
           <CardFooter>
             <Button onClick={() => navigate('/')} className="w-full">
-              Return to Corporate Site
+              Close
             </Button>
           </CardFooter>
         </Card>
@@ -189,219 +175,147 @@ const PublicOfferResponse = () => {
     );
   }
 
-  // --- MAIN OFFER STATE ---
+  // 🎯 Main UI
   return (
-    <div className="min-h-screen bg-muted/30 py-12 px-4 sm:px-6 lg:px-8 flex flex-col items-center">
-      <div className="max-w-3xl w-full space-y-6">
-        {/* Top Header */}
-        <div className="text-center space-y-2 mb-8">
-          <div className="inline-flex p-3 bg-primary/10 rounded-2xl mb-2">
-            <Building2 className="h-8 w-8 text-primary" />
+    <div className="min-h-screen bg-muted/30 py-10 px-4 flex justify-center">
+      <div className="w-full max-w-3xl space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <div className="inline-flex p-3 bg-primary/10 rounded-xl mb-3">
+            <Building2 className="w-6 h-6 text-primary" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight">
-            Official Employment Offer
-          </h1>
-          <p className="text-muted-foreground">
-            Please review the details below carefully before making your
-            decision.
+          <h1 className="text-2xl font-bold">Employment Offer</h1>
+          <p className="text-muted-foreground text-sm">
+            Please review your offer details carefully
           </p>
         </div>
 
-        {pageError && (
-          <Alert variant="destructive">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Error</AlertTitle>
-            <AlertDescription>{pageError}</AlertDescription>
-          </Alert>
-        )}
-
-        {/* Main Document Card */}
-        <Card className="shadow-lg border-t-4 border-t-primary relative">
-          <CardHeader className="pb-4">
-            <div className="flex items-center gap-2 mb-2">
-              <FileSignature className="h-5 w-5 text-primary" />
-              <CardTitle>
-                Welcome to WorkSphere, {offer?.candidate?.fullName}!
-              </CardTitle>
-            </div>
-            <CardDescription className="text-base text-foreground/80 leading-relaxed">
-              We are thrilled to formally offer you the position of{' '}
-              <span className="font-semibold text-foreground">
-                {offer?.jobOpening?.title}
-              </span>{' '}
-              in our{' '}
-              <span className="font-semibold text-foreground">
-                {offer?.jobOpening?.department?.name}
-              </span>{' '}
-              department. Based on your excellent interviews and qualifications,
-              we are confident you will be a great addition to our team.
+        {/* Main Card */}
+        <Card className="shadow-lg border-t-4 border-primary">
+          <CardHeader>
+            <CardTitle>Welcome, {offer?.candidateName}</CardTitle>
+            <CardDescription>
+              You have been selected for the role of{' '}
+              <span className="font-semibold">{offer?.jobTitle}</span> in the{' '}
+              <span className="font-semibold">{offer?.departmentName}</span>{' '}
+              department.
             </CardDescription>
           </CardHeader>
 
-          <Separator className="my-2" />
+          <Separator />
 
-          <CardContent className="pt-6">
-            <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-              Core Compensation & Logistics
-            </h3>
+          <CardContent className="grid sm:grid-cols-2 gap-4 pt-6">
+            {/* Role */}
+            <InfoCard
+              icon={<Briefcase />}
+              label="Position"
+              value={offer?.jobTitle}
+            />
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Position Info */}
-              <Card className="bg-muted/50 border-none shadow-none">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <Briefcase className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Position
-                    </p>
-                    <p className="font-semibold">{offer?.jobOpening?.title}</p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Dept */}
+            <InfoCard
+              icon={<Building />}
+              label="Department"
+              value={offer?.departmentName}
+            />
 
-              {/* Department Info */}
-              <Card className="bg-muted/50 border-none shadow-none">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <Building className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Department
-                    </p>
-                    <p className="font-semibold">
-                      {offer?.jobOpening?.department?.name}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
+            {/* Salary */}
+            <InfoCard
+              icon={<IndianRupee />}
+              label="Compensation"
+              value={`₹ ${offer?.proposedSalary?.toLocaleString('en-IN')}`}
+              highlight
+            />
 
-              {/* Salary Info */}
-              <Card className="bg-muted/50 border-none shadow-none">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <DollarSign className="w-5 h-5 text-green-600 mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Annual Compensation
-                    </p>
-                    <div className="flex items-center gap-2">
-                      <p className="font-bold text-lg text-green-600">
-                        $
-                        {offer?.proposedSalary?.toLocaleString(undefined, {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })}
-                      </p>
-                      <Badge
-                        variant="secondary"
-                        className="bg-green-100 text-green-800 hover:bg-green-100"
-                      >
-                        USD
-                      </Badge>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-
-              {/* Start Date Info */}
-              <Card className="bg-muted/50 border-none shadow-none">
-                <CardContent className="p-4 flex items-start gap-4">
-                  <Calendar className="w-5 h-5 text-primary mt-0.5" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground mb-1">
-                      Expected Start Date
-                    </p>
-                    <p className="font-semibold">
-                      {new Date(offer?.joiningDate).toLocaleDateString(
-                        undefined,
-                        {
-                          weekday: 'long',
-                          year: 'numeric',
-                          month: 'long',
-                          day: 'numeric',
-                        }
-                      )}
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
+            {/* Date */}
+            <InfoCard
+              icon={<Calendar />}
+              label="Joining Date"
+              value={
+                offer?.joiningDate
+                  ? new Date(offer.joiningDate).toLocaleDateString('en-IN', {
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    })
+                  : 'To be decided'
+              }
+            />
           </CardContent>
 
           <Separator />
 
-          <CardFooter className="flex flex-col pt-6 pb-8 px-8">
+          <CardFooter className="flex flex-col gap-4 pt-6">
             {submitError && (
-              <Alert variant="destructive" className="mb-6 w-full">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Submission Failed</AlertTitle>
+              <Alert variant="destructive">
+                <AlertTitle>Error</AlertTitle>
                 <AlertDescription>{submitError}</AlertDescription>
               </Alert>
             )}
 
-            <p className="text-sm text-muted-foreground text-center mb-6">
-              By accepting this offer, you agree to officially join our
-              organization. You will immediately be provisioned with your
-              employee accounts.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 w-full justify-center">
+            <div className="flex flex-col sm:flex-row gap-4 w-full">
               <Button
-                size="lg"
                 variant="outline"
-                className="sm:w-48 border-destructive/30 text-destructive hover:bg-destructive/10"
+                className="flex-1 border-destructive text-destructive"
                 onClick={() => initiateAction(false)}
                 disabled={isSubmitting}
               >
-                {isSubmitting && pendingAction === false ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                Decline Offer
+                Decline
               </Button>
+
               <Button
-                size="lg"
-                className="sm:w-48 shadow-lg shadow-primary/20"
+                className="flex-1"
                 onClick={() => initiateAction(true)}
                 disabled={isSubmitting}
               >
-                {isSubmitting && pendingAction === true ? (
-                  <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                ) : null}
-                Accept Offer
+                Accept
               </Button>
             </div>
           </CardFooter>
         </Card>
-      </div>
 
-      {/* ALERT DIALOG COMPONENT */}
-      <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>
-              {pendingAction ? 'Accept Offer?' : 'Decline Offer?'}
-            </AlertDialogTitle>
-            <AlertDialogDescription>
-              {pendingAction
-                ? 'Are you sure you want to accept this position? This will notify our HR department to begin your onboarding process.'
-                : 'Are you sure you want to decline this offer? This action cannot be easily undone and will release the position to other candidates.'}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              onClick={confirmAction}
-              className={
-                pendingAction
-                  ? 'bg-primary'
-                  : 'bg-destructive text-destructive-foreground hover:bg-destructive/90'
-              }
-            >
-              Confirm
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+        {/* Dialog */}
+        <AlertDialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>
+                {pendingAction ? 'Accept Offer?' : 'Decline Offer?'}
+              </AlertDialogTitle>
+              <AlertDialogDescription>
+                {pendingAction
+                  ? 'This will start your onboarding process.'
+                  : 'This action cannot be undone.'}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction onClick={confirmAction}>
+                Confirm
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
+      </div>
     </div>
   );
 };
+
+// 🔹 Reusable Info Card
+const InfoCard = ({ icon, label, value, highlight }) => (
+  <Card className="bg-muted/50 border-none shadow-none">
+    <CardContent className="p-4 flex items-start gap-3">
+      <div className={`mt-1 ${highlight ? 'text-green-600' : 'text-primary'}`}>
+        {icon}
+      </div>
+      <div>
+        <p className="text-xs text-muted-foreground">{label}</p>
+        <p className={`font-semibold ${highlight ? 'text-green-600' : ''}`}>
+          {value || '-'}
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+);
 
 export default PublicOfferResponse;

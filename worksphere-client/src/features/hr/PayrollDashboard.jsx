@@ -1,4 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+import { AuditTrail } from '../../components/common/AuditTrail';
 import {
   generatePayroll,
   fetchPayrollSummary,
@@ -11,6 +13,7 @@ import SalaryStructureModal from './SalaryStructureModal';
 import { Skeleton } from '../../components/ui/skeleton';
 
 const PayrollDashboard = () => {
+  const { user } = useContext(AuthContext);
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -458,6 +461,9 @@ const PayrollDashboard = () => {
                               <div className="text-sm font-semibold opacity-90">NET PAY (Take Home)</div>
                               <div className="text-xl font-extrabold tracking-tight">₹{fmt(r.netPay)}</div>
                             </div>
+
+                            {/* Audit metadata — HR/Admin/Auditor only */}
+                            <AuditTrail user={user} record={r} />
                           </td>
                         </tr>
                       )}

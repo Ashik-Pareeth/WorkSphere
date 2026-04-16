@@ -1,4 +1,6 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useContext } from 'react';
+import { AuthContext } from '../../context/AuthContext';
+import { AuditTrail } from '../../components/common/AuditTrail';
 import {
   fetchAllTickets,
   assignTicket,
@@ -37,6 +39,7 @@ const categoryIcon = (c) =>
   })[c] || '📝';
 
 const HelpdeskAdmin = () => {
+  const { user } = useContext(AuthContext);
   const [tickets, setTickets] = useState([]);
   const [employees, setEmployees] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -464,6 +467,9 @@ const HelpdeskAdmin = () => {
                     </button>
                   </div>
                 )}
+
+              {/* Audit Metadata — HR/Admin/Auditor only */}
+              <AuditTrail user={user} record={selectedTicket} />
             </div>
           </div>
         </div>

@@ -26,5 +26,8 @@ public record EmployeeActionResponse(
         String previousJobPosition,
         String previousDepartment,
         BigDecimal previousSalary,
-        LocalDateTime createdAt
+        LocalDateTime createdAt,
+        String createdBy,
+        LocalDateTime updatedAt,
+        String updatedBy
 ) {}

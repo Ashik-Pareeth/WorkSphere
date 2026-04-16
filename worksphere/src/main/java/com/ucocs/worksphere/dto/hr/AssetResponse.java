@@ -26,4 +26,7 @@ public class AssetResponse {
     private String assignedEmployeeName;
     private LocalDateTime assignedAt;
     private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
 }

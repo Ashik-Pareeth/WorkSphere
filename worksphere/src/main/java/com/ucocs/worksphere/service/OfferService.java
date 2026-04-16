@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.hiring.PublicOfferDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.OfferLetter;
 import com.ucocs.worksphere.enums.OfferStatus;
@@ -95,7 +96,7 @@ public class OfferService {
         return offer;
     }
 
-    public OfferLetter getPublicOfferById(UUID id, String token) {
+    public PublicOfferDTO getPublicOfferById(UUID id, String token) {
 
         // Add this log before the findById call
         System.out.println("Looking for offer ID: " + id);
@@ -134,8 +135,14 @@ public class OfferService {
             }
 
             // ✅ All checks passed
-            return offer;
-
+            return new PublicOfferDTO(
+                    offer.getCandidate().getFullName(),
+                    offer.getJobOpening().getTitle(),
+                    offer.getJobOpening().getDepartment().getName(),
+                    offer.getProposedSalary() != null
+                            ? offer.getProposedSalary()
+                            : offer.getJobOpening().getSalaryMin(),                    offer.getJoiningDate()
+            );
         } catch (Exception e) {
             throw new RuntimeException("Invalid or expired offer link");
         }
