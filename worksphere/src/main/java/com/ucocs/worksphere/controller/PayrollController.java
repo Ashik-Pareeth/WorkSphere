@@ -113,6 +113,12 @@ public class PayrollController {
         return ResponseEntity.ok(payrollCalculationService.getSalaryStructure(employeeId));
     }
 
+    @GetMapping("/salary-structure-template/{jobPositionId}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<SalaryStructureResponse> getSalaryStructureTemplate(@PathVariable UUID jobPositionId) {
+        return ResponseEntity.ok(payrollCalculationService.getSalaryStructureTemplate(jobPositionId));
+    }
+
     // ==================== HELPER ====================
 
     private UUID resolveEmployeeId(Authentication authentication) {

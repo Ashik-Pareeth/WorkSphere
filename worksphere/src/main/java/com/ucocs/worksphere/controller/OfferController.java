@@ -23,6 +23,12 @@ public class OfferController {
         return ResponseEntity.ok(offerService.getOfferById(id));
     }
 
+    @GetMapping("/candidate/{candidateId}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<OfferLetter> getOfferForCandidate(@PathVariable UUID candidateId) {
+        return ResponseEntity.ok(offerService.getOfferForCandidate(candidateId));
+    }
+
     @GetMapping("/public/{id}")
     public ResponseEntity<PublicOfferDTO> getOfferByPublicId(@PathVariable UUID id, @RequestParam String token) {
         return ResponseEntity.ok(offerService.getPublicOfferById(id,token));

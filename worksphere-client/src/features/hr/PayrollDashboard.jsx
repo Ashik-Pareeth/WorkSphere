@@ -8,6 +8,7 @@ import {
   markPayrollPaid,
 } from '../../api/hrApi';
 import { getAllEmployees } from '../../api/employeeApi';
+import axiosInstance from '../../api/axiosInstance';
 import PayslipViewerModal from './PayslipViewerModal';
 import SalaryStructureModal from './SalaryStructureModal';
 import { Skeleton } from '../../components/ui/skeleton';
@@ -16,6 +17,7 @@ const PayrollDashboard = () => {
   const { user } = useContext(AuthContext);
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [jobPositions, setJobPositions] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
@@ -28,18 +30,23 @@ const PayrollDashboard = () => {
   // Salary Structure Modal
   const [salaryModalOpen, setSalaryModalOpen] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
+  const [selectedJobPosition, setSelectedJobPosition] = useState(null);
   const [expandedRow, setExpandedRow] = useState(null);
 
   useEffect(() => {
-    loadEmployees();
+    loadDirectoryData();
   }, []);
 
-  const loadEmployees = async () => {
+  const loadDirectoryData = async () => {
     try {
-      const res = await getAllEmployees();
-      setEmployees(res);
+      const [employeeRes, jobPositionRes] = await Promise.all([
+        getAllEmployees(),
+        axiosInstance.get('/jobPositions'),
+      ]);
+      setEmployees(employeeRes);
+      setJobPositions(jobPositionRes.data);
     } catch (err) {
-      console.error('Failed to load employees', err);
+      console.error('Failed to load payroll directories', err);
     }
   };
 
@@ -111,6 +118,13 @@ const PayrollDashboard = () => {
 
   const openSalaryModal = (emp) => {
     setSelectedEmployee(emp);
+    setSelectedJobPosition(null);
+    setSalaryModalOpen(true);
+  };
+
+  const openJobPositionSalaryModal = (jobPosition) => {
+    setSelectedEmployee(null);
+    setSelectedJobPosition(jobPosition);
     setSalaryModalOpen(true);
   };
 
@@ -240,6 +254,26 @@ const PayrollDashboard = () => {
               className="px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 rounded-lg transition-colors shadow-sm"
             >
               {emp.firstName} {emp.lastName}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+        <h2 className="text-lg font-bold text-slate-900 mb-2">
+          Job Position Templates
+        </h2>
+        <p className="text-sm text-slate-600 font-medium mb-4">
+          Maintain reusable salary templates by position. Finalize hire will load from these defaults and then create an employee-specific copy.
+        </p>
+        <div className="flex flex-wrap gap-2">
+          {jobPositions.map((position) => (
+            <button
+              key={position.id}
+              onClick={() => openJobPositionSalaryModal(position)}
+              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+            >
+              {position.positionName}
             </button>
           ))}
         </div>
@@ -478,8 +512,13 @@ const PayrollDashboard = () => {
 
       <SalaryStructureModal
         isOpen={salaryModalOpen}
-        onClose={() => setSalaryModalOpen(false)}
+        onClose={() => {
+          setSalaryModalOpen(false);
+          setSelectedEmployee(null);
+          setSelectedJobPosition(null);
+        }}
         employee={selectedEmployee}
+        jobPosition={selectedJobPosition}
         onSave={() => {
           setSuccess('Salary structure saved.');
           setTimeout(() => setSuccess(null), 4000);

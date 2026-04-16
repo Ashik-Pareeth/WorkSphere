@@ -429,6 +429,37 @@ public class PayrollCalculationService {
         return toStructureResponse(structure);
     }
 
+    public SalaryStructureResponse getSalaryStructureTemplate(UUID jobPositionId) {
+        JobPosition jobPosition = jobPositionRepository.findById(jobPositionId)
+                .orElseThrow(() -> new RuntimeException("Job position not found: " + jobPositionId));
+
+        SalaryStructure structure = salaryStructureRepository
+                .findFirstByJobPositionAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
+                        jobPosition, LocalDate.now())
+                .orElse(null);
+
+        if (structure == null) {
+            BigDecimal baseSalary = BigDecimal.valueOf(
+                    jobPosition.getSalaryMin() != null ? jobPosition.getSalaryMin() : 0.0);
+
+            return SalaryStructureResponse.builder()
+                    .jobPositionId(jobPosition.getId())
+                    .jobPositionName(jobPosition.getPositionName())
+                    .baseSalary(baseSalary)
+                    .hra(BigDecimal.ZERO)
+                    .da(BigDecimal.ZERO)
+                    .travelAllowance(BigDecimal.ZERO)
+                    .otherAllowances(BigDecimal.ZERO)
+                    .pfEmployeePercent(12.0)
+                    .pfEmployerPercent(12.0)
+                    .professionalTax(BigDecimal.ZERO)
+                    .effectiveDate(LocalDate.now())
+                    .build();
+        }
+
+        return toStructureResponse(structure);
+    }
+
     // ==================== PAYSLIP FILE ACCESS ====================
 
     public String getPayslipPath(UUID recordId) {

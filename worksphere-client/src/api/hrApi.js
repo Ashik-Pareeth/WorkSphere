@@ -167,6 +167,12 @@ export const fetchSalaryStructure = (employeeId) => {
   return axiosInstance.get(`/api/hr/payroll/salary-structure/${employeeId}`);
 };
 
+export const fetchSalaryStructureTemplate = (jobPositionId) => {
+  return axiosInstance.get(
+    `/api/hr/payroll/salary-structure-template/${jobPositionId}`
+  );
+};
+
 export const downloadPayslip = (id) => {
   return axiosInstance.get(`/api/hr/payroll/${id}/payslip`, {
     responseType: 'blob',

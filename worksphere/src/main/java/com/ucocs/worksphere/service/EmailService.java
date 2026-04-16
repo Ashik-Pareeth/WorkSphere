@@ -1,6 +1,7 @@
 package com.ucocs.worksphere.service;
 
-import jakarta.mail.MessagingException;
+import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.entity.SalaryStructure;
 import jakarta.mail.internet.MimeMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.mail.javamail.MimeMessageHelper;
@@ -8,7 +9,10 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.math.BigDecimal;
+import java.text.NumberFormat;
 import java.time.LocalDateTime;
+import java.util.Locale;
 
 @Service
 public class EmailService {
@@ -29,7 +33,7 @@ public class EmailService {
             helper.setFrom("noreply@worksphere.com");
             helper.setTo(to);
             helper.setSubject(subject);
-            helper.setText(htmlContent, true); // ✅ HTML enabled
+            helper.setText(htmlContent, true);
 
             mailSender.send(message);
 
@@ -37,14 +41,15 @@ public class EmailService {
             System.err.println("Email failed. Falling back to local spool. Error: " + e.getMessage());
         }
 
-        // ✅ Fallback spool (for dev/testing)
         try (FileWriter writer = new FileWriter("local_mail_spool.txt", true)) {
             writer.write("====================================================\n");
             writer.write("Date:    " + LocalDateTime.now() + "\n");
             writer.write("To:      " + to + "\n");
             writer.write("Subject: " + subject + "\n");
             writer.write("------------------- EMAIL BODY ---------------------\n");
-            writer.write(htmlContent + "\n"); // Dumps the full HTML
+            writer.write(htmlContent + "\n");
+            writer.write("----------------- FALLBACK SUMMARY -----------------\n");
+            writer.write(fallbackText + "\n");
             writer.write("====================================================\n\n");
         } catch (IOException e) {
             e.printStackTrace();
@@ -94,18 +99,28 @@ public class EmailService {
 
     // ========================= ONBOARDING EMAIL =========================
 
-    public void sendOnboardingInviteEmail(String to, String userName, String tempPassword) {
+    public void sendOnboardingInviteEmail(Employee employee, SalaryStructure salaryStructure, String tempPassword) {
 
         String loginUrl = "http://localhost:5173/login";
+        String to = employee.getEmail();
+        String fullName = employee.getFirstName() + " " + employee.getLastName();
+        String department = employee.getDepartment() != null ? employee.getDepartment().getName() : "TBD";
+        String jobTitle = employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : "TBD";
+        String manager = employee.getManager() != null
+                ? employee.getManager().getFirstName() + " " + employee.getManager().getLastName()
+                : "TBD";
+        String workSchedule = employee.getWorkSchedule() != null
+                ? employee.getWorkSchedule().getScheduleName()
+                : "TBD";
 
-        String subject = "Welcome to WorkSphere – Your Account Details";
+        String subject = "Welcome to WorkSphere - Your Account Details";
 
         String html = """
             <html>
             <body style="font-family: Arial, sans-serif; line-height:1.6;">
                 <h2 style="color:#2c3e50;">Welcome to WorkSphere!</h2>
 
-                <p>We’re excited to have you on board.</p>
+                <p>We're excited to have you on board, <b>%s</b>.</p>
 
                 <p>Your account has been created. Use the credentials below to log in:</p>
 
@@ -114,6 +129,16 @@ public class EmailService {
                     <li><b>Username:</b> %s</li>
                     <li><b>Temporary Password:</b> %s</li>
                 </ul>
+
+                <p>Your onboarding details:</p>
+                <ul>
+                    <li><b>Department:</b> %s</li>
+                    <li><b>Job Position:</b> %s</li>
+                    <li><b>Reporting Manager:</b> %s</li>
+                    <li><b>Work Schedule:</b> %s</li>
+                </ul>
+
+                %s
 
                 <p>You will be required to change your password upon your first login.</p>
 
@@ -125,10 +150,80 @@ public class EmailService {
                 WorkSphere</p>
             </body>
             </html>
-        """.formatted(loginUrl, userName, tempPassword);
+        """.formatted(
+                fullName,
+                loginUrl,
+                employee.getUserName(),
+                tempPassword,
+                department,
+                jobTitle,
+                manager,
+                workSchedule,
+                buildCompensationHtml(employee, salaryStructure));
 
-        sendHtmlEmail(to, subject, html,
-                "Login: " + loginUrl + " Username: " + userName + " TempPassword: " + tempPassword);
+        String fallback = "Login: " + loginUrl
+                + " Username: " + employee.getUserName()
+                + " TempPassword: " + tempPassword
+                + " Department: " + department
+                + " Job Position: " + jobTitle
+                + " Manager: " + manager
+                + " Work Schedule: " + workSchedule
+                + " " + buildCompensationFallback(employee, salaryStructure);
+
+        sendHtmlEmail(to, subject, html, fallback);
+    }
+
+    private String buildCompensationHtml(Employee employee, SalaryStructure salaryStructure) {
+        if (salaryStructure == null) {
+            return """
+                <p><b>Compensation:</b> %s gross</p>
+            """.formatted(formatMoney(BigDecimal.valueOf(employee.getSalary())));
+        }
+
+        return """
+            <p>Your compensation breakdown:</p>
+            <ul>
+                <li><b>Base Salary:</b> %s</li>
+                <li><b>HRA:</b> %s</li>
+                <li><b>DA:</b> %s</li>
+                <li><b>Travel Allowance:</b> %s</li>
+                <li><b>Other Allowances:</b> %s</li>
+                <li><b>Professional Tax:</b> %s</li>
+                <li><b>PF Employee %%:</b> %s</li>
+                <li><b>PF Employer %%:</b> %s</li>
+                <li><b>Gross Salary:</b> %s</li>
+            </ul>
+        """.formatted(
+                formatMoney(salaryStructure.getBaseSalary()),
+                formatMoney(salaryStructure.getHra()),
+                formatMoney(salaryStructure.getDa()),
+                formatMoney(salaryStructure.getTravelAllowance()),
+                formatMoney(salaryStructure.getOtherAllowances()),
+                formatMoney(salaryStructure.getProfessionalTax()),
+                salaryStructure.getPfEmployeePercent(),
+                salaryStructure.getPfEmployerPercent(),
+                formatMoney(salaryStructure.computeGross()));
+    }
+
+    private String buildCompensationFallback(Employee employee, SalaryStructure salaryStructure) {
+        if (salaryStructure == null) {
+            return "Compensation: " + formatMoney(BigDecimal.valueOf(employee.getSalary())) + " gross";
+        }
+
+        return "Compensation: Base " + formatMoney(salaryStructure.getBaseSalary())
+                + ", HRA " + formatMoney(salaryStructure.getHra())
+                + ", DA " + formatMoney(salaryStructure.getDa())
+                + ", Travel " + formatMoney(salaryStructure.getTravelAllowance())
+                + ", Other " + formatMoney(salaryStructure.getOtherAllowances())
+                + ", PT " + formatMoney(salaryStructure.getProfessionalTax())
+                + ", PF Employee % " + salaryStructure.getPfEmployeePercent()
+                + ", PF Employer % " + salaryStructure.getPfEmployerPercent()
+                + ", Gross " + formatMoney(salaryStructure.computeGross());
+    }
+
+    private String formatMoney(BigDecimal value) {
+        NumberFormat formatter = NumberFormat.getCurrencyInstance(new Locale("en", "IN"));
+        return formatter.format(value != null ? value : BigDecimal.ZERO);
     }
 
     // ========================= PASSWORD RESET =========================
@@ -168,9 +263,18 @@ public class EmailService {
 
         sendHtmlEmail(to, subject, html, "Reset Link: " + resetUrl);
     }
+
     // ========================= INTERVIEW SCHEDULED EMAIL =========================
 
-    public void sendInterviewScheduledEmail(String to, String candidateName, String jobTitle, String date, String time, String mode, String interviewer, Integer round) {
+    public void sendInterviewScheduledEmail(
+            String to,
+            String candidateName,
+            String jobTitle,
+            String date,
+            String time,
+            String mode,
+            String interviewer,
+            Integer round) {
         String subject = "Interview Scheduled: " + jobTitle + " - WorkSphere";
 
         String html = """
