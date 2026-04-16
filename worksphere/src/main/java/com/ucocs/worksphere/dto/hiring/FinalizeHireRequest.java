@@ -1,6 +1,9 @@
 package com.ucocs.worksphere.dto.hiring;
 
 import lombok.Data;
+
+import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.Set;
 import java.util.UUID;
 
@@ -14,4 +17,13 @@ public class FinalizeHireRequest {
     private Double salary;
     private UUID departmentId;
     private UUID jobPositionId;
+    private BigDecimal baseSalary;
+    private BigDecimal hra;
+    private BigDecimal da;
+    private BigDecimal travelAllowance;
+    private BigDecimal otherAllowances;
+    private Double pfEmployeePercent;
+    private Double pfEmployerPercent;
+    private BigDecimal professionalTax;
+    private LocalDate effectiveDate;
 }

@@ -102,6 +102,10 @@ export const fetchOffer = (id) => {
   return axiosInstance.get(`/api/offers/${id}`);
 };
 
+export const fetchOfferForCandidate = (candidateId) => {
+  return axiosInstance.get(`/api/offers/candidate/${candidateId}`);
+};
+
 export const fetchPublicOffer = (id, token) => {
   return axiosInstance.get(`/api/offers/public/${id}`, {
     params: { token },

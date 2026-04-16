@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Role;
+import com.ucocs.worksphere.entity.SalaryStructure;
 import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.enums.NotificationType;
@@ -12,6 +13,7 @@ import com.ucocs.worksphere.repository.EmployeeActionRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobPositionRepository;
 import com.ucocs.worksphere.repository.RoleRepository;
+import com.ucocs.worksphere.repository.SalaryStructureRepository;
 import com.ucocs.worksphere.repository.WorkScheduleRepository;
 import com.ucocs.worksphere.entity.EmployeeActionRecord;
 import com.ucocs.worksphere.enums.EmployeeActionType;
@@ -25,9 +27,11 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import java.io.IOException;
+import java.math.BigDecimal;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
@@ -74,6 +78,7 @@ public class EmployeeService {
     private final AuditService auditService;
     private final NotificationService notificationService;
     private final EmployeeActionRepository employeeActionRepository;
+    private final SalaryStructureRepository salaryStructureRepository;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
@@ -85,7 +90,8 @@ public class EmployeeService {
             EmailService emailService,
             AuditService auditService,
             NotificationService notificationService,
-            EmployeeActionRepository employeeActionRepository) {
+            EmployeeActionRepository employeeActionRepository,
+            SalaryStructureRepository salaryStructureRepository) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
@@ -96,6 +102,7 @@ public class EmployeeService {
         this.auditService = auditService;
         this.notificationService = notificationService;
         this.employeeActionRepository = employeeActionRepository;
+        this.salaryStructureRepository = salaryStructureRepository;
     }
 
     // =========================================================================
@@ -547,16 +554,50 @@ public class EmployeeService {
                     .orElseThrow(() -> new ResourceNotFoundException("Work Schedule not found")));
         }
 
+        SalaryStructure employeeSalaryStructure = null;
+        if (request.getBaseSalary() != null) {
+            employeeSalaryStructure = upsertEmployeeSalaryStructure(employee, request);
+            employee.setSalary(employeeSalaryStructure.computeGross().doubleValue());
+        } else if (request.getSalary() != null) {
+            employee.setSalary(request.getSalary());
+        }
+
         Employee savedEmployee = employeeRepository.save(employee);
 
-        // Send onboarding email with the final (possibly HR-overridden) username
-        emailService.sendOnboardingInviteEmail(
-                savedEmployee.getEmail(),
-                savedEmployee.getUserName(),
-                "Welcome123!"
-        );
+        if (employeeSalaryStructure != null) {
+            employeeSalaryStructure.setEmployee(savedEmployee);
+            employeeSalaryStructure = salaryStructureRepository.save(employeeSalaryStructure);
+        }
+
+        emailService.sendOnboardingInviteEmail(savedEmployee, employeeSalaryStructure, "Welcome123!");
 
         return savedEmployee;
+    }
+
+    private SalaryStructure upsertEmployeeSalaryStructure(
+            Employee employee,
+            com.ucocs.worksphere.dto.hiring.FinalizeHireRequest request) {
+        SalaryStructure structure = salaryStructureRepository.findByEmployee(employee)
+                .orElseGet(SalaryStructure::new);
+
+        structure.setEmployee(employee);
+        structure.setJobPosition(employee.getJobPosition());
+        structure.setBaseSalary(request.getBaseSalary());
+        structure.setHra(defaultMoney(request.getHra()));
+        structure.setDa(defaultMoney(request.getDa()));
+        structure.setTravelAllowance(defaultMoney(request.getTravelAllowance()));
+        structure.setOtherAllowances(defaultMoney(request.getOtherAllowances()));
+        structure.setPfEmployeePercent(
+                request.getPfEmployeePercent() != null ? request.getPfEmployeePercent() : 12.0);
+        structure.setPfEmployerPercent(
+                request.getPfEmployerPercent() != null ? request.getPfEmployerPercent() : 12.0);
+        structure.setProfessionalTax(defaultMoney(request.getProfessionalTax()));
+        structure.setEffectiveDate(request.getEffectiveDate() != null ? request.getEffectiveDate() : LocalDate.now());
+        return structure;
+    }
+
+    private BigDecimal defaultMoney(BigDecimal value) {
+        return value != null ? value : BigDecimal.ZERO;
     }
 
     // =========================================================================
