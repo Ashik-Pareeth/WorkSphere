@@ -155,12 +155,15 @@ public class CandidateService {
                             "Candidate"
                     ));
             if (candidate.getEmail() != null) {
-                emailService.sendCandidateStatusUpdateEmail(
-                        candidate.getEmail(),
-                        candidate.getFullName(),
-                        candidate.getJobOpening().getTitle(),
-                        statusLabel
-                );
+                // Skip generic email for INTERVIEWING, as InterviewService sends a detailed schedule email
+                if (newStatus != CandidateStatus.INTERVIEWING) {
+                    emailService.sendCandidateStatusUpdateEmail(
+                            candidate.getEmail(),
+                            candidate.getFullName(),
+                            candidate.getJobOpening().getTitle(),
+                            statusLabel
+                    );
+                }
             }
         }
 
