@@ -8,6 +8,7 @@ import org.springframework.stereotype.Service;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Service
 public class EmailService {
@@ -38,8 +39,13 @@ public class EmailService {
 
         // ✅ Fallback spool (for dev/testing)
         try (FileWriter writer = new FileWriter("local_mail_spool.txt", true)) {
-            writer.write("To: " + to + "\n");
-            writer.write(fallbackText + "\n\n");
+            writer.write("====================================================\n");
+            writer.write("Date:    " + LocalDateTime.now() + "\n");
+            writer.write("To:      " + to + "\n");
+            writer.write("Subject: " + subject + "\n");
+            writer.write("------------------- EMAIL BODY ---------------------\n");
+            writer.write(htmlContent + "\n"); // Dumps the full HTML
+            writer.write("====================================================\n\n");
         } catch (IOException e) {
             e.printStackTrace();
         }

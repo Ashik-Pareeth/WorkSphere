@@ -35,7 +35,7 @@ public abstract class BaseEntity {
     @Column(nullable = true)
     private String createdBy;
 
-    @Column(nullable = false)
-    private Boolean deleted = false;
-
+    @LastModifiedBy
+    @Column(nullable = true)
+    private String updatedBy;
 }
