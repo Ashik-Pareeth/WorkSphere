@@ -39,7 +39,11 @@ public record EmployeeResponseDTO(
         LocalDateTime joiningDate,
         EmployeeStatus employeeStatus,
         boolean chatAnonymous,
-        String anonymousAlias) {
+        String anonymousAlias,
+        LocalDateTime createdAt,
+        String createdBy,
+        LocalDateTime updatedAt,
+        String updatedBy) {
 
         // Simple record to hold Role data inside this DTO
         public record SimpleRoleDTO(UUID id, String roleName) {
@@ -83,6 +87,10 @@ public record EmployeeResponseDTO(
                         employee.getJoiningDate(),
                         employee.getEmployeeStatus(),
                         employee.isChatAnonymous(),
-                        employee.getAnonymousAlias());
+                        employee.getAnonymousAlias(),
+                        employee.getCreatedAt(),
+                        employee.getCreatedBy(),
+                        employee.getUpdatedAt(),
+                        employee.getUpdatedBy());
         }
 }

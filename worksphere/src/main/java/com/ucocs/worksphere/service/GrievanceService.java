@@ -296,6 +296,9 @@ public class GrievanceService {
                                 .assignedToId(ticket.getAssignedTo())
                                 .comments(comments)
                                 .createdAt(ticket.getCreatedAt())
+                                .createdBy(ticket.getCreatedBy())
+                                .updatedAt(ticket.getUpdatedAt())
+                                .updatedBy(ticket.getUpdatedBy())
                                 .resolvedAt(ticket.getResolvedAt())
                                 .build();
         }

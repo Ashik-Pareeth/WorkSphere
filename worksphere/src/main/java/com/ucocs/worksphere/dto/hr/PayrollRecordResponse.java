@@ -30,5 +30,9 @@ public class PayrollRecordResponse {
     private BigDecimal netPay;
     private PayrollStatus status;
     private LocalDateTime processedAt;
+    private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
     private String payslipDownloadUrl;
 }

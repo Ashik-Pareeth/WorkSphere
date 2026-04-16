@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axiosInstance from '../../api/axiosInstance';
 import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2, AlertTriangle } from 'lucide-react';
 import HRActionModal from '../../features/hr/HRActionModal';
+import { AuditTrail } from '../common/AuditTrail';
+import { AuthContext } from '../../context/AuthContext';
 
 import { formatSalary, formatDate, getGradient } from './utils/helpers';
 import { canManage, assignableRoles } from '../../utils/rbac';
@@ -11,7 +13,7 @@ import { PermissionBanner, ElToast, FieldLabel, FormInput, FormSelect, SaveBtn, 
 /* ═══════════════════════════════════════════════════════════════
    TAB: VIEW
 ═══════════════════════════════════════════════════════════════ */
-function ViewTab({ emp }) {
+function ViewTab({ emp, user }) {
   const rows = [
     { Icon: Mail, label: 'Email', value: emp.email },
     { Icon: Building2, label: 'Department', value: emp.departmentName },
@@ -37,6 +39,7 @@ function ViewTab({ emp }) {
           </div>
         </div>
       ))}
+      <AuditTrail user={user} record={emp} />
     </div>
   );
 }
@@ -652,6 +655,7 @@ function AttendanceTab({ emp, viewerRank }) {
    EMPLOYEE MODAL
 ═══════════════════════════════════════════════════════════════ */
 function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
+  const { user } = useContext(AuthContext);
   const [emp, setEmp] = useState(initialEmp);
   const [tab, setTab] = useState('view');
   const [refreshing, setRefreshing] = useState(false);
@@ -809,7 +813,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
 
         {/* Tab body */}
         <div className="el-tab-body">
-          {tab === 'view' && <ViewTab emp={emp} />}
+          {tab === 'view' && <ViewTab emp={emp} user={user} />}
           {tab === 'edit' && (
             <EditTab emp={emp} onSaved={handleSaved} viewerRank={viewerRank} />
           )}

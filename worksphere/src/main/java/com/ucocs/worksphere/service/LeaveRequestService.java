@@ -28,6 +28,7 @@ public class LeaveRequestService {
         private final LeavePolicyRepository policyRepository;
         private final LeaveLedgerService leaveLedgerService;
         private final NotificationService notificationService; // ADDED
+        private final AuditService auditService;
 
         // 1. Employee Submits Request
         @Transactional
@@ -131,6 +132,8 @@ public class LeaveRequestService {
                         "LeaveRequest"
                 );
 
+                auditService.log("LeaveRequest", savedRequest.getId(), com.ucocs.worksphere.enums.AuditAction.UPDATED, manager.getId(), "PENDING", "APPROVED");
+
                 return savedRequest;
         }
 
@@ -158,6 +161,8 @@ public class LeaveRequestService {
                         saved.getId(),
                         "LeaveRequest"
                 );
+
+                auditService.log("LeaveRequest", saved.getId(), com.ucocs.worksphere.enums.AuditAction.UPDATED, manager.getId(), "PENDING", "REJECTED");
 
                 return saved;
         }

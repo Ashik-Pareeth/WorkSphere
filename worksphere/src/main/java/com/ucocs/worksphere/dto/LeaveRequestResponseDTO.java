@@ -19,7 +19,11 @@ public record LeaveRequestResponseDTO(
         String reason,
         String reviewerComment,
         EmployeeSummary employee,
-        PolicySummary leavePolicy) {
+        PolicySummary leavePolicy,
+        java.time.LocalDateTime createdAt,
+        String createdBy,
+        java.time.LocalDateTime updatedAt,
+        String updatedBy) {
     public record EmployeeSummary(UUID id, String firstName, String lastName) {
     }
 
@@ -45,6 +49,10 @@ public record LeaveRequestResponseDTO(
                         ? new PolicySummary(
                                 lr.getLeavePolicy().getId(),
                                 lr.getLeavePolicy().getName())
-                        : null);
+                        : null,
+                lr.getCreatedAt(),
+                lr.getCreatedBy(),
+                lr.getUpdatedAt(),
+                lr.getUpdatedBy());
     }
 }

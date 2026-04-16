@@ -219,6 +219,9 @@ public class AssetManagementService {
                         : null)
                 .assignedAt(asset.getAssignedAt())
                 .createdAt(asset.getCreatedAt())
+                .createdBy(asset.getCreatedBy())
+                .updatedAt(asset.getUpdatedAt())
+                .updatedBy(asset.getUpdatedBy())
                 .build();
     }
 }

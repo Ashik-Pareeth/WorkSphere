@@ -467,6 +467,10 @@ public class PayrollCalculationService {
                 .payslipDownloadUrl(record.getPayslipUrl() != null
                         ? "/api/hr/payroll/" + record.getId() + "/payslip"
                         : null)
+                .createdAt(record.getCreatedAt())
+                .createdBy(record.getCreatedBy())
+                .updatedAt(record.getUpdatedAt())
+                .updatedBy(record.getUpdatedBy())
                 .build();
     }
 

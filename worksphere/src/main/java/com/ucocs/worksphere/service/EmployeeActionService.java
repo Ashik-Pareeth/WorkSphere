@@ -267,7 +267,10 @@ public class EmployeeActionService {
                 r.getPreviousJobPosition(),
                 r.getPreviousDepartment(),
                 r.getPreviousSalary(),
-                r.getCreatedAt()
+                r.getCreatedAt(),
+                r.getCreatedBy(),
+                r.getUpdatedAt(),
+                r.getUpdatedBy()
         );
     }
 }

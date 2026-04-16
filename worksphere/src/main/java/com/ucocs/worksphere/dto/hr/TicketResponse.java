@@ -28,5 +28,8 @@ public class TicketResponse {
     private UUID assignedToId;
     private List<TicketCommentResponse> comments;
     private LocalDateTime createdAt;
+    private String createdBy;
+    private LocalDateTime updatedAt;
+    private String updatedBy;
     private LocalDateTime resolvedAt;
 }

@@ -31,12 +31,14 @@ public class TaskService {
     private final GrievanceTicketRepository grievanceTicketRepository;
     private final TicketCommentRepository ticketCommentRepository;
     private final NotificationService notificationService; // ADDED
+    private final AuditService auditService;
 
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
                        TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
                        TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
                        TicketCommentRepository ticketCommentRepository,
-                       NotificationService notificationService) {           // ADDED
+                       NotificationService notificationService,
+                       AuditService auditService) {           // ADDED
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceRepository = taskEvidenceRepository;
@@ -45,6 +47,7 @@ public class TaskService {
         this.grievanceTicketRepository = grievanceTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
         this.notificationService = notificationService;         // ADDED
+        this.auditService = auditService;
     }
 
     public Task createTask(TaskCreateRequest request, UUID managerId) {
@@ -85,6 +88,8 @@ public class TaskService {
                 savedTask.getId(),
                 "Task"
         );
+
+        auditService.log("Task", savedTask.getId(), AuditAction.CREATED, manager.getId(), null, savedTask.getTitle());
 
         return savedTask;
     }
@@ -220,6 +225,8 @@ public class TaskService {
                     "Task"
             );
         }
+
+        auditService.log("Task", savedTask.getId(), AuditAction.UPDATED, currentUser.getId(), oldStatus.name(), newStatus.name());
 
         return taskRepository.findByIdWithRelations(taskId)
                 .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));

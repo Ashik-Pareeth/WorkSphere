@@ -14,7 +14,11 @@ public record AttendanceDTO(
         String dailyStatus,
         Integer totalWorkMinutes,
         Boolean isManuallyAdjusted,
-        Integer overtimeMinutes
+        Integer overtimeMinutes,
+        LocalDateTime createdAt,
+        String createdBy,
+        LocalDateTime updatedAt,
+        String updatedBy
 ) {
     public static AttendanceDTO fromEntity(Attendance attendance) {
         return new AttendanceDTO(
@@ -25,7 +29,11 @@ public record AttendanceDTO(
                 attendance.getDailyStatus() != null ? attendance.getDailyStatus().name() : null,
                 attendance.getTotalWorkMinutes(),
                 attendance.getIsManuallyAdjusted(),
-                attendance.getOvertimeMinutes()
+                attendance.getOvertimeMinutes(),
+                attendance.getCreatedAt(),
+                attendance.getCreatedBy(),
+                attendance.getUpdatedAt(),
+                attendance.getUpdatedBy()
         );
     }
 }

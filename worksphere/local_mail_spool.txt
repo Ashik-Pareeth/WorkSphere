@@ -71,3 +71,275 @@ HR Team
 WorkSphereTo: arjun.mehta@email.com
 Interview scheduled on May 02, 2026 at 12:25 pm
 
+====================================================
+Date:    2026-04-16T18:22:55.775587800
+To:      arjun.mehta@email.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Arjun Mehta,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T18:23:09.118875800
+To:      arjun.mehta@email.com
+Subject: Your Offer Letter from WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Congratulations!</h2>
+
+        <p>We are pleased to inform you that you have been selected for a position at <b>WorkSphere</b>.</p>
+
+        <p>Please review your offer details and respond using the button below:</p>
+
+        <p>
+            <a href="http://localhost:5173/offers/785c87bd-46e2-44fd-bece-75a9504e28e9/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiNzg1Yzg3YmQtNDZlMi00NGZkLWJlY2UtNzVhOTUwNGUyOGU5IiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoiYXJqdW4ubWVodGFAZW1haWwuY29tIiwiaWF0IjoxNzc2MzQzOTg0LCJleHAiOjE3NzY5NDg3ODR9.yfASaokC1iqX23_LRU7KH5S2dDjFja5tMTEzgu0mtnM"
+               style="background-color:#28a745;color:white;padding:12px 18px;
+                      text-decoration:none;border-radius:6px;display:inline-block;">
+                View Offer
+            </a>
+        </p>
+
+        <p>If you have any questions, feel free to reply to this email.</p>
+
+        <br/>
+        <p>Warm regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+
+        <hr/>
+        <small>This is an automated message. Please do not share this link.</small>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T18:37:47.336214200
+To:      ashikpareeth004@gmail.com
+Subject: Interview Scheduled: QA Automation Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Interview Scheduled</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are pleased to inform you that an interview has been scheduled for your application for the <b>QA Automation Engineer</b> position.</p>
+        <ul>
+            <li><b>Round:</b> 1</li>
+            <li><b>Date:</b> Apr 18, 2026</li>
+            <li><b>Time:</b> 01:07 pm</li>
+            <li><b>Mode:</b> VIDEO</li>
+            <li><b>Interviewer:</b> Mike Johnson</li>
+        </ul>
+        <p>Please ensure you are available at the scheduled time. If you have any questions, feel free to reply to this email.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T18:38:15.602277300
+To:      ashikpareeth004@gmail.com
+Subject: Application Update: QA Automation Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+====================================================
+Date:    2026-04-16T18:38:15.602277300
+To:      ashikpareeth004@gmail.com
+Subject: Application Update: QA Automation Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>QA Automation Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>QA Automation Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T18:38:45.000859300
+To:      ashikpareeth004@gmail.com
+Subject: Your Offer Letter from WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Congratulations!</h2>
+
+        <p>We are pleased to inform you that you have been selected for a position at <b>WorkSphere</b>.</p>
+
+        <p>Please review your offer details and respond using the button below:</p>
+
+        <p>
+            <a href="http://localhost:5173/offers/c380ba3b-8369-4051-a092-8c0b2b95e605/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiYzM4MGJhM2ItODM2OS00MDUxLWEwOTItOGMwYjJiOTVlNjA1IiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoiYXNoaWtwYXJlZXRoMDA0QGdtYWlsLmNvbSIsImlhdCI6MTc3NjM0NDkwOSwiZXhwIjoxNzc2OTQ5NzA5fQ.WvENn-PzveN0gXbeeh3VSrIZLo7-V8hIyge6txW_FCk"
+               style="background-color:#28a745;color:white;padding:12px 18px;
+                      text-decoration:none;border-radius:6px;display:inline-block;">
+                View Offer
+            </a>
+        </p>
+
+        <p>If you have any questions, feel free to reply to this email.</p>
+
+        <br/>
+        <p>Warm regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+
+        <hr/>
+        <small>This is an automated message. Please do not share this link.</small>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T20:33:33.004430
+To:      kavitha.r@email.com
+Subject: Application Update: QA Automation Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+====================================================
+Date:    2026-04-16T20:33:33.004430
+To:      kavitha.r@email.com
+Subject: Application Update: QA Automation Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Kavitha Rao,</p>
+        <p>We are writing to inform you that the status of your application for the <b>QA Automation Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Kavitha Rao,</p>
+        <p>We are writing to inform you that the status of your application for the <b>QA Automation Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T20:34:04.564797200
+To:      kavitha.r@email.com
+Subject: Your Offer Letter from WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Congratulations!</h2>
+
+        <p>We are pleased to inform you that you have been selected for a position at <b>WorkSphere</b>.</p>
+
+        <p>Please review your offer details and respond using the button below:</p>
+
+        <p>
+            <a href="http://localhost:5173/offers/37f4febc-349c-42b6-a1fd-9cbb931c4f88/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiMzdmNGZlYmMtMzQ5Yy00MmI2LWExZmQtOWNiYjkzMWM0Zjg4IiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoia2F2aXRoYS5yQGVtYWlsLmNvbSIsImlhdCI6MTc3NjM1MTgyOSwiZXhwIjoxNzc2OTU2NjI5fQ.6elC_P03_I1vvgmiuuI7IWMyioVgvKHV5Ye7bMQm_4w"
+               style="background-color:#28a745;color:white;padding:12px 18px;
+                      text-decoration:none;border-radius:6px;display:inline-block;">
+                View Offer
+            </a>
+        </p>
+
+        <p>If you have any questions, feel free to reply to this email.</p>
+
+        <br/>
+        <p>Warm regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+
+        <hr/>
+        <small>This is an automated message. Please do not share this link.</small>
+    </body>
+    </html>
+
+====================================================
+
+====================================================
+Date:    2026-04-16T20:43:00.164095400
+To:      arjun.mehta@email.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+====================================================
+Date:    2026-04-16T20:43:00.164095400
+To:      arjun.mehta@email.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Arjun Mehta,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Arjun Mehta,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+====================================================
+

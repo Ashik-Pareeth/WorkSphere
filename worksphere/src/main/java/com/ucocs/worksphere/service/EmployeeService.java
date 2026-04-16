@@ -300,7 +300,15 @@ public class EmployeeService {
             employee.setWorkSchedule(null);
         }
 
-        employeeRepository.save(employee);
+        Employee saved = employeeRepository.save(employee);
+
+        // Audit the update
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        if (auth != null) {
+            employeeRepository.findByUserName(auth.getName()).ifPresent(performer ->
+                auditService.log("Employee", saved.getId(), AuditAction.UPDATED, performer.getId(),
+                        "profile", "profile updated by " + auth.getName()));
+        }
     }
 
     public void deleteEmployee(UUID id) {
@@ -386,7 +394,9 @@ public class EmployeeService {
         }
 
         employee.setProfilePic(imageName);
-        employeeRepository.save(employee);
+        Employee saved = employeeRepository.save(employee);
+        auditService.log("Employee", saved.getId(), AuditAction.UPDATED, saved.getId(),
+                "profilePic", imageName);
     }
 
     // =========================================================================
@@ -412,7 +422,17 @@ public class EmployeeService {
             employee.getRoles().clear();
         }
 
-        employeeRepository.save(employee);
+        Employee saved = employeeRepository.save(employee);
+
+        // Audit role change
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String roleNames = saved.getRoles().stream()
+                .map(Role::getRoleName).reduce((a, b) -> a + "," + b).orElse("none");
+        if (auth != null) {
+            employeeRepository.findByUserName(auth.getName()).ifPresent(performer ->
+                auditService.log("Employee", saved.getId(), AuditAction.UPDATED, performer.getId(),
+                        "roles", "roles updated to: " + roleNames));
+        }
     }
 
     // =========================================================================
