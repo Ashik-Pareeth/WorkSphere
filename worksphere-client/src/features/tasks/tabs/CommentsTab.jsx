@@ -1,14 +1,14 @@
 import React from 'react';
 import { Send } from 'lucide-react';
 
-export default function CommentsTab({ 
-  comments, 
-  ticketComments, 
-  newComment, 
-  setNewComment, 
-  handleSendComment, 
+export default function CommentsTab({
+  comments,
+  ticketComments,
+  newComment,
+  setNewComment,
+  handleSendComment,
   sendingComment,
-  sourceTicketId
+  sourceTicketId,
 }) {
   return (
     <div className="flex flex-col h-[500px] border border-gray-200 rounded-xl bg-gray-50 overflow-hidden mt-2">
@@ -22,14 +22,21 @@ export default function CommentsTab({
             </div>
             <div className="p-4 flex flex-col gap-3">
               {ticketComments.map((tc, idx) => (
-                <div key={idx} className="bg-white border border-orange-100 rounded-lg p-3 shadow-sm">
+                <div
+                  key={idx}
+                  className="bg-white border border-orange-100 rounded-lg p-3 shadow-sm"
+                >
                   <div className="flex justify-between items-start mb-1">
-                    <span className="text-xs font-bold text-orange-800">{tc.authorName}</span>
+                    <span className="text-xs font-bold text-orange-800">
+                      {tc.authorName}
+                    </span>
                     <span className="text-[10px] text-orange-600/70 font-mono">
                       {new Date(tc.createdAt).toLocaleString()}
                     </span>
                   </div>
-                  <p className="text-sm text-gray-700 leading-relaxed">{tc.body}</p>
+                  <p className="text-sm text-gray-700 leading-relaxed">
+                    {tc.body}
+                  </p>
                 </div>
               ))}
             </div>
@@ -42,15 +49,22 @@ export default function CommentsTab({
             No comments yet. Start the conversation below.
           </div>
         ) : (
-          comments?.map(c => (
-            <div key={c.id} className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm">
+          comments?.map((c) => (
+            <div
+              key={c.id}
+              className="bg-white border border-gray-200 rounded-xl p-4 shadow-sm"
+            >
               <div className="flex justify-between items-start mb-2">
-                <span className="text-sm font-bold text-gray-900">{c.authorName}</span>
+                <span className="text-sm font-bold text-gray-900">
+                  {c.authorName}
+                </span>
                 <span className="text-xs text-gray-500 font-mono">
                   {new Date(c.createdAt).toLocaleString()}
                 </span>
               </div>
-              <p className="text-sm text-gray-700 leading-relaxed">{c.body}</p>
+              <p className="text-sm text-gray-700 leading-relaxed">
+                {c.comment || c.content || c.message || 'No content'}
+              </p>
             </div>
           ))
         )}

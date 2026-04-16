@@ -34,8 +34,8 @@ public class TaskEvidenceService {
     private final EmployeeRepository employeeRepository;
 
     public TaskEvidenceService(TaskEvidenceRepository taskEvidenceRepository,
-                               TaskRepository taskRepository,
-                               EmployeeRepository employeeRepository) {
+            TaskRepository taskRepository,
+            EmployeeRepository employeeRepository) {
         this.taskEvidenceRepository = taskEvidenceRepository;
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
@@ -70,7 +70,8 @@ public class TaskEvidenceService {
         }
 
         String timeStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
-        String originalFilename = Paths.get(Objects.requireNonNull(file.getOriginalFilename())).getFileName().toString();
+        String originalFilename = Paths.get(Objects.requireNonNull(file.getOriginalFilename())).getFileName()
+                .toString();
         String uniqueFileName = timeStamp + "_" + originalFilename;
 
         Path filePath = uploadPath.resolve(uniqueFileName);
@@ -100,9 +101,9 @@ public class TaskEvidenceService {
         // We still need this to attach to the evidence entity below
         Employee currentUser = getCurrentUser();
 
-        // FIX: hasRole now only takes the String role name!
-        if (!hasRole("MANAGER") && !hasRole("ADMIN")) {
-            throw new AccessDeniedException("Only Managers or Admins can review evidence.");
+        // Authorization check: allow MANAGER or SUPER_ADMIN roles
+        if (!hasRole("MANAGER") && !hasRole("SUPER_ADMIN")) {
+            throw new AccessDeniedException("Only Managers or Super Admins can review evidence.");
         }
 
         evidence.setStatus(newStatus);
@@ -112,8 +113,6 @@ public class TaskEvidenceService {
 
         return taskEvidenceRepository.save(evidence);
     }
-
-
 
     private Employee getCurrentUser() {
         String username = Objects
