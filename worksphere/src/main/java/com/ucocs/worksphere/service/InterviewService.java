@@ -2,6 +2,7 @@ package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.dto.hiring.InterviewScheduleDTO;
 import com.ucocs.worksphere.entity.Candidate;
+import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.InterviewSchedule;
 import com.ucocs.worksphere.enums.InterviewStatus;
 import com.ucocs.worksphere.enums.NotificationType;
@@ -47,29 +48,45 @@ public class InterviewService {
     public InterviewSchedule scheduleInterview(InterviewSchedule interview) {
         InterviewSchedule saved = interviewRepository.save(interview);
 
+        Candidate candidate = null;
+        if (saved.getCandidate() != null && saved.getCandidate().getId() != null) {
+            candidate = candidateRepository.findById(saved.getCandidate().getId()).orElse(null);
+        }
+        
+        Employee interviewer = null;
+        if (saved.getInterviewer() != null && saved.getInterviewer().getId() != null) {
+            interviewer = employeeRepository.findById(saved.getInterviewer().getId()).orElse(null);
+        }
+
         // NOTIFICATION: Notify the interviewer (if they are an internal employee)
-        if (saved.getInterviewer() != null) {
+        if (interviewer != null) {
             notificationService.send(
-                    saved.getInterviewer().getId(),
+                    interviewer.getId(),
                     NotificationType.INTERVIEW_SCHEDULED,
                     "Interview Scheduled: Round " + saved.getRoundNumber(),
-                    "You have been assigned to interview candidate \"" + saved.getCandidate().getFullName() + "\" for Round " + saved.getRoundNumber() + " on " + saved.getScheduledAt() + " (" + saved.getMode() + ").",
+                    "You have been assigned to interview candidate \"" + (candidate != null ? candidate.getFullName() : "Unknown") + "\" for Round " + saved.getRoundNumber() + " on " + saved.getScheduledAt() + " (" + saved.getMode() + ").",
                     saved.getId(),
                     "InterviewSchedule"
             );
         }
 
-        if (saved.getCandidate() != null && saved.getCandidate().getEmail() != null) {
+        if (candidate != null && candidate.getEmail() != null) {
             // Optional: Format the LocalDateTime to look nicer
-            java.time.format.DateTimeFormatter formatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy - hh:mm a");
-            String formattedDate = saved.getScheduledAt().format(formatter);
+            java.time.format.DateTimeFormatter dateFormatter = java.time.format.DateTimeFormatter.ofPattern("MMM dd, yyyy");
+            java.time.format.DateTimeFormatter timeFormatter = java.time.format.DateTimeFormatter.ofPattern("hh:mm a");
+            String formattedDate = saved.getScheduledAt().format(dateFormatter);
+            String formattedTime = saved.getScheduledAt().format(timeFormatter);
+            String interviewerName = interviewer != null ? interviewer.getFirstName() + " " + interviewer.getLastName() : "TBD";
 
             emailService.sendInterviewScheduledEmail(
-                    saved.getCandidate().getEmail(),
-                    saved.getCandidate().getFullName(),
-                    saved.getCandidate().getJobOpening().getTitle(),
+                    candidate.getEmail(),
+                    candidate.getFullName(),
+                    candidate.getJobOpening().getTitle(),
                     formattedDate,
-                    saved.getMode().name()
+                    formattedTime,
+                    saved.getMode().name(),
+                    interviewerName,
+                    saved.getRoundNumber()
             );
         }
 

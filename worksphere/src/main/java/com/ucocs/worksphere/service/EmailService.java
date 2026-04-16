@@ -164,7 +164,7 @@ public class EmailService {
     }
     // ========================= INTERVIEW SCHEDULED EMAIL =========================
 
-    public void sendInterviewScheduledEmail(String to, String candidateName, String jobTitle, String scheduledAt, String mode) {
+    public void sendInterviewScheduledEmail(String to, String candidateName, String jobTitle, String date, String time, String mode, String interviewer, Integer round) {
         String subject = "Interview Scheduled: " + jobTitle + " - WorkSphere";
 
         String html = """
@@ -174,8 +174,11 @@ public class EmailService {
                 <p>Dear %s,</p>
                 <p>We are pleased to inform you that an interview has been scheduled for your application for the <b>%s</b> position.</p>
                 <ul>
-                    <li><b>Date & Time:</b> %s</li>
+                    <li><b>Round:</b> %d</li>
+                    <li><b>Date:</b> %s</li>
+                    <li><b>Time:</b> %s</li>
                     <li><b>Mode:</b> %s</li>
+                    <li><b>Interviewer:</b> %s</li>
                 </ul>
                 <p>Please ensure you are available at the scheduled time. If you have any questions, feel free to reply to this email.</p>
                 <br/>
@@ -184,9 +187,9 @@ public class EmailService {
                 WorkSphere</p>
             </body>
             </html>
-        """.formatted(candidateName, jobTitle, scheduledAt, mode);
+        """.formatted(candidateName, jobTitle, round, date, time, mode, interviewer);
 
-        sendHtmlEmail(to, subject, html, "Interview scheduled on: " + scheduledAt);
+        sendHtmlEmail(to, subject, html, "Interview scheduled on " + date + " at " + time);
     }
 
     // ========================= CANDIDATE STATUS UPDATE EMAIL =========================

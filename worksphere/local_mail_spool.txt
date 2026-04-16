@@ -49,3 +49,25 @@ Your application status is now: SHORTLISTED
 To: suku@gmail.com
 Your application status is now: INTERVIEWING
 
+To: ashikpareeth004@gmail.com
+Your application status is now: INTERVIEWING
+
+To: ashikpareeth004@gmail.com
+Your application status is now: SHORTLISTED
+
+To: deepa.k@email.com
+Your application status is now: INTERVIEWING
+
+Application Update
+Dear Deepa Krishnan,
+
+We are writing to inform you that the status of your application for the Full-Stack Software Engineer position has been updated to: INTERVIEWING.
+
+We will keep you posted regarding any further steps.
+
+
+Best regards,
+HR Team
+WorkSphereTo: arjun.mehta@email.com
+Interview scheduled on May 02, 2026 at 12:25 pm
+
