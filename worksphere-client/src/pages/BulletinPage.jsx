@@ -89,8 +89,7 @@ export default function BulletinPage() {
 
   if (!user) return null;
 
-  const isManager = user?.roles?.some((r) => r.replace('ROLE_', '').toUpperCase() === 'MANAGER');
-  const hasTeam = isManager || !!user?.managerId;
+  const hasTeam = user?.isManager || !!user?.managerId;
 
   return (
     <div className="max-w-3xl mx-auto py-8 space-y-6 px-4 md:px-0">

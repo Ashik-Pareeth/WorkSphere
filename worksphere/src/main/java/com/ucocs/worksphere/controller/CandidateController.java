@@ -29,6 +29,12 @@ public class CandidateController {
         return ResponseEntity.ok(candidateService.getCandidatesByJobId(jobId));
     }
 
+    @GetMapping("/{id}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'HR')")
+    public ResponseEntity<Candidate> getCandidateById(@PathVariable UUID id) {
+        return ResponseEntity.ok(candidateService.getCandidateById(id));
+    }
+
     // THIS IS THE PUBLIC APPLY ENDPOINT - No PreAuthorize
     @PostMapping(value = "/public/apply", consumes = {"multipart/form-data"})
     public ResponseEntity<Candidate> applyForJob(

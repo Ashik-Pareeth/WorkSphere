@@ -236,8 +236,7 @@ public class EmployeeService {
 
         // 7. Manager
         if (request.managerId() != null) {
-            employee.setManager(employeeRepository.findById(request.managerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+            employee.setManager(resolveAndEnsureManagerRole(request.managerId()));
         }
 
         // 8. Work Schedule
@@ -293,8 +292,7 @@ public class EmployeeService {
 
         // 7. Manager
         if (request.managerId() != null) {
-            employee.setManager(employeeRepository.findById(request.managerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+            employee.setManager(resolveAndEnsureManagerRole(request.managerId()));
         } else {
             employee.setManager(null);
         }
@@ -544,8 +542,7 @@ public class EmployeeService {
 
         // Manager
         if (request.getManagerId() != null) {
-            employee.setManager(employeeRepository.findById(request.getManagerId())
-                    .orElseThrow(() -> new ResourceNotFoundException("Manager not found")));
+            employee.setManager(resolveAndEnsureManagerRole(request.getManagerId()));
         }
 
         // Work Schedule
@@ -598,6 +595,34 @@ public class EmployeeService {
 
     private BigDecimal defaultMoney(BigDecimal value) {
         return value != null ? value : BigDecimal.ZERO;
+    }
+
+    private Employee resolveAndEnsureManagerRole(UUID managerId) {
+        Employee manager = employeeRepository.findById(managerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Manager not found"));
+
+        ensureManagerRole(manager);
+        return manager;
+    }
+
+    private void ensureManagerRole(Employee manager) {
+        if (manager.getRoles() == null) {
+            manager.setRoles(new HashSet<>());
+        }
+
+        boolean alreadyManager = manager.getRoles().stream()
+                .anyMatch(role -> "MANAGER".equals(role.getRoleName()) || "ROLE_MANAGER".equals(role.getRoleName()));
+
+        if (alreadyManager) {
+            return;
+        }
+
+        Role managerRole = roleRepository.findByRoleName("MANAGER")
+                .or(() -> roleRepository.findByRoleName("ROLE_MANAGER"))
+                .orElseThrow(() -> new ResourceNotFoundException("Manager role not configured"));
+
+        manager.getRoles().add(managerRole);
+        employeeRepository.save(manager);
     }
 
     // =========================================================================

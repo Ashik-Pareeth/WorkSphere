@@ -30,7 +30,7 @@ import {
   toSalaryForm,
 } from '../hr/salaryStructureUtils';
 import { fetchSalaryStructureTemplate } from '../../api/hrApi';
-import { fetchOfferForCandidate } from '../../api/hiringApi';
+import { fetchCandidateById, fetchOfferForCandidate } from '../../api/hiringApi';
 
 const today = new Date().toISOString().split('T')[0];
 
@@ -42,6 +42,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
   const [salary, setSalary] = useState('');
   const [salarySource, setSalarySource] = useState('Manual');
   const [salaryForm, setSalaryForm] = useState(DEFAULT_SALARY_FORM);
+  const [candidateEmployeeId, setCandidateEmployeeId] = useState(null);
   const [username, setUsername] = useState('');
   const [selectedRole, setSelectedRole] = useState('');
   const [selectedManager, setSelectedManager] = useState('');
@@ -68,7 +69,10 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
     setSalarySource(sourceLabel);
   };
 
-  const loadTemplateForPosition = async (jobPositionId, sourceLabel = 'Job position template') => {
+  const loadTemplateForPosition = async (
+    jobPositionId,
+    sourceLabel = 'Job position template'
+  ) => {
     if (!jobPositionId) {
       setSalaryForm(DEFAULT_SALARY_FORM);
       setSalary('');
@@ -96,13 +100,19 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
       if (snapshot) {
         const parsedSnapshot = JSON.parse(snapshot);
         applySalaryForm(
-          { ...parsedSnapshot, effectiveDate: parsedSnapshot.effectiveDate || today },
+          {
+            ...parsedSnapshot,
+            effectiveDate: parsedSnapshot.effectiveDate || today,
+          },
           'Accepted offer snapshot'
         );
         return;
       }
     } catch (error) {
-      console.info('No offer snapshot available for finalize-hire prefill', error);
+      console.info(
+        'No offer snapshot available for finalize-hire prefill',
+        error
+      );
     } finally {
       setSalaryLoading(false);
     }
@@ -133,24 +143,51 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
   useEffect(() => {
     if (!isOpen || !candidate) return;
 
-    const emp = candidate.convertedEmployee;
-    if (emp) {
-      setSalary(emp.salary ? String(emp.salary) : '');
-      setSelectedDept(emp.departmentId || '');
-      setSelectedPos(emp.jobPositionId || '');
-      setUsername(emp.userName || emp.username || '');
-    }
+    const initializeModal = async () => {
+      let resolvedCandidate = candidate;
+      let emp = candidate.convertedEmployee;
 
-    setSelectedManager('');
-    setSelectedSchedule('');
-    setSalarySource('Loading...');
-    setSalaryForm(DEFAULT_SALARY_FORM);
+      if (!emp) {
+        try {
+          const candidateRes = await fetchCandidateById(candidate.id);
+          resolvedCandidate = candidateRes.data;
+          emp = resolvedCandidate?.convertedEmployee || null;
+        } catch (error) {
+          console.error('Failed to refresh accepted candidate details', error);
+        }
+      }
 
-    fetchFormData();
-    initializeSalaryForCandidate(
-      emp?.jobPositionId || candidate?.jobOpening?.jobPosition?.id,
-      emp?.salary
-    );
+      setCandidateEmployeeId(emp?.id || null);
+
+      if (emp) {
+        setSalary(emp.salary ? String(emp.salary) : '');
+        setSelectedDept(emp.departmentId || emp.department?.id || '');
+        setSelectedPos(emp.jobPositionId || emp.jobPosition?.id || '');
+        setSelectedManager(emp.managerId || emp.manager?.id || '');
+        setSelectedSchedule(emp.workSchedule?.id || '');
+        setUsername(emp.userName || emp.username || '');
+      } else {
+        setSalary('');
+        setSelectedDept('');
+        setSelectedPos('');
+        setSelectedManager('');
+        setSelectedSchedule('');
+        setUsername('');
+      }
+
+      setSalarySource('Loading...');
+      setSalaryForm(DEFAULT_SALARY_FORM);
+
+      fetchFormData();
+      initializeSalaryForCandidate(
+        emp?.jobPositionId ||
+          emp?.jobPosition?.id ||
+          resolvedCandidate?.jobOpening?.jobPosition?.id,
+        emp?.salary
+      );
+    };
+
+    initializeModal();
   }, [isOpen, candidate]);
 
   const fetchFormData = async () => {
@@ -192,6 +229,13 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
       return;
     }
 
+    if (!candidateEmployeeId) {
+      toast.error(
+        'This accepted candidate does not have a pending employee record yet. Refresh the pipeline and try again.'
+      );
+      return;
+    }
+
     if (parseAmount(salaryForm.baseSalary) <= 0) {
       toast.error('Base salary is required.');
       return;
@@ -200,7 +244,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
     setLoading(true);
     try {
       const payload = {
-        employeeId: candidate.convertedEmployee.id,
+        employeeId: candidateEmployeeId,
         salary: parseAmount(salary),
         departmentId: selectedDept,
         jobPositionId: selectedPos,
@@ -216,6 +260,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
       onHireFinalized();
       onClose();
     } catch (error) {
+      console.error('Failed to finalize hire', error.response || error);
       toast.error(error.response?.data?.message || 'Failed to finalize hire.');
     } finally {
       setLoading(false);
@@ -227,32 +272,25 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
   return (
     <>
       <Dialog open={isOpen} onOpenChange={onClose}>
-        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[860px]">
+        <DialogContent className="max-h-[90vh] overflow-y-auto sm:max-w-[860px] bg-white">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
+            <DialogTitle className="flex items-center gap-2 text-slate-900">
               <CheckCircle2 className="h-5 w-5 text-green-500" />
               Verify & Finalize: {candidate.fullName}
             </DialogTitle>
-            <DialogDescription>
-              Review access, reporting lines, and salary structure before sending the onboarding invite.
+            <DialogDescription className="text-slate-600">
+              Review access, reporting lines, and salary structure before
+              sending the onboarding invite.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <div className="grid gap-2">
-              <Label>
-                Gross Salary
-                <span className="ml-1 text-xs text-muted-foreground">
-                  (auto-calculated)
-                </span>
-              </Label>
-              <Input type="number" value={salary} readOnly className="bg-slate-50" />
-            </div>
-
-            <div className="grid gap-2">
-              <Label>
+          {/* FORM */}
+          <div className="grid grid-cols-2 gap-5 py-4">
+            {/* Username */}
+            <div className="grid gap-1.5">
+              <Label className="text-sm font-medium text-slate-700">
                 Username
-                <span className="ml-1 text-xs text-muted-foreground">
+                <span className="ml-1 text-xs text-slate-400">
                   (auto-generated)
                 </span>
               </Label>
@@ -265,13 +303,17 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
                   )
                 }
                 placeholder="e.g. john.doe"
+                className="bg-white text-slate-900 border border-slate-300 rounded-md px-3 py-2 shadow-sm focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
               />
             </div>
 
-            <div className="grid gap-2">
-              <Label>Primary Role *</Label>
+            {/* Role */}
+            <div className="grid gap-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Primary Role *
+              </Label>
               <Select value={selectedRole} onValueChange={setSelectedRole}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white border border-slate-300 text-slate-900">
                   <SelectValue placeholder="Select role" />
                 </SelectTrigger>
                 <SelectContent>
@@ -284,10 +326,13 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Department *</Label>
+            {/* Department */}
+            <div className="grid gap-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Department *
+              </Label>
               <Select value={selectedDept} onValueChange={setSelectedDept}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white border border-slate-300 text-slate-900">
                   <SelectValue placeholder="Select dept" />
                 </SelectTrigger>
                 <SelectContent>
@@ -300,10 +345,13 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
               </Select>
             </div>
 
-            <div className="grid gap-2">
-              <Label>Job Position *</Label>
+            {/* Position */}
+            <div className="grid gap-1.5">
+              <Label className="text-sm font-medium text-slate-700">
+                Job Position *
+              </Label>
               <Select value={selectedPos} onValueChange={handlePositionChange}>
-                <SelectTrigger>
+                <SelectTrigger className="bg-white border border-slate-300 text-slate-900">
                   <SelectValue placeholder="Select position" />
                 </SelectTrigger>
                 <SelectContent>
@@ -316,10 +364,16 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
               </Select>
             </div>
 
-            <div className="grid gap-2 col-span-2">
-              <Label>Line Manager *</Label>
-              <Select value={selectedManager} onValueChange={setSelectedManager}>
-                <SelectTrigger>
+            {/* Manager */}
+            <div className="grid gap-1.5 col-span-2">
+              <Label className="text-sm font-medium text-slate-700">
+                Line Manager *
+              </Label>
+              <Select
+                value={selectedManager}
+                onValueChange={setSelectedManager}
+              >
+                <SelectTrigger className="bg-white border border-slate-300 text-slate-900">
                   <SelectValue placeholder="Select manager" />
                 </SelectTrigger>
                 <SelectContent>
@@ -332,13 +386,17 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
               </Select>
             </div>
 
-            <div className="grid gap-2 col-span-2">
-              <Label>
+            {/* Schedule */}
+            <div className="grid gap-1.5 col-span-2">
+              <Label className="text-sm font-medium text-slate-700">
                 Work Schedule
-                <span className="ml-1 text-xs text-muted-foreground">(optional)</span>
+                <span className="ml-1 text-xs text-slate-400">(optional)</span>
               </Label>
-              <Select value={selectedSchedule} onValueChange={setSelectedSchedule}>
-                <SelectTrigger>
+              <Select
+                value={selectedSchedule}
+                onValueChange={setSelectedSchedule}
+              >
+                <SelectTrigger className="bg-white border border-slate-300 text-slate-900">
                   <SelectValue placeholder="Select schedule" />
                 </SelectTrigger>
                 <SelectContent>
@@ -352,7 +410,8 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
             </div>
           </div>
 
-          <div className="space-y-4 rounded-2xl border border-slate-200 bg-white p-5">
+          {/* Salary Structure */}
+          <div className="space-y-4 rounded-xl border border-slate-200 bg-white p-5">
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
                 <h3 className="text-lg font-semibold text-slate-900">
@@ -369,15 +428,18 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
                   variant="outline"
                   disabled={!selectedPos || salaryLoading}
                   onClick={() => loadTemplateForPosition(selectedPos)}
+                  className="border-slate-300 text-slate-700"
                 >
                   <RefreshCw className="mr-2 h-4 w-4" />
                   Reload Template
                 </Button>
+
                 <Button
                   type="button"
                   variant="outline"
                   disabled={!selectedJobPosition}
                   onClick={() => setTemplateModalOpen(true)}
+                  className="border-slate-300 text-slate-700"
                 >
                   Edit Position Template
                 </Button>
@@ -394,14 +456,21 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
             />
           </div>
 
+          {/* Footer */}
           <DialogFooter>
-            <Button variant="outline" onClick={onClose} disabled={loading}>
+            <Button
+              variant="outline"
+              onClick={onClose}
+              disabled={loading}
+              className="border-slate-300 text-slate-700"
+            >
               Cancel
             </Button>
+
             <Button
               onClick={handleFinalize}
               disabled={loading || salaryLoading}
-              className="bg-blue-600 hover:bg-blue-700"
+              className="bg-blue-600 hover:bg-blue-700 text-white"
             >
               {loading ? 'Processing...' : 'Verify & Send Invite'}
             </Button>
@@ -416,7 +485,10 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
         onSave={() => {
           toast.success('Position salary template saved.');
           if (selectedPos) {
-            loadTemplateForPosition(selectedPos, 'Updated job position template');
+            loadTemplateForPosition(
+              selectedPos,
+              'Updated job position template'
+            );
           }
         }}
       />
