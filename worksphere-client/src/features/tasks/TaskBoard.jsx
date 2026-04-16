@@ -273,22 +273,18 @@ const TaskBoard = () => {
         </div>
       </header>
 
-      <main className="flex-1 overflow-x-auto overflow-y-hidden bg-gray-50/50 p-6 flex flex-col w-full">
-        {/* 1. Flex-none ensures AlertMessage only takes the space it needs */}
+      <main className="flex-1 min-h-0 overflow-auto bg-gray-50/50 p-6 flex flex-col w-full">
         <div className="flex-none">
           <AlertMessage error={error} onClose={() => setError(null)} />
         </div>
 
         <DragDropContext onDragEnd={handleDragEnd}>
-          {/* 2. flex-1 allows it to fill remaining space dynamically
-            3. min-h-0 is a CSS requirement to prevent flex children from ignoring container bounds
-            4. min-w-[1024px] forces horizontal scroll on smaller screens instead of squishing
-          */}
-          <div className="flex-1 min-h-0 min-w-[1024px] mt-4">
+          <div className="flex-1 min-h-0 min-w-max mt-4">
             <div
-              className={`grid gap-6 h-full ${
-                filters.showCancelled ? 'grid-cols-5' : 'grid-cols-4'
-              }`}
+              className="grid gap-6 min-h-full"
+              style={{
+                gridTemplateColumns: `repeat(${columns.length}, minmax(280px, 1fr))`,
+              }}
             >
               {columns.map((status) => (
                 <KanbanColumn

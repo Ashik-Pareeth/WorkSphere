@@ -45,6 +45,10 @@ export const fetchCandidatesByJob = (jobId) => {
   return axiosInstance.get(`/api/candidates/job/${jobId}`);
 };
 
+export const fetchCandidateById = (id) => {
+  return axiosInstance.get(`/api/candidates/${id}`);
+};
+
 export const applyForJob = (data, file) => {
   const formData = new FormData();
 

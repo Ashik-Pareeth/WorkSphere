@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { AlertTriangle, ShieldCheck, Lock, Loader2, Save } from 'lucide-react';
-import { STATUS_STYLE, ROLE_STYLE, API_BASE } from './constants';
+import { STATUS_STYLE, ROLE_STYLE } from './constants';
 import { getGradient, getInitials } from '../utils/helpers';
+import { resolveProfilePicSrc } from '../../../utils/profilePhoto';
 
 export function StatusPill({ status }) {
   const s = STATUS_STYLE[status] ?? {
@@ -41,22 +42,32 @@ export function RolePill({ roleName }) {
   );
 }
 
+function AvatarImage({ src, alt, className, style, fallback }) {
+  const [hasError, setHasError] = useState(false);
+
+  useEffect(() => {
+    setHasError(false);
+  }, [src]);
+
+  if (!src || hasError) {
+    return fallback;
+  }
+
+  return (
+    <img
+      src={src}
+      alt={alt}
+      className={className}
+      style={style}
+      onError={() => setHasError(true)}
+    />
+  );
+}
+
 export function Avatar({ emp, size = 32 }) {
   const [colors] = useState(() => getGradient(emp.id));
-  const profileSrc = emp.profilePic
-    ? `${API_BASE}/uploads/profilePhoto/${emp.profilePic}`
-    : null;
-  if (profileSrc) {
-    return (
-      <img
-        src={profileSrc}
-        alt={emp.firstName}
-        className="el-avatar"
-        style={{ width: size, height: size }}
-      />
-    );
-  }
-  return (
+  const profileSrc = resolveProfilePicSrc(emp.profilePic);
+  const fallback = (
     <div
       className="el-avatar-initials"
       style={{
@@ -68,18 +79,22 @@ export function Avatar({ emp, size = 32 }) {
       {getInitials(emp.firstName, emp.lastName)}
     </div>
   );
+
+  return (
+    <AvatarImage
+      src={profileSrc}
+      alt={emp.firstName}
+      className="el-avatar"
+      style={{ width: size, height: size }}
+      fallback={fallback}
+    />
+  );
 }
 
 export function ModalAvatar({ emp }) {
   const [colors] = useState(() => getGradient(emp.id));
-  const profileSrc = emp.profilePic
-    ? `${API_BASE}/uploads/profilePhoto/${emp.profilePic}`
-    : null;
-  if (profileSrc)
-    return (
-      <img src={profileSrc} alt={emp.firstName} className="el-modal-avatar" />
-    );
-  return (
+  const profileSrc = resolveProfilePicSrc(emp.profilePic);
+  const fallback = (
     <div
       className="el-modal-avatar-initials"
       style={{
@@ -88,6 +103,15 @@ export function ModalAvatar({ emp }) {
     >
       {getInitials(emp.firstName, emp.lastName)}
     </div>
+  );
+
+  return (
+    <AvatarImage
+      src={profileSrc}
+      alt={emp.firstName}
+      className="el-modal-avatar"
+      fallback={fallback}
+    />
   );
 }
 

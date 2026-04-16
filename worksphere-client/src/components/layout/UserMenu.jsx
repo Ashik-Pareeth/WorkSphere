@@ -3,11 +3,14 @@ import { NavLink } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { LogOut, User, ChevronDown } from 'lucide-react';
 import { AnonymousToggle } from '../../features/bulletin/AnonymousToggle';
+import { resolveProfilePicSrc } from '../../utils/profilePhoto';
 
 export default function UserMenu() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
+  const [avatarFailed, setAvatarFailed] = useState(false);
   const menuRef = useRef(null);
+  const avatarSrc = resolveProfilePicSrc(user?.profilePic);
 
   // Fallback initials logic
   const getInitials = () => {
@@ -31,6 +34,10 @@ export default function UserMenu() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
+  useEffect(() => {
+    setAvatarFailed(false);
+  }, [avatarSrc]);
+
   return (
     <div className="relative" ref={menuRef}>
       <button
@@ -47,23 +54,19 @@ export default function UserMenu() {
         </div>
 
         {/* Avatar */}
-        {user?.profilePic ? (
+        {avatarSrc && !avatarFailed ? (
           <img
-            src={`http://localhost:8080/uploads/${user.profilePic}`}
+            src={avatarSrc}
             alt="Profile"
             className="w-9 h-9 rounded-full object-cover border border-gray-200"
-            onError={(e) => {
-              // Fallback if image fails to load
-              e.target.style.display = 'none';
-              e.target.nextSibling.style.display = 'flex';
-            }}
+            onError={() => setAvatarFailed(true)}
           />
         ) : null}
         
         {/* Fallback avatar */}
         <div 
           className="w-9 h-9 rounded-full bg-blue-100 text-blue-700 font-bold flex items-center justify-center border border-blue-200 text-sm"
-          style={{ display: user?.profilePic ? 'none' : 'flex' }}
+          style={{ display: avatarSrc && !avatarFailed ? 'none' : 'flex' }}
         >
           {getInitials()}
         </div>

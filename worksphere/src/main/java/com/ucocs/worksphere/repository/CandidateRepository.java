@@ -15,7 +15,7 @@ import java.util.UUID;
 @NullMarked
 @Repository
 public interface CandidateRepository extends JpaRepository<Candidate, UUID> {
-    @EntityGraph(attributePaths = {"jobOpening", "jobOpening.jobPosition", "jobOpening.department"})
+    @EntityGraph(attributePaths = {"jobOpening", "jobOpening.jobPosition", "jobOpening.department", "convertedEmployee"})
     List<Candidate> findByJobOpeningId(UUID jobOpeningId);
 
     @Override

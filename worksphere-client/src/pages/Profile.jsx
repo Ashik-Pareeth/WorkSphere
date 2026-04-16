@@ -1,10 +1,11 @@
 /* eslint-disable no-unused-vars */
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import axiosInstance from '../api/axiosInstance';
 import { useQuery } from '@tanstack/react-query';
 import { fetchMyAssets } from '@/api/hrApi';
 import { getMyBalances } from '@/api/leaveApi';
+import { resolveProfilePicSrc } from '../utils/profilePhoto';
 import {
   User,
   Mail,
@@ -120,6 +121,7 @@ const CardTitle = ({ icon: Icon, children }) => (
 const Profile = () => {
   const { user } = useAuth();
   const [activeTab, setActiveTab] = useState('overview');
+  const [imageFailed, setImageFailed] = useState(false);
 
   const {
     data: profileData,
@@ -141,6 +143,11 @@ const Profile = () => {
     queryKey: ['myLeaves'],
     queryFn: getMyBalances,
   });
+  const profileSrc = resolveProfilePicSrc(profileData?.profilePic);
+
+  useEffect(() => {
+    setImageFailed(false);
+  }, [profileSrc]);
 
   if (profileLoading) {
     return (
@@ -207,18 +214,31 @@ const Profile = () => {
         <div className="max-w-5xl mx-auto px-8 pt-10 pb-2 flex items-end gap-6">
           {/* Avatar */}
           <div className="relative shrink-0">
-            <div
-              className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
-              style={{
-                background: 'rgba(255,255,255,0.15)',
-                backdropFilter: 'blur(8px)',
-                border: '2px solid rgba(255,255,255,0.3)',
-                color: '#fff',
-                letterSpacing: '0.05em',
-              }}
-            >
-              {initials}
-            </div>
+            {profileSrc && !imageFailed ? (
+              <img
+                src={profileSrc}
+                alt={`${profileData.firstName} ${profileData.lastName}`}
+                className="w-20 h-20 rounded-2xl object-cover"
+                style={{
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  boxShadow: '0 12px 28px rgba(15, 23, 42, 0.22)',
+                }}
+                onError={() => setImageFailed(true)}
+              />
+            ) : (
+              <div
+                className="w-20 h-20 rounded-2xl flex items-center justify-center text-2xl font-bold"
+                style={{
+                  background: 'rgba(255,255,255,0.15)',
+                  backdropFilter: 'blur(8px)',
+                  border: '2px solid rgba(255,255,255,0.3)',
+                  color: '#fff',
+                  letterSpacing: '0.05em',
+                }}
+              >
+                {initials}
+              </div>
+            )}
             <span
               className="absolute -bottom-1 -right-1 w-4 h-4 rounded-full"
               style={{

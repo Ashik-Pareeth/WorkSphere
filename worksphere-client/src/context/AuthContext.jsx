@@ -19,6 +19,15 @@ const checkTokenValidity = (token) => {
   }
 };
 
+const normalizeRoles = (roles = []) =>
+  roles
+    .map((role) => {
+      if (typeof role === 'string') return role;
+      if (role?.roleName) return role.roleName;
+      return null;
+    })
+    .filter(Boolean);
+
 /**
  * Build UI-friendly role flags from role list
  */
@@ -73,19 +82,24 @@ export const AuthProvider = ({ children }) => {
       if (user && user.id) {
         try {
           const profile = await getMyProfile();
-          console.log('Fetched profile on startup:', profile); // Debugging line to check fetched profile data
+          const normalizedRoles = normalizeRoles(profile.roles);
           if (isMounted) {
             setUser((prev) => ({
               ...prev,
+              roles: normalizedRoles,
+              ...buildRoleFlags(normalizedRoles),
               firstName: profile.firstName,
               lastName: profile.lastName,
               profilePic: profile.profilePic,
               department: profile.department,
               designation: profile.jobTitle || null,
               workSchedule: profile.workSchedule || null,
+              managerId: profile.managerId || null,
+              managerName: profile.managerName || null,
               chatAnonymous: profile.chatAnonymous,
               anonymousAlias: profile.anonymousAlias,
             }));
+            localStorage.setItem('roles', JSON.stringify(normalizedRoles));
           }
         } catch (error) {
           console.error('Failed to load user profile on startup', error);
@@ -125,13 +139,19 @@ export const AuthProvider = ({ children }) => {
     // Fetch full profile info in the background
     try {
       const profile = await getMyProfile();
+      const normalizedRoles = normalizeRoles(profile.roles);
+      localStorage.setItem('roles', JSON.stringify(normalizedRoles));
       setUser((prev) => ({
         ...prev,
+        roles: normalizedRoles,
+        ...buildRoleFlags(normalizedRoles),
         firstName: profile.firstName,
         lastName: profile.lastName,
         profilePic: profile.profilePic,
         department: profile.department,
         designation: profile.jobPosition?.title || null,
+        managerId: profile.managerId || null,
+        managerName: profile.managerName || null,
         chatAnonymous: profile.chatAnonymous,
         anonymousAlias: profile.anonymousAlias,
       }));
