@@ -14,11 +14,15 @@ export default function KanbanColumn({ status, tasks, onTaskClick }) {
   };
 
   return (
-    <div className="flex flex-col h-full min-w-[280px]">
+    <div className="flex flex-col h-full min-w-70">
       <div className="flex items-center justify-between mb-3 px-1">
         <div className="flex items-center gap-2">
-          <span className={`w-2.5 h-2.5 rounded-full ${dotColors[status] || 'bg-gray-400'}`} />
-          <span className={`text-xs font-bold uppercase tracking-wide ${isCancelled ? 'text-red-600' : 'text-gray-600'}`}>
+          <span
+            className={`w-2.5 h-2.5 rounded-full ${dotColors[status] || 'bg-gray-400'}`}
+          />
+          <span
+            className={`text-xs font-bold uppercase tracking-wide ${isCancelled ? 'text-red-600' : 'text-gray-600'}`}
+          >
             {status.replace('_', ' ')}
           </span>
         </div>
@@ -27,14 +31,20 @@ export default function KanbanColumn({ status, tasks, onTaskClick }) {
         </span>
       </div>
 
-      <div className={`flex-1 min-h-0 rounded-xl border p-2 ${isCancelled ? 'bg-red-50/30 border-red-100' : 'bg-gray-100/40 border-gray-200/60'}`}>
+      <div
+        className={`flex-1 min-h-0 rounded-xl border p-2 ${isCancelled ? 'bg-red-50/30 border-red-100' : 'bg-gray-100/40 border-gray-200/60'}`}
+      >
         <Droppable droppableId={status}>
           {(provided, snapshot) => (
             <div
               ref={provided.innerRef}
               {...provided.droppableProps}
               className={`h-full overflow-y-auto pr-1 custom-scrollbar ${
-                snapshot.isDraggingOver ? (isCancelled ? 'bg-red-50/50' : 'bg-blue-50/30') : ''
+                snapshot.isDraggingOver
+                  ? isCancelled
+                    ? 'bg-red-50/50'
+                    : 'bg-blue-50/30'
+                  : ''
               }`}
             >
               {tasks.map((task, index) => (

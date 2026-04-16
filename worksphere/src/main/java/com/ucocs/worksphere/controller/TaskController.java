@@ -125,7 +125,7 @@ public class TaskController {
     }
 
     @PatchMapping("/evidence/{evidenceId}/review")
-    @PreAuthorize("hasRole('MANAGER')")
+    @PreAuthorize("hasAnyRole('MANAGER', 'SUPER_ADMIN')")
     public ResponseEntity<TaskEvidence> reviewEvidence(
             @PathVariable UUID evidenceId,
             @RequestParam EvidenceStatus status,
@@ -181,10 +181,10 @@ public class TaskController {
                 .collect(Collectors.toList());
     }
 
-
     @GetMapping("/{taskId}/source-ticket/comments")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<TicketCommentResponse>> getSourceTicketComments(
             @PathVariable UUID taskId) {
         return ResponseEntity.ok(taskService.getSourceTicketComments(taskId));
-    }}
+    }
+}

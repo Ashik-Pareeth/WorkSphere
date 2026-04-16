@@ -38,7 +38,10 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
       onTaskCreated();
       onClose();
     } catch (error) {
-      toast.error('Failed to create task: ' + (error?.response?.data?.message || error?.message || 'Unknown error'));
+      toast.error(
+        'Failed to create task: ' +
+          (error?.response?.data?.message || error?.message || 'Unknown error')
+      );
     } finally {
       setLoading(false);
     }
@@ -52,11 +55,12 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
         <form onSubmit={handleSubmit} className="space-y-4">
           {/* Title */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Title</label>
+            <label className="text-sm font-medium text-gray-700">Title</label>
             <input
               type="text"
               required
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
               value={formData.title}
               onChange={(e) =>
                 setFormData({ ...formData, title: e.target.value })
@@ -66,9 +70,12 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
 
           {/* Assign To */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Assign To</label>
+            <label className="text-sm font-medium text-gray-700">
+              Assign To
+            </label>
             <select
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
               value={formData.assignedToId}
               onChange={(e) =>
                 setFormData({ ...formData, assignedToId: e.target.value })
@@ -87,9 +94,12 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
 
           {/* Priority */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Priority</label>
+            <label className="text-sm font-medium text-gray-700">
+              Priority
+            </label>
             <select
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
               value={formData.priority}
               onChange={(e) =>
                 setFormData({ ...formData, priority: e.target.value })
@@ -104,11 +114,14 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
 
           {/* Due Date */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Due Date</label>
+            <label className="text-sm font-medium text-gray-700">
+              Due Date
+            </label>
             <input
               type="datetime-local"
               required
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
               value={formData.dueDate}
               onChange={(e) =>
                 setFormData({ ...formData, dueDate: e.target.value })
@@ -118,10 +131,13 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
 
           {/* Description */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium">Description</label>
+            <label className="text-sm font-medium text-gray-700">
+              Description
+            </label>
             <textarea
               rows="3"
-              className="border rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
               value={formData.description}
               onChange={(e) =>
                 setFormData({ ...formData, description: e.target.value })
@@ -134,7 +150,8 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 rounded-lg border hover:bg-gray-100 transition"
+              className="px-4 py-2 rounded-lg border border-gray-300 text-gray-700 
+            hover:bg-gray-100 transition"
             >
               Cancel
             </button>
@@ -142,7 +159,8 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
             <button
               type="submit"
               disabled={loading}
-              className="px-4 py-2 rounded-lg bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-50 transition"
+              className="px-4 py-2 rounded-lg bg-blue-600 text-white 
+            hover:bg-blue-700 disabled:opacity-50 transition shadow-sm"
             >
               {loading ? 'Creating...' : 'Create Task'}
             </button>

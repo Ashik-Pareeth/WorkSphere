@@ -52,12 +52,17 @@ const TaskDetailsModal = ({ task, onClose }) => {
   const [reviewingEvidence, setReviewingEvidence] = useState(false);
 
   const [alert, setAlert] = useState(null);
-  const [confirmConfig, setConfirmConfig] = useState({ isOpen: false, title: '', description: '', onConfirm: null });
+  const [confirmConfig, setConfirmConfig] = useState({
+    isOpen: false,
+    title: '',
+    description: '',
+    onConfirm: null,
+  });
 
   useEffect(() => {
     if (task?.id) loadData();
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [task]);
 
   const loadData = async () => {
@@ -192,7 +197,8 @@ const TaskDetailsModal = ({ task, onClose }) => {
     setConfirmConfig({
       isOpen: true,
       title: 'Cancel Task',
-      description: 'Cancel this task? This removes it from the active workflow.',
+      description:
+        'Cancel this task? This removes it from the active workflow.',
       onConfirm: async () => {
         try {
           setIsCanceling(true);
@@ -212,7 +218,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
         } finally {
           setIsCanceling(false);
         }
-      }
+      },
     });
   };
 
@@ -285,6 +291,8 @@ const TaskDetailsModal = ({ task, onClose }) => {
 
   const _statusClass = task.status?.toLowerCase().replace('_', '_') || 'todo';
 
+  const [activeTab, setActiveTab] = useState('info');
+
   return (
     <div
       className="fixed inset-0 bg-black/40 backdrop-blur-sm flex items-center justify-center z-50"
@@ -330,7 +338,6 @@ const TaskDetailsModal = ({ task, onClose }) => {
           </div>
 
           <div className="flex items-center gap-3">
-            {/* Show Flag button only to Auditors/Admins if task is NOT already flagged */}
             {(storedRoles.includes('ROLE_AUDITOR') ||
               storedRoles.includes('ROLE_SUPER_ADMIN')) &&
               !task.isFlagged && (
@@ -339,15 +346,13 @@ const TaskDetailsModal = ({ task, onClose }) => {
                   disabled={isFlagging}
                   className="flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-lg transition-colors disabled:opacity-50"
                 >
-                  <span className="text-base">🚩</span>
-                  {isFlagging ? 'Flagging...' : 'Flag Issue'}
+                  🚩 {isFlagging ? 'Flagging...' : 'Flag Issue'}
                 </button>
               )}
 
-            {/* If it is already flagged, show a static badge here */}
             {task.isFlagged && (
               <span className="px-3 py-1.5 text-sm font-medium text-white bg-rose-500 rounded-lg flex items-center gap-1.5">
-                <span className="text-base">🚩</span> Flagged
+                🚩 Flagged
               </span>
             )}
 
@@ -362,80 +367,81 @@ const TaskDetailsModal = ({ task, onClose }) => {
 
         {/* BODY */}
         <div className="p-6 flex-1 overflow-y-auto">
-          <Tabs defaultValue="info" className="w-full">
-            <TabsList className="grid grid-cols-3 bg-gray-50 p-1 rounded-xl border border-gray-200 mb-6">
-              <TabsTrigger
-                value="info"
-                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
+          {/* 🔥 PURE TAILWIND TABS */}
+          <div className="flex bg-gray-100 p-1 rounded-xl border border-gray-200 mb-6">
+            {[
+              { key: 'info', label: 'Task Info' },
+              { key: 'evidence', label: 'Evidence & Review' },
+              { key: 'comments', label: `Comments (${comments?.length || 0})` },
+            ].map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 text-sm px-3 py-2 rounded-lg transition-all font-medium
+                ${
+                  activeTab === tab.key
+                    ? 'bg-white text-black shadow-sm'
+                    : 'text-gray-600 hover:text-black'
+                }
+              `}
               >
-                Task Info
-              </TabsTrigger>
-              <TabsTrigger
-                value="evidence"
-                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
-              >
-                Evidence & Review
-              </TabsTrigger>
-              <TabsTrigger
-                value="comments"
-                className="text-sm text-gray-600 rounded-lg data-[state=active]:bg-white data-[state=active]:text-gray-900"
-              >
-                Comments ({comments?.length || 0})
-              </TabsTrigger>
-            </TabsList>
+                {tab.label}
+              </button>
+            ))}
+          </div>
 
-            <TabsContent value="info" className="mt-0">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <TaskInfoTab task={task} />
-              </div>
-            </TabsContent>
+          {/* TAB CONTENT */}
+          {activeTab === 'info' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <TaskInfoTab task={task} />
+            </div>
+          )}
 
-            <TabsContent value="evidence" className="mt-0">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <EvidenceTab
-                  task={task}
-                  evidenceList={evidenceList}
-                  loading={loading}
-                  uploading={uploading}
-                  selectedFile={selectedFile}
-                  fileInputRef={fileInputRef}
-                  handleFileSelect={handleFileSelect}
-                  handleRemoveFile={handleRemoveFile}
-                  handleFileUpload={handleFileUpload}
-                  handleEvidenceReview={handleEvidenceReview}
-                  activeReview={activeReview}
-                  setActiveReview={setActiveReview}
-                  reviewingEvidence={reviewingEvidence}
-                  isManager={isManagerOrAdmin}
-                  isAuditor={storedRoles.includes('ROLE_AUDITOR')}
-                  rating={rating}
-                  setRating={setRating}
-                  handleLateRating={handleLateRating}
-                  isCompleting={isCompleting}
-                  handleApproveAndComplete={handleApproveAndComplete}
-                  handleCancelTask={handleCancelTask}
-                  isCanceling={isCanceling}
-                />
-              </div>
-            </TabsContent>
+          {activeTab === 'evidence' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <EvidenceTab
+                task={task}
+                evidenceList={evidenceList}
+                loading={loading}
+                uploading={uploading}
+                selectedFile={selectedFile}
+                fileInputRef={fileInputRef}
+                handleFileSelect={handleFileSelect}
+                handleRemoveFile={handleRemoveFile}
+                handleFileUpload={handleFileUpload}
+                handleEvidenceReview={handleEvidenceReview}
+                activeReview={activeReview}
+                setActiveReview={setActiveReview}
+                reviewingEvidence={reviewingEvidence}
+                isManager={isManagerOrAdmin}
+                isAuditor={storedRoles.includes('ROLE_AUDITOR')}
+                rating={rating}
+                setRating={setRating}
+                handleLateRating={handleLateRating}
+                isCompleting={isCompleting}
+                handleApproveAndComplete={handleApproveAndComplete}
+                handleCancelTask={handleCancelTask}
+                isCanceling={isCanceling}
+              />
+            </div>
+          )}
 
-            <TabsContent value="comments" className="mt-0">
-              <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <CommentsTab
-                  comments={comments}
-                  ticketComments={ticketComments}
-                  newComment={newComment}
-                  setNewComment={setNewComment}
-                  handleSendComment={handleSendComment}
-                  sendingComment={sendingComment}
-                  sourceTicketId={task.sourceTicketId}
-                />
-              </div>
-            </TabsContent>
-          </Tabs>
+          {activeTab === 'comments' && (
+            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
+              <CommentsTab
+                comments={comments}
+                ticketComments={ticketComments}
+                newComment={newComment}
+                setNewComment={setNewComment}
+                handleSendComment={handleSendComment}
+                sendingComment={sendingComment}
+                sourceTicketId={task.sourceTicketId}
+              />
+            </div>
+          )}
         </div>
       </div>
-      
+
       <ConfirmDialog
         isOpen={confirmConfig.isOpen}
         title={confirmConfig.title}
@@ -444,9 +450,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
           if (confirmConfig.onConfirm) confirmConfig.onConfirm();
           setConfirmConfig({ ...confirmConfig, isOpen: false });
         }}
-        onCancel={() =>
-          setConfirmConfig({ ...confirmConfig, isOpen: false })
-        }
+        onCancel={() => setConfirmConfig({ ...confirmConfig, isOpen: false })}
       />
     </div>
   );
