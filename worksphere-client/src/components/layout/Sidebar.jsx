@@ -166,6 +166,10 @@ export default function Sidebar() {
                 <Users size={18} />
                 {!collapsed && <span>Employee Directory</span>}
               </NavLink>
+              <NavLink to="/hr/archived-staff" className={navLinkClass}>
+                <LogOut size={18} />
+                {!collapsed && <span>Archived Staff</span>}
+              </NavLink>
               <NavLink to="/hr/manager-teams" className={navLinkClass}>
                 <Network size={18} />
                 {!collapsed && <span>Manager Teams</span>}

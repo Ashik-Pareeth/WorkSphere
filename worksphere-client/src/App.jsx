@@ -37,6 +37,7 @@ const PayrollDashboard = React.lazy(
 );
 import MyCompensation from './features/hr/MyCompensation';
 const EmployeeList = React.lazy(() => import('./components/employees/EmployeeList'));
+const ArchivedStaff = React.lazy(() => import('./components/employees/ArchivedStaff'));
 import Unauthorized from './pages/Unauthorized';
 import MyAttendanceLog from './features/attendance/MyAttendanceLog';
 import TeamAttendanceLog from './features/attendance/TeamAttendanceLog';
@@ -199,6 +200,7 @@ function App() {
                 <Route path="/jobPosition" element={<JobPositionForm />} />
                 <Route path="/leave-policies" element={<LeavePolicyPage />} />
                 <Route path="/employee-list" element={<EmployeeList />} />
+                <Route path="/hr/archived-staff" element={<ArchivedStaff />} />
                 <Route
                   path="/leave-override"
                   element={<LeaveBalanceOverridePage />}

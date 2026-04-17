@@ -1,9 +1,6 @@
 package com.ucocs.worksphere.controller;
 
-import com.ucocs.worksphere.dto.ActivateAccountRequest;
-import com.ucocs.worksphere.dto.CreateEmployeeRequest;
-import com.ucocs.worksphere.dto.EmployeeResponseDTO;
-import com.ucocs.worksphere.dto.UpdateStatusRequest;
+import com.ucocs.worksphere.dto.*;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.service.EmployeeService;
 import jakarta.validation.Valid;
@@ -68,6 +65,12 @@ public class EmployeeController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<List<EmployeeResponseDTO>> getMyTeam(Principal principal) {
         return ResponseEntity.ok(employeeService.getMyTeam(principal.getName()));
+    }
+
+    @GetMapping("/archived")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN')")
+    public ResponseEntity<List<ArchivedEmployeeDTO>> getArchivedEmployees() {
+        return ResponseEntity.ok(employeeService.getArchivedEmployees());
     }
 
     @PutMapping("/{id}")

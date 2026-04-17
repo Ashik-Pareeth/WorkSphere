@@ -17,3 +17,9 @@ export const getMyTeam = async () => {
   const response = await axiosInstance.get('/employees/my-team');
   return response.data;
 };
+
+// HR/ADMIN only: fetch offboarded/terminated employees
+export const getArchivedEmployees = async () => {
+  const response = await axiosInstance.get('/employees/archived');
+  return response.data;
+};
