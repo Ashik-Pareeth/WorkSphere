@@ -78,6 +78,14 @@ public class TaskController {
         return ResponseEntity.ok(convertToDTOs(tasks));
     }
 
+    @GetMapping("/team-tasks/strict")
+    @PreAuthorize("hasRole('MANAGER')")
+    public ResponseEntity<List<TaskResponseDTO>> getStrictTeamTasks() {
+        Employee manager = getAuthenticatedEmployee();
+        List<Task> tasks = taskService.getStrictTeamTasks(manager.getId());
+        return ResponseEntity.ok(convertToDTOs(tasks));
+    }
+
     @GetMapping("/all-tasks")
     @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'AUDITOR')")
     public ResponseEntity<List<TaskResponseDTO>> getAllTasks() {

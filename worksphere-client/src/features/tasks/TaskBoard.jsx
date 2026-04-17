@@ -6,6 +6,7 @@ import {
   getMyTasks,
   updateTaskStatus,
   getTeamTasks,
+  getStrictTeamTasks,
   getAllTasks,
 } from '../../api/taskApi';
 import CreateTaskModal from './CreateTaskModal';
@@ -97,7 +98,7 @@ const TaskBoard = () => {
   if (filters.viewMode === 'ALL_TASKS') {
     taskQueryFn = getAllTasks;
   } else if (filters.viewMode === 'TEAM_TASKS') {
-    taskQueryFn = getTeamTasks;
+    taskQueryFn = getStrictTeamTasks;
   } else {
     taskQueryFn = getMyTasks;
   }
@@ -105,8 +106,8 @@ const TaskBoard = () => {
   const taskQueryKey =
     taskQueryFn === getAllTasks
       ? ['allTasks']
-      : taskQueryFn === getTeamTasks
-        ? ['teamTasks']
+      : taskQueryFn === getStrictTeamTasks
+        ? ['teamTasksStrict']
         : ['myTasks'];
 
   const {

@@ -15,6 +15,11 @@ export const getTeamTasks = async () => {
   return response.data;
 };
 
+export const getStrictTeamTasks = async () => {
+  const response = await axiosInstance.get('/tasks/team-tasks/strict');
+  return response.data;
+};
+
 export const getAllTasks = async () => {
   const response = await axiosInstance.get('/tasks/all-tasks');
   return response.data;
