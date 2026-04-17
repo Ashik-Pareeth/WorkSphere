@@ -15,4 +15,6 @@ public interface OffboardingRecordRepository extends JpaRepository<OffboardingRe
     Optional<OffboardingRecord> findByEmployee(Employee employee);
 
     List<OffboardingRecord> findByStatus(OffboardingStatus status);
+    Optional<OffboardingRecord> findByEmployeeId(UUID employeeId);
+
 }

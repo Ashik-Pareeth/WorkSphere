@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.service;
 
+import com.ucocs.worksphere.dto.ArchivedEmployeeDTO;
 import com.ucocs.worksphere.dto.CreateEmployeeRequest;
 import com.ucocs.worksphere.dto.EmployeeResponseDTO;
 import com.ucocs.worksphere.entity.Employee;
@@ -8,13 +9,8 @@ import com.ucocs.worksphere.entity.SalaryStructure;
 import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.EmployeeStatus;
 import com.ucocs.worksphere.enums.NotificationType;
-import com.ucocs.worksphere.repository.DepartmentRepository;
-import com.ucocs.worksphere.repository.EmployeeActionRepository;
-import com.ucocs.worksphere.repository.EmployeeRepository;
-import com.ucocs.worksphere.repository.JobPositionRepository;
-import com.ucocs.worksphere.repository.RoleRepository;
-import com.ucocs.worksphere.repository.SalaryStructureRepository;
-import com.ucocs.worksphere.repository.WorkScheduleRepository;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import com.ucocs.worksphere.repository.*;
 import com.ucocs.worksphere.entity.EmployeeActionRecord;
 import com.ucocs.worksphere.enums.EmployeeActionType;
 import com.ucocs.worksphere.enums.EmployeeActionStatus;
@@ -22,7 +18,6 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
-import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 
@@ -79,6 +74,7 @@ public class EmployeeService {
     private final NotificationService notificationService;
     private final EmployeeActionRepository employeeActionRepository;
     private final SalaryStructureRepository salaryStructureRepository;
+    private final OffboardingRecordRepository offboardingRecordRepository;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
@@ -91,7 +87,8 @@ public class EmployeeService {
             AuditService auditService,
             NotificationService notificationService,
             EmployeeActionRepository employeeActionRepository,
-            SalaryStructureRepository salaryStructureRepository) {
+            SalaryStructureRepository salaryStructureRepository,
+            OffboardingRecordRepository offboardingRecordRepository) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
@@ -103,6 +100,7 @@ public class EmployeeService {
         this.notificationService = notificationService;
         this.employeeActionRepository = employeeActionRepository;
         this.salaryStructureRepository = salaryStructureRepository;
+        this.offboardingRecordRepository = offboardingRecordRepository;
     }
 
     // =========================================================================
@@ -327,9 +325,14 @@ public class EmployeeService {
     // READ OPERATIONS
     // =========================================================================
 
+    private static final List<EmployeeStatus> ARCHIVED_STATUSES = List.of(
+            EmployeeStatus.TERMINATED,
+            EmployeeStatus.RESIGNED
+    );
+
     @Transactional(readOnly = true)
     public List<EmployeeResponseDTO> getAllEmployees() {
-        return employeeRepository.findAll()
+        return employeeRepository.findByEmployeeStatusNotIn(ARCHIVED_STATUSES)
                 .stream()
                 .map(EmployeeResponseDTO::fromEntity)
                 .toList();
@@ -337,9 +340,20 @@ public class EmployeeService {
 
     @Transactional(readOnly = true)
     public List<EmployeeResponseDTO> getMyTeam(String managerUsername) {
-        return employeeRepository.findByManagerUserName(managerUsername)
+        return employeeRepository.findByManagerUserNameAndEmployeeStatusNotIn(managerUsername, ARCHIVED_STATUSES)
                 .stream()
                 .map(EmployeeResponseDTO::fromEntity)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public List<ArchivedEmployeeDTO> getArchivedEmployees() {
+        return employeeRepository.findByEmployeeStatusIn(ARCHIVED_STATUSES)
+                .stream()
+                .map(emp -> ArchivedEmployeeDTO.fromEntities(
+                        emp,
+                        offboardingRecordRepository.findByEmployeeId(emp.getId()).orElse(null)
+                ))
                 .toList();
     }
 
