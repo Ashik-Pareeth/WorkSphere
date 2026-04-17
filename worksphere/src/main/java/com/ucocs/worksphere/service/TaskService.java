@@ -291,6 +291,16 @@ public class TaskService {
         return taskRepository.findByAssignedTo_Id(employeeId);
     }
 
+    public List<Task> getStrictTeamTasks(UUID employeeId) {
+        List<Task> assignedByMe = taskRepository.findByAssigner_Id(employeeId);
+        List<Task> assignedToMyTeam = taskRepository.findByAssignedTo_Manager_Id(employeeId);
+
+        Set<Task> combined = new HashSet<>(assignedByMe);
+        combined.addAll(assignedToMyTeam);
+
+        return new ArrayList<>(combined);
+    }
+
     public List<Task> getTeamTasks(UUID employeeId) {
         boolean isGlobalViewer = Objects.requireNonNull(SecurityContextHolder.getContext().getAuthentication())
                 .getAuthorities().stream()
