@@ -99,6 +99,7 @@ const MyCompensation = () => {
               Number(r.taxDeduction || 0) +
               Number(r.professionalTax || 0) +
               Number(r.otherDeductions || 0);
+            const performanceBonus = Number(r.performanceBonus || 0);
 
             return (
               <div
@@ -133,6 +134,11 @@ const MyCompensation = () => {
                     <p className="text-lg font-semibold text-gray-900 mt-1">
                       ₹{fmt(r.grossPay)}
                     </p>
+                    {performanceBonus > 0 && (
+                      <p className="text-xs text-indigo-600 mt-0.5">
+                        +₹{fmt(performanceBonus)} bonus
+                      </p>
+                    )}
                   </div>
                   <div className="bg-red-50 rounded-lg p-3">
                     <p className="text-xs text-red-600 uppercase tracking-wider">
@@ -198,6 +204,23 @@ const MyCompensation = () => {
                     )}
                   </div>
                 </div>
+                {performanceBonus > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100">
+                    <p className="text-xs text-gray-400 uppercase tracking-wider mb-2">
+                      Earnings Additions
+                    </p>
+                    <span className="text-sm text-gray-600">
+                      Performance bonus:{' '}
+                      <strong>₹{fmt(performanceBonus)}</strong>
+                      {r.performanceScore && (
+                        <span className="text-gray-400">
+                          {' '}
+                          ({Number(r.performanceScore).toFixed(2)}/5)
+                        </span>
+                      )}
+                    </span>
+                  </div>
+                )}
               </div>
             );
           })}

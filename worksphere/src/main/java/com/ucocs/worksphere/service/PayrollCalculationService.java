@@ -37,9 +37,13 @@ public class PayrollCalculationService {
     private final NotificationService notificationService;
     private final JobPositionRepository jobPositionRepository;
     private final LeaveRequestRepository leaveRequestRepository;
+    private final PerformanceAppraisalRepository performanceAppraisalRepository;
 
     private static final BigDecimal HUNDRED = new BigDecimal("100");
     private static final BigDecimal TWELVE = new BigDecimal("12");
+    private static final BigDecimal PERFORMANCE_BONUS_MIN_SCORE = new BigDecimal("3.00");
+    private static final BigDecimal PERFORMANCE_BONUS_MAX_SCORE = new BigDecimal("5.00");
+    private static final BigDecimal PERFORMANCE_BONUS_MAX_PERCENT = new BigDecimal("10.00");
 
     // ==================== PAYROLL GENERATION ====================
 
@@ -148,9 +152,12 @@ public class PayrollCalculationService {
                 .multiply(BigDecimal.valueOf(totalOvertimeMinutes))
                 .divide(BigDecimal.valueOf(60), 2, RoundingMode.HALF_UP);
 
+        PerformanceBonusResult performanceBonus = calculatePerformanceBonus(emp, grossPay, yearMonth);
+
         // Net pay
         BigDecimal netPay = grossPay
                 .add(overtimePay)
+                .add(performanceBonus.amount())
                 .subtract(lopDeduction)
                 .subtract(pfDeduction)
                 .subtract(taxDeduction)
@@ -172,10 +179,50 @@ public class PayrollCalculationService {
         record.setProfessionalTax(professionalTax);
         record.setOtherDeductions(BigDecimal.ZERO);
         record.setOvertimePay(overtimePay);
+        record.setPerformanceScore(performanceBonus.score());
+        record.setPerformanceBonus(performanceBonus.amount());
         record.setNetPay(netPay);
         record.setStatus(PayrollStatus.DRAFT);
 
         return payrollRecordRepository.save(record);
+    }
+
+    /**
+     * Performance bonus is driven by the latest acknowledged appraisal available
+     * by the payroll period end. Scores at or below 3.0 receive no bonus; a 5.0
+     * score receives the capped 10% monthly gross bonus, with linear scaling
+     * between those points.
+     */
+    private PerformanceBonusResult calculatePerformanceBonus(Employee emp, BigDecimal grossPay, YearMonth yearMonth) {
+        Optional<PerformanceAppraisal> appraisalOpt = performanceAppraisalRepository
+                .findFirstByEmployeeAndStatusAndFinalScoreIsNotNullAndReviewPeriodEndLessThanEqualOrderByReviewPeriodEndDesc(
+                        emp,
+                        AppraisalStatus.ACKNOWLEDGED,
+                        yearMonth.atEndOfMonth());
+
+        if (appraisalOpt.isEmpty()) {
+            return new PerformanceBonusResult(null, BigDecimal.ZERO);
+        }
+
+        BigDecimal score = appraisalOpt.get().getFinalScore();
+        if (score == null || score.compareTo(PERFORMANCE_BONUS_MIN_SCORE) <= 0) {
+            return new PerformanceBonusResult(score, BigDecimal.ZERO);
+        }
+
+        BigDecimal cappedScore = score.min(PERFORMANCE_BONUS_MAX_SCORE);
+        BigDecimal bonusPercent = cappedScore
+                .subtract(PERFORMANCE_BONUS_MIN_SCORE)
+                .divide(PERFORMANCE_BONUS_MAX_SCORE.subtract(PERFORMANCE_BONUS_MIN_SCORE), 6, RoundingMode.HALF_UP)
+                .multiply(PERFORMANCE_BONUS_MAX_PERCENT);
+
+        BigDecimal amount = grossPay
+                .multiply(bonusPercent)
+                .divide(HUNDRED, 2, RoundingMode.HALF_UP);
+
+        return new PerformanceBonusResult(score, amount);
+    }
+
+    private record PerformanceBonusResult(BigDecimal score, BigDecimal amount) {
     }
 
     /**
@@ -492,6 +539,8 @@ public class PayrollCalculationService {
                 .professionalTax(record.getProfessionalTax())
                 .otherDeductions(record.getOtherDeductions())
                 .overtimePay(record.getOvertimePay())
+                .performanceScore(record.getPerformanceScore())
+                .performanceBonus(record.getPerformanceBonus() != null ? record.getPerformanceBonus() : BigDecimal.ZERO)
                 .netPay(record.getNetPay())
                 .status(record.getStatus())
                 .processedAt(record.getProcessedAt())

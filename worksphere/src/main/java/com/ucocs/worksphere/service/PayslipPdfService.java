@@ -56,7 +56,12 @@ public class PayslipPdfService {
         String position = employee.getJobPosition() != null ? employee.getJobPosition().getPositionName() : "N/A";
 
         BigDecimal overtimePay = record.getOvertimePay() != null ? record.getOvertimePay() : BigDecimal.ZERO;
-        BigDecimal totalEarnings = record.getGrossPay().add(overtimePay);
+        BigDecimal performanceBonus = record.getPerformanceBonus() != null
+                ? record.getPerformanceBonus()
+                : BigDecimal.ZERO;
+        BigDecimal totalEarnings = record.getGrossPay()
+                .add(overtimePay)
+                .add(performanceBonus);
         BigDecimal totalDeductions = record.getLopDeduction()
                 .add(record.getPfDeduction())
                 .add(record.getTaxDeduction())
@@ -66,6 +71,12 @@ public class PayslipPdfService {
         String overtimeRow = overtimePay.compareTo(BigDecimal.ZERO) > 0
                 ? "<tr><td style='color:#059669;font-weight:600;'>Overtime Pay <span style='font-size:9px;color:#059669;'>(1.5x hourly rate)</span></td><td style='text-align:right;color:#059669;font-weight:700;'>"
                         + formatCurrency(overtimePay) + "</td></tr>"
+                : "";
+
+        String performanceBonusRow = performanceBonus.compareTo(BigDecimal.ZERO) > 0
+                ? "<tr><td style='color:#4f46e5;font-weight:600;'>Performance Bonus <span style='font-size:9px;color:#6366f1;'>(Score "
+                        + formatScore(record.getPerformanceScore()) + "/5)</span></td><td style='text-align:right;color:#4f46e5;font-weight:700;'>"
+                        + formatCurrency(performanceBonus) + "</td></tr>"
                 : "";
 
         return """
@@ -195,6 +206,7 @@ public class PayslipPdfService {
                                     <tbody>
                                         <tr><td>Basic / Gross Pay</td><td class="amount">%s</td></tr>
                                         %s
+                                        %s
                                     </tbody>
                                     <tfoot>
                                         <tr><td>Total Earnings</td><td class="amount">%s</td></tr>
@@ -264,6 +276,7 @@ public class PayslipPdfService {
                         "PAID",
                         formatCurrency(record.getGrossPay()),
                         overtimeRow,
+                        performanceBonusRow,
                         formatCurrency(totalEarnings),
                         formatCurrency(record.getLopDeduction()),
                         formatCurrency(record.getPfDeduction()),
@@ -280,5 +293,11 @@ public class PayslipPdfService {
         if (amount == null)
             return "0.00";
         return String.format("%,.2f", amount);
+    }
+
+    private String formatScore(BigDecimal score) {
+        if (score == null)
+            return "N/A";
+        return String.format("%.2f", score);
     }
 }
