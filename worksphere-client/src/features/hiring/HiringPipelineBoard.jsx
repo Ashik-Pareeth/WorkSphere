@@ -61,12 +61,35 @@ const COLUMNS = {
   },
 };
 
+const getApiErrorMessage = (error, fallbackMessage) => {
+  const responseData = error?.response?.data;
+
+  if (typeof responseData === 'string' && responseData.trim()) {
+    return responseData;
+  }
+
+  if (typeof responseData?.message === 'string' && responseData.message.trim()) {
+    return responseData.message;
+  }
+
+  if (typeof responseData?.error === 'string' && responseData.error.trim()) {
+    return responseData.error;
+  }
+
+  if (typeof error?.message === 'string' && error.message.trim()) {
+    return error.message;
+  }
+
+  return fallbackMessage;
+};
+
 const HiringPipelineBoard = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const [candidates, setCandidates] = useState([]);
   const [job, setJob] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [showRejected, setShowRejected] = useState(false);
   const [pendingRejection, setPendingRejection] = useState(null);
@@ -77,15 +100,38 @@ const HiringPipelineBoard = () => {
 
   const loadCandidates = async () => {
     try {
+      setLoadError('');
+
       const [candidatesRes, jobRes] = await Promise.all([
         fetchCandidatesByJob(id),
         fetchJobById(id),
       ]);
-      setCandidates(candidatesRes.data);
+
+      const candidateList = Array.isArray(candidatesRes.data)
+        ? candidatesRes.data
+        : [];
+
+      if (!Array.isArray(candidatesRes.data)) {
+        console.error('Unexpected candidates payload', candidatesRes.data);
+        setLoadError(
+          'Candidates could not be loaded because the server returned an invalid response.'
+        );
+      }
+
+      setCandidates(candidateList);
       setJob(jobRes.data);
     } catch (error) {
+      const message = getApiErrorMessage(
+        error,
+        'Failed to load candidates. Please try again.'
+      );
+
       console.error('Failed to load candidates', error);
-      toast.error('Failed to load candidates. Please try again.');
+      setCandidates([]);
+      setLoadError(message);
+      toast.error('Failed to load candidates', {
+        description: message,
+      });
     } finally {
       setLoading(false);
     }
@@ -122,7 +168,9 @@ const HiringPipelineBoard = () => {
 
       try {
         const interviewRes = await fetchInterviewsForCandidate(draggableId);
-        const interviews = interviewRes.data;
+        const interviews = Array.isArray(interviewRes.data)
+          ? interviewRes.data
+          : [];
         const hasPassedInterview = interviews.some(
           (interview) => interview.status === 'COMPLETED'
         );
@@ -582,6 +630,23 @@ const HiringPipelineBoard = () => {
         </div>
 
         {/* ── Board ── */}
+        {loadError && (
+          <div
+            style={{
+              marginBottom: '14px',
+              border: '1px solid #fecaca',
+              background: '#fff1f2',
+              color: '#9f1239',
+              borderRadius: '10px',
+              padding: '12px 14px',
+              fontSize: '13px',
+              lineHeight: 1.5,
+            }}
+          >
+            {loadError}
+          </div>
+        )}
+
         <div style={{ flex: 1, overflowX: 'auto', minHeight: 0 }}>
           <DragDropContext onDragEnd={handleDragEnd}>
             <div

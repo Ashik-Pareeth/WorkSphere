@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
@@ -40,6 +41,7 @@ public class SalaryStructure extends BaseEntity {
     @Column(nullable = false)
     private LocalDate effectiveDate;
 
+    @JsonIgnore
     @OneToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "employee_id", unique = true)
     private Employee employee;

@@ -34,28 +34,61 @@ function timeAgo(dateString) {
 
 const getRouteForNotification = (type, referenceId) => {
   switch (type) {
+    // ── Tasks ────────────────────────────────────────────────
+    case 'TASK_ASSIGNED':
+    case 'TASK_STATUS_UPDATED':
+    case 'TASK_COMPLETED':
+    case 'TASK_RATED':
+      return referenceId ? `/tasks?open=${referenceId}` : '/tasks';
+
+    // ── Leave ────────────────────────────────────────────────
+    case 'LEAVE_SUBMITTED':
+    case 'LEAVE_APPROVED':
+    case 'LEAVE_REJECTED':
+    case 'LEAVE_CANCELLED':
+      return '/leave';
+
+    // ── Helpdesk ─────────────────────────────────────────────
+    case 'TICKET_UPDATE':
+      return referenceId ? `/helpdesk?ticket=${referenceId}` : '/helpdesk';
+
+    // ── Payroll ──────────────────────────────────────────────
     case 'PAYSLIP_READY':
       return '/my-compensation';
+
+    // ── Appraisals ───────────────────────────────────────────
     case 'APPRAISAL_DUE':
     case 'APPRAISAL_RECEIVED':
+    case 'MANAGER_REPORT_SUBMITTED':
+    case 'MANAGER_REPORT_REVIEWED':
       return '/my-appraisals';
-    case 'TICKET_UPDATE':
-      return '/helpdesk';
+
+    // ── Assets ───────────────────────────────────────────────
     case 'ASSET_ASSIGNED':
     case 'ASSET_RETURN_REQUEST':
       return '/my-assets';
-    case 'OFFBOARDING_INITIATED':
-      return '/profile';
-    case 'LEAVE_APPROVED':
-    case 'LEAVE_REJECTED':
-    case 'LEAVE_REQUESTED':
-      return '/my-leave';
-    case 'TASK_ASSIGNED':
-    case 'TASK_UPDATED':
-    case 'TASK_OVERDUE':
-      return `/tasks?open=${referenceId}`;
+
+    // ── Attendance ───────────────────────────────────────────
+    case 'ATTENDANCE_LATE':
+    case 'TIMESHEET_MANUALLY_ADJUSTED':
+      return '/attendance-log';
+
+    // ── Bulletin ─────────────────────────────────────────────
     case 'NEW_ANNOUNCEMENT':
       return '/bulletin';
+
+    // ── Profile / HR Actions ─────────────────────────────────
+    case 'OFFBOARDING_INITIATED':
+    case 'EMPLOYEE_ACTION_APPLIED':
+      return '/profile';
+
+    // ── Hiring / Recruiting (HR-facing) ──────────────────────
+    case 'INTERVIEW_SCHEDULED':
+    case 'INTERVIEW_FEEDBACK_SUBMITTED':
+    case 'CANDIDATE_APPLIED':
+    case 'CANDIDATE_STATUS_CHANGED':
+      return '/hiring/jobs';
+
     default:
       return '/dashboard';
   }
@@ -63,10 +96,19 @@ const getRouteForNotification = (type, referenceId) => {
 
 const getCategoryForType = (type) => {
   if (!type) return 'System';
-  if (type.includes('LEAVE')) return 'Leave';
-  if (type.includes('TASK')) return 'Tasks';
-  if (type.includes('PAYSLIP') || type.includes('PAYROLL')) return 'Payroll';
+  if (type.startsWith('LEAVE')) return 'Leave';
+  if (type.startsWith('TASK')) return 'Tasks';
+  if (type.startsWith('PAYSLIP') || type.startsWith('PAYROLL')) return 'Payroll';
   if (type === 'NEW_ANNOUNCEMENT') return 'Bulletin';
+  if (type === 'TICKET_UPDATE') return 'Helpdesk';
+  if (type.startsWith('ATTENDANCE') || type === 'TIMESHEET_MANUALLY_ADJUSTED') return 'Attendance';
+  if (type.startsWith('APPRAISAL') || type.startsWith('MANAGER_REPORT')) return 'Appraisals';
+  if (
+    type === 'INTERVIEW_SCHEDULED' ||
+    type === 'INTERVIEW_FEEDBACK_SUBMITTED' ||
+    type === 'CANDIDATE_APPLIED' ||
+    type === 'CANDIDATE_STATUS_CHANGED'
+  ) return 'Hiring';
   return 'System';
 };
 
@@ -79,10 +121,16 @@ const getIconForCategory = (category, isUnread) => {
       return <CheckSquare className={`w-5 h-5 ${color}`} />;
     case 'Payroll':
       return <CreditCard className={`w-5 h-5 ${color}`} />;
-    case 'System':
+    case 'Helpdesk':
       return <ShieldAlert className={`w-5 h-5 ${color}`} />;
     case 'Bulletin':
       return <Bell className={`w-5 h-5 ${color}`} />;
+    case 'Attendance':
+      return <Calendar className={`w-5 h-5 ${color}`} />;
+    case 'Appraisals':
+      return <CheckSquare className={`w-5 h-5 ${color}`} />;
+    case 'Hiring':
+      return <Briefcase className={`w-5 h-5 ${color}`} />;
     default:
       return <Bell className={`w-5 h-5 ${color}`} />;
   }
@@ -179,9 +227,13 @@ export default function NotificationsPage() {
         >
           <TabsList className="mb-6">
             <TabsTrigger value="All">All</TabsTrigger>
-            <TabsTrigger value="Leave">Leave</TabsTrigger>
             <TabsTrigger value="Tasks">Tasks</TabsTrigger>
+            <TabsTrigger value="Leave">Leave</TabsTrigger>
+            <TabsTrigger value="Helpdesk">Helpdesk</TabsTrigger>
+            <TabsTrigger value="Attendance">Attendance</TabsTrigger>
+            <TabsTrigger value="Appraisals">Appraisals</TabsTrigger>
             <TabsTrigger value="Payroll">Payroll</TabsTrigger>
+            <TabsTrigger value="Hiring">Hiring</TabsTrigger>
             <TabsTrigger value="Bulletin">Bulletin</TabsTrigger>
             <TabsTrigger value="System">System</TabsTrigger>
           </TabsList>

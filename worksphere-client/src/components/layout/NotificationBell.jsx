@@ -60,22 +60,64 @@ export default function NotificationBell() {
     }
   };
 
-  // Maps backend notification types to your frontend routes
-  // eslint-disable-next-line no-unused-vars
-  const getRouteForNotification = (type, _referenceId) => {
+  // Maps backend notification types to frontend routes
+  const getRouteForNotification = (type, referenceId) => {
     switch (type) {
+      // ── Tasks ────────────────────────────────────────────────
+      case 'TASK_ASSIGNED':
+      case 'TASK_STATUS_UPDATED':
+      case 'TASK_COMPLETED':
+      case 'TASK_RATED':
+        return referenceId ? `/tasks?open=${referenceId}` : '/tasks';
+
+      // ── Leave ────────────────────────────────────────────────
+      case 'LEAVE_SUBMITTED':
+      case 'LEAVE_APPROVED':
+      case 'LEAVE_REJECTED':
+      case 'LEAVE_CANCELLED':
+        return '/leave';
+
+      // ── Helpdesk ─────────────────────────────────────────────
+      case 'TICKET_UPDATE':
+        return referenceId ? `/helpdesk?ticket=${referenceId}` : '/helpdesk';
+
+      // ── Payroll ──────────────────────────────────────────────
       case 'PAYSLIP_READY':
         return '/my-compensation';
+
+      // ── Appraisals ───────────────────────────────────────────
       case 'APPRAISAL_DUE':
       case 'APPRAISAL_RECEIVED':
+      case 'MANAGER_REPORT_SUBMITTED':
+      case 'MANAGER_REPORT_REVIEWED':
         return '/my-appraisals';
-      case 'TICKET_UPDATE':
-        return '/helpdesk';
+
+      // ── Assets ───────────────────────────────────────────────
       case 'ASSET_ASSIGNED':
       case 'ASSET_RETURN_REQUEST':
         return '/my-assets';
+
+      // ── Attendance ───────────────────────────────────────────
+      case 'ATTENDANCE_LATE':
+      case 'TIMESHEET_MANUALLY_ADJUSTED':
+        return '/attendance-log';
+
+      // ── Bulletin ─────────────────────────────────────────────
+      case 'NEW_ANNOUNCEMENT':
+        return '/bulletin';
+
+      // ── Profile / HR Actions ─────────────────────────────────
       case 'OFFBOARDING_INITIATED':
+      case 'EMPLOYEE_ACTION_APPLIED':
         return '/profile';
+
+      // ── Hiring / Recruiting (HR-facing) ──────────────────────
+      case 'INTERVIEW_SCHEDULED':
+      case 'INTERVIEW_FEEDBACK_SUBMITTED':
+      case 'CANDIDATE_APPLIED':
+      case 'CANDIDATE_STATUS_CHANGED':
+        return '/hiring/jobs';
+
       default:
         return '/dashboard';
     }
