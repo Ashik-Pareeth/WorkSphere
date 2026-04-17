@@ -12,6 +12,8 @@ export default function TaskFilterBar({
   onChange,
   hasOversightAccess,
   isGlobalAdmin,
+  isTeamManager,
+  hasBothRoles,
   uniqueAssignees,
 }) {
   const handleChange = (key, value) => {
@@ -22,6 +24,7 @@ export default function TaskFilterBar({
     <div className="flex flex-wrap items-center gap-3">
       {hasOversightAccess && (
         <div className="flex items-center p-1 bg-gray-100 rounded-lg border border-gray-200">
+          {/* My Tasks — always shown to anyone with oversight */}
           <button
             onClick={() => handleChange('viewMode', 'MY_TASKS')}
             className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
@@ -32,16 +35,34 @@ export default function TaskFilterBar({
           >
             My Tasks
           </button>
-          <button
-            onClick={() => handleChange('viewMode', 'TEAM_TASKS')}
-            className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
-              filters.viewMode === 'TEAM_TASKS'
-                ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
-                : 'text-gray-500 hover:text-gray-700'
-            }`}
-          >
-            {isGlobalAdmin ? 'All Tasks' : 'Team View'}
-          </button>
+
+          {/* Team View — shown to managers (pure or dual-role) */}
+          {isTeamManager && (
+            <button
+              onClick={() => handleChange('viewMode', 'TEAM_TASKS')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                filters.viewMode === 'TEAM_TASKS'
+                  ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Team View
+            </button>
+          )}
+
+          {/* All Tasks — shown to HR/Admin (pure or dual-role) */}
+          {isGlobalAdmin && (
+            <button
+              onClick={() => handleChange('viewMode', 'ALL_TASKS')}
+              className={`px-3 py-1.5 text-xs font-semibold rounded-md transition-all ${
+                filters.viewMode === 'ALL_TASKS'
+                  ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {hasBothRoles ? 'All Tasks' : 'All Tasks'}
+            </button>
+          )}
         </div>
       )}
 
@@ -61,7 +82,7 @@ export default function TaskFilterBar({
       </button>
 
       {/* Assignee Filter (Only when viewing Team/All Tasks) */}
-      {filters.viewMode === 'TEAM_TASKS' && uniqueAssignees.length > 0 && (
+      {filters.viewMode !== 'MY_TASKS' && uniqueAssignees.length > 0 && (
         <select
           value={filters.filterAssignee || 'ALL'}
           onChange={(e) => handleChange('filterAssignee', e.target.value)}

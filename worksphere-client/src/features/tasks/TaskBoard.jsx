@@ -48,7 +48,7 @@ const TaskBoard = () => {
 
   const setFilters = (newFilters) => {
     const params = new URLSearchParams();
-    if (newFilters.viewMode !== 'MY_TASKS')
+    if (newFilters.viewMode && newFilters.viewMode !== 'MY_TASKS')
       params.set('view', newFilters.viewMode);
     if (newFilters.showCancelled) params.set('graveyard', 'true');
     if (newFilters.filterPriority !== 'ALL')
@@ -65,43 +65,43 @@ const TaskBoard = () => {
     ? [...baseColumns, 'CANCELLED']
     : baseColumns;
 
-  const userRole = localStorage.getItem('role') || '';
-  const normalizedRole = userRole.toUpperCase();
+  // Read the full roles array — supports multi-role users (e.g. HR + MANAGER)
+  const rolesRaw = localStorage.getItem('roles');
+  const userRoles = (() => {
+    try {
+      const parsed = JSON.parse(rolesRaw || '[]');
+      // Normalize: strip ROLE_ prefix and uppercase
+      return parsed.map((r) => r.replace(/^ROLE_/i, '').toUpperCase());
+    } catch {
+      // Fallback: legacy single-role key
+      const single = localStorage.getItem('role') || '';
+      return [single.replace(/^ROLE_/i, '').toUpperCase()].filter(Boolean);
+    }
+  })();
 
-  const isGlobalAdmin = [
-    'ROLE_SUPER_ADMIN',
-    'SUPER_ADMIN',
-    'ROLE_HR',
-    'HR',
-    'ROLE_AUDITOR',
-    'AUDITOR',
-  ].includes(normalizedRole);
-
-  const isTeamManager = ['ROLE_MANAGER', 'MANAGER'].includes(normalizedRole);
-
-  // ✅ Added role-specific checks
-  const isHR = ['ROLE_HR', 'HR'].includes(normalizedRole);
-  const isSuperAdmin = ['ROLE_SUPER_ADMIN', 'SUPER_ADMIN'].includes(
-    normalizedRole
+  const isGlobalAdmin = userRoles.some((r) =>
+    ['SUPER_ADMIN', 'HR', 'AUDITOR'].includes(r)
   );
+  const isTeamManager = userRoles.includes('MANAGER');
+
+  // A user can genuinely be both (e.g. HR manager)
+  const hasBothRoles = isGlobalAdmin && isTeamManager;
 
   const hasOversightAccess = isGlobalAdmin || isTeamManager;
 
-  // ✅ Updated API selection logic
+  // ── API selection based on viewMode ──────────────────────────
+  // viewMode can now be: 'MY_TASKS' | 'TEAM_TASKS' | 'ALL_TASKS'
+  // 'TEAM_TASKS' always maps to getTeamTasks (direct reports)
+  // 'ALL_TASKS'  always maps to getAllTasks  (org-wide)
   let taskQueryFn;
-  if (filters.viewMode === 'TEAM_TASKS') {
-    if (isHR || isSuperAdmin) {
-      taskQueryFn = getAllTasks;
-    } else if (isTeamManager) {
-      taskQueryFn = getTeamTasks;
-    } else {
-      taskQueryFn = getMyTasks;
-    }
+  if (filters.viewMode === 'ALL_TASKS') {
+    taskQueryFn = getAllTasks;
+  } else if (filters.viewMode === 'TEAM_TASKS') {
+    taskQueryFn = getTeamTasks;
   } else {
     taskQueryFn = getMyTasks;
   }
 
-  // ✅ Updated query keys for caching correctness
   const taskQueryKey =
     taskQueryFn === getAllTasks
       ? ['allTasks']
@@ -240,16 +240,16 @@ const TaskBoard = () => {
             <h1 className="text-xl font-bold tracking-tight text-gray-900">
               {filters.viewMode === 'MY_TASKS'
                 ? 'My Tasks'
-                : isGlobalAdmin
+                : filters.viewMode === 'ALL_TASKS'
                   ? 'Organization Tasks'
                   : 'Team Tasks'}
             </h1>
             <p className="text-xs text-gray-500 mt-0.5">
               {filters.viewMode === 'MY_TASKS'
                 ? 'Manage your personal active tasks'
-                : isGlobalAdmin
+                : filters.viewMode === 'ALL_TASKS'
                   ? 'Track task progress across the entire company'
-                  : 'Track task progress across your department'}
+                  : 'Track task progress across your direct reports'}
             </p>
           </div>
 
@@ -259,6 +259,8 @@ const TaskBoard = () => {
               onChange={setFilters}
               hasOversightAccess={hasOversightAccess}
               isGlobalAdmin={isGlobalAdmin}
+              isTeamManager={isTeamManager}
+              hasBothRoles={hasBothRoles}
               uniqueAssignees={uniqueAssignees}
             />
 

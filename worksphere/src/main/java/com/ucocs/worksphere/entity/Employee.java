@@ -8,6 +8,7 @@ import lombok.Setter;
 import java.time.LocalDateTime;
 import java.util.Set;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 @Setter
@@ -38,6 +39,7 @@ public class Employee extends BaseEntity {
     @Column(nullable = false)
     private double salary;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "employee", cascade = CascadeType.ALL)
     private SalaryStructure salaryStructure;
 

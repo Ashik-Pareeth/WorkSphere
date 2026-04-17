@@ -93,7 +93,9 @@ const OffboardingTracker = () => {
             remarks: '',
           });
         } catch (err) {
-          toast.error(err.response?.data?.message || 'Error initiating offboarding');
+          toast.error(
+            err.response?.data?.message || 'Error initiating offboarding'
+          );
         } finally {
           closeConfirm();
         }
@@ -261,7 +263,7 @@ const OffboardingTracker = () => {
                   required
                   value={formData.employeeId}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none bg-white"
                 >
                   <option value="" disabled>
                     Select mapping employee...
@@ -282,8 +284,12 @@ const OffboardingTracker = () => {
                   name="reason"
                   value={formData.reason}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 >
+                  <option value="" disabled>
+                    Select reason...
+                  </option>
+
                   <option value="RESIGNATION">Resignation</option>
                   <option value="TERMINATION">Termination</option>
                   <option value="RETIREMENT">Retirement</option>
@@ -300,7 +306,7 @@ const OffboardingTracker = () => {
                   required
                   value={formData.lastWorkingDay}
                   onChange={handleChange}
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                 />
               </div>
               <div>
@@ -312,7 +318,7 @@ const OffboardingTracker = () => {
                   value={formData.remarks}
                   onChange={handleChange}
                   rows="3"
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-500 focus:border-red-500 outline-none"
                   placeholder="Optional details..."
                 ></textarea>
               </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   clockIn,
   clockOut,
@@ -93,11 +93,6 @@ const STYLES = `
   .att-skip-btn:hover { color: rgba(255,255,255,0.45); }
   .att-error { font-family: 'DM Sans', sans-serif; font-size: 12px; color: #f87171; margin-top: 12px; }
 
-  .att-float {
-    position: fixed; bottom: 32px; right: 32px; z-index: 1000;
-    display: flex; flex-direction: column; align-items: flex-end; gap: 10px;
-    animation: att-float-in 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  }
   @keyframes att-float-in {
     from { opacity:0; transform: translateY(20px) scale(0.9) }
     to   { opacity:1; transform: translateY(0) scale(1) }
@@ -177,7 +172,6 @@ function useElapsed(clockInTime) {
   const [elapsed, setElapsed] = useState('');
   useEffect(() => {
     if (!clockInTime) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect
       setElapsed('');
       return;
     }
@@ -187,12 +181,8 @@ function useElapsed(clockInTime) {
         setElapsed('00:00:00');
         return;
       }
-      const h = Math.floor(s / 3600)
-        .toString()
-        .padStart(2, '0');
-      const m = Math.floor((s % 3600) / 60)
-        .toString()
-        .padStart(2, '0');
+      const h = Math.floor(s / 3600).toString().padStart(2, '0');
+      const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
       const sec = (s % 60).toString().padStart(2, '0');
       setElapsed(`${h}:${m}:${sec}`);
     };
@@ -201,6 +191,77 @@ function useElapsed(clockInTime) {
     return () => clearInterval(id);
   }, [clockInTime]);
   return elapsed;
+}
+
+/**
+ * Makes the floating widget freely draggable anywhere on screen.
+ * Starts anchored to the bottom-right corner.
+ * Double-click anywhere on the widget container resets it to the default corner.
+ */
+function useDraggable() {
+  const getDefaultPos = () => ({
+    x: window.innerWidth - 220,
+    y: window.innerHeight - 130,
+  });
+
+  const [pos, setPos] = useState(getDefaultPos);
+  const dragState = useRef(null);
+  const isDragging = useRef(false);
+
+  const onPointerDown = useCallback(
+    (e) => {
+      // Don't start a drag when clicking the Clock Out button itself
+      if (e.target.closest('.att-float-clockout')) return;
+
+      e.preventDefault();
+      isDragging.current = false;
+      dragState.current = {
+        startX: e.clientX,
+        startY: e.clientY,
+        originX: pos.x,
+        originY: pos.y,
+      };
+
+      const onMove = (ev) => {
+        if (!dragState.current) return;
+        const dx = ev.clientX - dragState.current.startX;
+        const dy = ev.clientY - dragState.current.startY;
+        if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
+        setPos({
+          x: Math.max(0, Math.min(window.innerWidth - 200, dragState.current.originX + dx)),
+          y: Math.max(0, Math.min(window.innerHeight - 120, dragState.current.originY + dy)),
+        });
+      };
+
+      const onUp = () => {
+        dragState.current = null;
+        window.removeEventListener('pointermove', onMove);
+        window.removeEventListener('pointerup', onUp);
+      };
+
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', onUp);
+    },
+    [pos]
+  );
+
+  const resetPos = useCallback(() => setPos(getDefaultPos()), []);
+
+  const style = {
+    position: 'fixed',
+    left: pos.x,
+    top: pos.y,
+    zIndex: 1000,
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 10,
+    animation: 'att-float-in 0.4s cubic-bezier(0.16, 1, 0.3, 1)',
+    cursor: 'grab',
+    userSelect: 'none',
+  };
+
+  return { style, onPointerDown, resetPos };
 }
 
 const ClockIcon = ({ size = 20 }) => (
@@ -243,6 +304,7 @@ const AttendanceTracker = () => {
   const [error, setError] = useState(null);
   const [showPopup, setShowPopup] = useState(false);
 
+  const drag = useDraggable();
   const now = useLiveClock();
   const elapsed = useElapsed(clockInTime);
 
@@ -273,7 +335,7 @@ const AttendanceTracker = () => {
 
           if (todayLog?.clockIn && !todayLog?.clockOut) {
             setIsClockedIn(true);
-            setClockInTime(new Date(todayLog.clockIn)); // ← real backend timestamp
+            setClockInTime(new Date(todayLog.clockIn));
           } else {
             setShowPopup(true);
           }
@@ -296,7 +358,7 @@ const AttendanceTracker = () => {
       setError(null);
       await clockIn();
       setIsClockedIn(true);
-      setClockInTime(new Date()); // fresh session starts now
+      setClockInTime(new Date());
       setShowPopup(false);
     } catch (err) {
       setError(err.response?.data?.message || 'Failed to clock in. Try again.');
@@ -358,9 +420,14 @@ const AttendanceTracker = () => {
         </div>
       )}
 
-      {/* FLOATING CLOCK-OUT */}
+      {/* FLOATING CLOCK-OUT — draggable */}
       {isClockedIn && (
-        <div className="att-float">
+        <div
+          style={drag.style}
+          onPointerDown={drag.onPointerDown}
+          onDoubleClick={drag.resetPos}
+          title="Drag to move · Double-click to reset position"
+        >
           <div className="att-float-badge">
             <span className="att-float-dot" />
             <span className="att-float-label">On shift</span>
@@ -370,6 +437,7 @@ const AttendanceTracker = () => {
             className="att-float-clockout"
             onClick={handleClockOut}
             disabled={actionLoading}
+            style={{ cursor: actionLoading ? 'not-allowed' : 'pointer' }}
           >
             <StopIcon />
             {actionLoading ? 'Clocking out…' : 'Clock Out'}
@@ -404,7 +472,7 @@ const AttendanceTracker = () => {
             }}
           />
           <span className="att-header-pill-text">
-            On shift — clock out bottom right
+            On shift — drag the clock-out widget to reposition
           </span>
         </div>
       ) : (
