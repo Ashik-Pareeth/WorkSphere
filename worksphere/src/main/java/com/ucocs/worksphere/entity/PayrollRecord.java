@@ -60,6 +60,12 @@ public class PayrollRecord extends BaseEntity {
     @Column(nullable = false, precision = 12, scale = 2)
     private BigDecimal overtimePay = BigDecimal.ZERO;
 
+    @Column(precision = 4, scale = 2)
+    private BigDecimal performanceScore;
+
+    @Column(nullable = false, precision = 12, scale = 2, columnDefinition = "numeric(12,2) default 0.00")
+    private BigDecimal performanceBonus = BigDecimal.ZERO;
+
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private PayrollStatus status = PayrollStatus.DRAFT;

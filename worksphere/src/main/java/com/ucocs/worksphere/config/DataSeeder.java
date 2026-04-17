@@ -1120,6 +1120,7 @@ public class DataSeeder implements CommandLineRunner {
         r.setTaxDeduction(tax);
         r.setProfessionalTax(profTax);
         r.setOtherDeductions(otherDeductions);
+        r.setPerformanceBonus(BigDecimal.ZERO);
         r.setNetPay(netPay);
         r.setStatus(status);
         r.setProcessedBy(processedBy);

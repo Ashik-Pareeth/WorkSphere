@@ -27,6 +27,8 @@ public class PayrollRecordResponse {
     private BigDecimal professionalTax;
     private BigDecimal otherDeductions;
     private BigDecimal overtimePay;
+    private BigDecimal performanceScore;
+    private BigDecimal performanceBonus;
     private BigDecimal netPay;
     private PayrollStatus status;
     private LocalDateTime processedAt;

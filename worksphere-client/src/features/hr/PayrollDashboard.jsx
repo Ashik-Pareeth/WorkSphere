@@ -357,7 +357,9 @@ const PayrollDashboard = () => {
                     Number(r.professionalTax || 0) +
                     Number(r.otherDeductions || 0);
                   const overtimePay = Number(r.overtimePay || 0);
-                  const totalEarnings = Number(r.grossPay || 0) + overtimePay;
+                  const performanceBonus = Number(r.performanceBonus || 0);
+                  const totalEarnings =
+                    Number(r.grossPay || 0) + overtimePay + performanceBonus;
                   const isExpanded = expandedRow === r.id;
 
                   return (
@@ -378,6 +380,11 @@ const PayrollDashboard = () => {
                           ₹{fmt(r.grossPay)}
                           {overtimePay > 0 && (
                             <span className="block text-[11px] text-emerald-600 font-medium">+₹{fmt(overtimePay)} OT</span>
+                          )}
+                          {performanceBonus > 0 && (
+                            <span className="block text-[11px] text-indigo-600 font-medium">
+                              +₹{fmt(performanceBonus)} Bonus
+                            </span>
                           )}
                         </td>
                         <td className="p-4 text-right text-sm font-semibold text-red-600">
@@ -446,6 +453,19 @@ const PayrollDashboard = () => {
                                           <span className="ml-1 text-[10px] text-slate-400">(1.5× hourly rate)</span>
                                         </td>
                                         <td className="py-1.5 text-right font-semibold text-emerald-600">+₹{fmt(overtimePay)}</td>
+                                      </tr>
+                                    )}
+                                    {performanceBonus > 0 && (
+                                      <tr className="border-b border-slate-200">
+                                        <td className="py-1.5 text-slate-600">
+                                          Performance Bonus
+                                          {r.performanceScore && (
+                                            <span className="ml-1 text-[10px] text-slate-400">
+                                              ({Number(r.performanceScore).toFixed(2)}/5)
+                                            </span>
+                                          )}
+                                        </td>
+                                        <td className="py-1.5 text-right font-semibold text-indigo-600">+₹{fmt(performanceBonus)}</td>
                                       </tr>
                                     )}
                                     <tr className="bg-indigo-100/60">
