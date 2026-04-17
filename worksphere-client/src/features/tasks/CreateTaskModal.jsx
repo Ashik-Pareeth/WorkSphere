@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { getAllEmployees } from '../../api/employeeApi';
+import { useState, useEffect, useMemo } from 'react';
+import { getAllEmployees, getMyTeam } from '../../api/employeeApi';
 import { createTask } from '../../api/taskApi';
 import { toast } from 'sonner';
 
@@ -9,6 +9,9 @@ const autoRequiresEvidence = (priority) =>
 
 const CreateTaskModal = ({ onClose, onTaskCreated }) => {
   const [employees, setEmployees] = useState([]);
+  const [teamMembers, setTeamMembers] = useState([]);
+  const [assigneeScope, setAssigneeScope] = useState('TEAM'); // 'TEAM' or 'ORG'
+  
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -21,20 +24,62 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
   const [evidenceManual, setEvidenceManual] = useState(false);
   const [loading, setLoading] = useState(false);
 
+  const rolesRaw = localStorage.getItem('roles');
+  const userRoles = useMemo(() => {
+    try {
+      const parsed = JSON.parse(rolesRaw || '[]');
+      return parsed.map((r) => r.replace(/^ROLE_/i, '').toUpperCase());
+    } catch {
+      const single = localStorage.getItem('role') || '';
+      return [single.replace(/^ROLE_/i, '').toUpperCase()].filter(Boolean);
+    }
+  }, [rolesRaw]);
+
+  const isGlobalAdmin = userRoles.some((r) =>
+    ['SUPER_ADMIN', 'HR', 'AUDITOR'].includes(r)
+  );
+  const isTeamManager = userRoles.includes('MANAGER');
+  const hasBothRoles = isGlobalAdmin && isTeamManager;
+
+  useEffect(() => {
+    // Determine default scope based on roles
+    if (isGlobalAdmin && !isTeamManager) {
+      setAssigneeScope('ORG');
+    } else {
+      setAssigneeScope('TEAM');
+    }
+  }, [isGlobalAdmin, isTeamManager]);
+
   useEffect(() => {
     async function fetchEmps() {
       try {
-        const data = await getAllEmployees();
-        setEmployees(data);
-        if (data.length > 0) {
-          setFormData((prev) => ({ ...prev, assignedToId: data[0].id }));
+        let defaultList = [];
+        if (isTeamManager) {
+          const team = await getMyTeam();
+          setTeamMembers(team);
+          if (assigneeScope === 'TEAM') defaultList = team;
+        }
+        
+        if (isGlobalAdmin) {
+          const all = await getAllEmployees();
+          setEmployees(all);
+          if (assigneeScope === 'ORG') defaultList = all;
+        }
+
+        if (defaultList.length > 0) {
+          setFormData((prev) => ({ ...prev, assignedToId: defaultList[0].id }));
         }
       } catch (err) {
-        console.error('Failed to load employees', err);
+        console.error('Failed to load employees for task assignment', err);
       }
     }
     fetchEmps();
-  }, []);
+  }, [isTeamManager, isGlobalAdmin, assigneeScope]);
+
+  // Derived list of employees to show based on current scope toggle
+  const activeEmployeeList = assigneeScope === 'TEAM' && isTeamManager 
+    ? teamMembers 
+    : employees;
 
   /** When priority changes, auto-update evidence unless user locked it manually */
   const handlePriorityChange = (e) => {
@@ -107,26 +152,77 @@ const CreateTaskModal = ({ onClose, onTaskCreated }) => {
 
           {/* Assign To */}
           <div className="flex flex-col gap-1">
-            <label className="text-sm font-medium text-gray-700">
-              Assign To
-            </label>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium text-gray-700">
+                Assign To
+              </label>
+              {hasBothRoles && (
+                <div className="flex bg-gray-100 p-0.5 rounded-lg border border-gray-200">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssigneeScope('TEAM');
+                      if (teamMembers.length > 0) {
+                        setFormData((prev) => ({ ...prev, assignedToId: teamMembers[0].id }));
+                      }
+                    }}
+                    className={`px-2 py-1 text-[11px] font-semibold rounded-md transition-all ${
+                      assigneeScope === 'TEAM'
+                        ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    My Team
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setAssigneeScope('ORG');
+                      if (employees.length > 0) {
+                        setFormData((prev) => ({ ...prev, assignedToId: employees[0].id }));
+                      }
+                    }}
+                    className={`px-2 py-1 text-[11px] font-semibold rounded-md transition-all ${
+                      assigneeScope === 'ORG'
+                        ? 'bg-white text-gray-900 shadow-sm ring-1 ring-black/5'
+                        : 'text-gray-500 hover:text-gray-700'
+                    }`}
+                  >
+                    Entire Org
+                  </button>
+                </div>
+              )}
+            </div>
+            
             <select
               className="border border-gray-300 bg-white shadow-sm rounded-lg px-3 py-2 
-            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition"
+            focus:outline-none focus:ring-2 focus:ring-blue-500/30 focus:border-blue-500 transition disabled:bg-gray-100 disabled:text-gray-400"
               value={formData.assignedToId}
               onChange={(e) =>
                 setFormData({ ...formData, assignedToId: e.target.value })
               }
+              disabled={activeEmployeeList.length === 0}
             >
-              <option value="" disabled>
-                Select Employee
-              </option>
-              {employees.map((emp) => (
-                <option key={emp.id} value={emp.id}>
-                  {emp.username} ({emp.jobTitle || 'No Job Title'})
+              {activeEmployeeList.length === 0 ? (
+                <option value="" disabled>
+                  No employees found
                 </option>
-              ))}
+              ) : (
+                <>
+                  <option value="" disabled>
+                    Select Employee
+                  </option>
+                  {activeEmployeeList.map((emp) => (
+                    <option key={emp.id} value={emp.id}>
+                      {emp.firstName && emp.lastName ? `${emp.firstName} ${emp.lastName}` : emp.username} ({emp.jobTitle?.title || emp.jobTitle || 'No Title'})
+                    </option>
+                  ))}
+                </>
+              )}
             </select>
+            {activeEmployeeList.length === 0 && assigneeScope === 'TEAM' && isTeamManager && (
+              <p className="text-xs text-amber-600 mt-1">You don't have any direct reports yet.</p>
+            )}
           </div>
 
           {/* Priority */}
