@@ -3,6 +3,7 @@ package com.ucocs.worksphere.controller;
 import com.ucocs.worksphere.dto.bulletin.BulletinPostDTO;
 import com.ucocs.worksphere.dto.bulletin.ChatRequest;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.BulletinService;
 import jakarta.validation.Valid;
@@ -26,7 +27,7 @@ public class TeamMessageController {
     private Employee getAuthenticatedEmployee() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         return employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Authenticated user not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated user not found"));
     }
 
     @PostMapping

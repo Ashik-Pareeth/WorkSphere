@@ -1,6 +1,7 @@
 package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.entity.Role;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.RoleRepository;
 import org.springframework.stereotype.Service;
 
@@ -25,7 +26,7 @@ public class RoleService {
     public Role updateRole(UUID id, Role role) {
 
         Role existing = roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         existing.setRoleName(role.getRoleName());
 
@@ -36,7 +37,7 @@ public class RoleService {
     public void deleteRole(UUID id) {
 
         Role existing = roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         roleRepository.delete(existing);
     }
@@ -49,6 +50,6 @@ public class RoleService {
     //  GET BY ID  ← this was missing
     public Role findById(UUID id) {
         return roleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
     }
 }

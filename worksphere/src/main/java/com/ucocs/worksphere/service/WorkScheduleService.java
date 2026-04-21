@@ -65,7 +65,7 @@ public class WorkScheduleService {
 
     public void deleteSchedule(UUID id) {
         WorkSchedule schedule = workScheduleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Schedule not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Schedule not found"));
         String oldName = schedule.getScheduleName();
         workScheduleRepository.delete(schedule);
         UUID performedBy = getCurrentUserId();

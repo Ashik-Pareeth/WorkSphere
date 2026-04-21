@@ -7,6 +7,7 @@ import com.ucocs.worksphere.entity.OffboardingRecord;
 import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.NotificationType;
 import com.ucocs.worksphere.enums.OffboardingStatus;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.OffboardingRecordRepository;
 import lombok.RequiredArgsConstructor;
@@ -38,10 +39,10 @@ public class OffboardingService {
             String initiatedByUsername) {
         Employee initiator = resolveEmployee(initiatedByUsername);
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + request.getEmployeeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
 
         if (offboardingRepository.findByEmployee(employee).isPresent()) {
-            throw new RuntimeException("Offboarding already initiated for this employee");
+            throw new IllegalStateException("Offboarding already initiated for this employee");
         }
 
         boolean hasAssets = !assetManagementService.getAssetsForEmployee(employee.getId()).isEmpty();
@@ -103,7 +104,7 @@ public class OffboardingService {
             String performedByUsername) {
         Employee performer = resolveEmployee(performedByUsername);
         OffboardingRecord record = offboardingRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Offboarding record not found: " + recordId));
+                .orElseThrow(() -> new ResourceNotFoundException("Offboarding record not found: " + recordId));
 
         boolean isHRorAdmin = performer.getRoles().stream()
                 .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
@@ -120,7 +121,7 @@ public class OffboardingService {
         switch (department.toUpperCase()) {
             case "IT":
                 if (isCleared && !assetManagementService.getAssetsForEmployee(record.getEmployee().getId()).isEmpty()) {
-                    throw new RuntimeException("Cannot grant IT clearance while employee still has assigned assets.");
+                    throw new IllegalStateException("Cannot grant IT clearance while employee still has assigned assets.");
                 }
                 record.setItClearance(isCleared);
                 clearanceField = "IT Clearance";
@@ -174,12 +175,12 @@ public class OffboardingService {
         Employee employee = resolveEmployee(username);
         return offboardingRepository.findByEmployee(employee)
                 .map(this::toResponse)
-                .orElseThrow(() -> new RuntimeException("No active offboarding record found for employee"));
+                .orElseThrow(() -> new ResourceNotFoundException("No active offboarding record found for employee"));
     }
 
     private Employee resolveEmployee(String username) {
         return employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
     }
 
     private OffboardingRecordResponse toResponse(OffboardingRecord record) {

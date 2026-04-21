@@ -6,6 +6,7 @@ import com.ucocs.worksphere.entity.GrievanceTicket;
 import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TicketComment;
 import com.ucocs.worksphere.enums.*;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.GrievanceTicketRepository;
 import com.ucocs.worksphere.repository.TaskRepository;
@@ -118,10 +119,10 @@ public class GrievanceService {
                 Employee performer = resolveEmployee(performedByUsername);
 
                 GrievanceTicket ticket = ticketRepository.findById(ticketId)
-                        .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
 
                 Employee assignee = employeeRepository.findById(assignToId)
-                        .orElseThrow(() -> new RuntimeException("Handler not found: " + assignToId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Handler not found: " + assignToId));
 
                 ticket.setAssignedTo(assignToId);
                 ticket.setStatus(GrievanceStatus.IN_PROGRESS);
@@ -187,7 +188,7 @@ public class GrievanceService {
                 Employee author = resolveEmployee(authorUsername);
 
                 GrievanceTicket ticket = ticketRepository.findById(ticketId)
-                                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+                                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
 
                 boolean isOwner = ticket.getRaisedBy().getId().equals(author.getId());
                 boolean hasAdminOrHr = author.getRoles().stream()
@@ -226,7 +227,7 @@ public class GrievanceService {
                 Employee performer = resolveEmployee(performedByUsername);
 
                 GrievanceTicket ticket = ticketRepository.findById(ticketId)
-                                .orElseThrow(() -> new RuntimeException("Ticket not found: " + ticketId));
+                                .orElseThrow(() -> new ResourceNotFoundException("Ticket not found: " + ticketId));
 
                 ticket.setStatus(GrievanceStatus.RESOLVED);
                 ticket.setResolution(resolution);
@@ -251,7 +252,7 @@ public class GrievanceService {
 
         private Employee resolveEmployee(String username) {
                 return employeeRepository.findByUserName(username)
-                                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
         }
 
         private String generateTicketNumber() {

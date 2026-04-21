@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.hiring.JobOpeningRequest;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.JobOpening;
 import com.ucocs.worksphere.enums.JobOpeningStatus;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.*;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -37,7 +38,7 @@ public class JobOpeningService {
 
     public JobOpening getOpeningById(UUID id) {
         return jobOpeningRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Job Opening not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Job Opening not found"));
     }
 
     @Transactional
@@ -56,13 +57,13 @@ public class JobOpeningService {
         jobOpening.setStatus(JobOpeningStatus.OPEN);
 
         jobOpening.setDepartment(departmentRepository.findById(openingRequest.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found")));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
 
         jobOpening.setJobPosition(jobPositionRepository.findById(openingRequest.getJobPositionId())
-                .orElseThrow(() -> new RuntimeException("Job Position not found")));
+                .orElseThrow(() -> new ResourceNotFoundException("Job Position not found")));
 
         Employee hrOwner = employeeRepository.findByUserName(hrUsername)
-                .orElseThrow(() -> new RuntimeException("HR User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("HR User not found"));
         jobOpening.setHrOwner(hrOwner);
 
         return jobOpeningRepository.save(jobOpening);

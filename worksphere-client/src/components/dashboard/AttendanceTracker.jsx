@@ -181,8 +181,12 @@ function useElapsed(clockInTime) {
         setElapsed('00:00:00');
         return;
       }
-      const h = Math.floor(s / 3600).toString().padStart(2, '0');
-      const m = Math.floor((s % 3600) / 60).toString().padStart(2, '0');
+      const h = Math.floor(s / 3600)
+        .toString()
+        .padStart(2, '0');
+      const m = Math.floor((s % 3600) / 60)
+        .toString()
+        .padStart(2, '0');
       const sec = (s % 60).toString().padStart(2, '0');
       setElapsed(`${h}:${m}:${sec}`);
     };
@@ -228,8 +232,14 @@ function useDraggable() {
         const dy = ev.clientY - dragState.current.startY;
         if (Math.abs(dx) > 3 || Math.abs(dy) > 3) isDragging.current = true;
         setPos({
-          x: Math.max(0, Math.min(window.innerWidth - 200, dragState.current.originX + dx)),
-          y: Math.max(0, Math.min(window.innerHeight - 120, dragState.current.originY + dy)),
+          x: Math.max(
+            0,
+            Math.min(window.innerWidth - 200, dragState.current.originX + dx)
+          ),
+          y: Math.max(
+            0,
+            Math.min(window.innerHeight - 120, dragState.current.originY + dy)
+          ),
         });
       };
 
@@ -472,7 +482,7 @@ const AttendanceTracker = () => {
             }}
           />
           <span className="att-header-pill-text">
-            On shift — drag the clock-out widget to reposition
+            On shift{elapsed ? ` · ${elapsed}` : ''}
           </span>
         </div>
       ) : (

@@ -72,6 +72,19 @@ public class GlobalExceptionHandler {
                 );
         }
 
+        @ExceptionHandler(org.springframework.web.multipart.MaxUploadSizeExceededException.class)
+        public ResponseEntity<ApiErrorResponse> handleMaxUploadSizeExceeded(
+                org.springframework.web.multipart.MaxUploadSizeExceededException ex,
+                HttpServletRequest request) {
+
+                return build(
+                        HttpStatus.CONTENT_TOO_LARGE,
+                        "File Too Large",
+                        "Uploaded file exceeds the maximum allowed size (5MB).",
+                        request
+                );
+        }
+
         @ExceptionHandler(org.springframework.web.HttpRequestMethodNotSupportedException.class)
         public ResponseEntity<ApiErrorResponse> handleMethodNotSupported(
                 org.springframework.web.HttpRequestMethodNotSupportedException ex,
@@ -83,6 +96,13 @@ public class GlobalExceptionHandler {
         public ResponseEntity<ApiErrorResponse> handleDatabaseConflict(
                 Exception ex, HttpServletRequest request) {
                 return build(HttpStatus.CONFLICT, "Database Conflict", "Operation violates database constraints.", request);
+        }
+
+        @ExceptionHandler(ServiceOperationException.class)
+        public ResponseEntity<ApiErrorResponse> handleServiceOperationException(
+                ServiceOperationException ex, HttpServletRequest request) {
+                log.error("Service operation failed at {}: {}", request.getRequestURI(), ex.getMessage(), ex);
+                return build(HttpStatus.INTERNAL_SERVER_ERROR, "Internal Server Error", ex.getMessage(), request);
         }
 
         @ExceptionHandler({

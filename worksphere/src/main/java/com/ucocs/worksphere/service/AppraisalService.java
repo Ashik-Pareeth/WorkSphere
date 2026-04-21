@@ -9,6 +9,7 @@ import com.ucocs.worksphere.enums.AppraisalStatus;
 import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.DailyStatus;
 import com.ucocs.worksphere.enums.NotificationType;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.AttendanceRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.PerformanceAppraisalRepository;
@@ -45,7 +46,7 @@ public class AppraisalService {
         public AppraisalResponse createAppraisal(AppraisalCreateRequest request, String initiatedByUsername) {
                 Employee initiator = resolveEmployee(initiatedByUsername);
                 Employee employee = employeeRepository.findById(request.getEmployeeId())
-                        .orElseThrow(() -> new RuntimeException(
+                        .orElseThrow(() -> new ResourceNotFoundException(
                                 "Employee not found: " + request.getEmployeeId()));
 
                 LocalDateTime startDt = request.getReviewPeriodStart().atStartOfDay();
@@ -137,14 +138,15 @@ public class AppraisalService {
                                                      String username) {
                 Employee employee = resolveEmployee(username);
                 PerformanceAppraisal appraisal = appraisalRepository.findById(appraisalId)
-                        .orElseThrow(() -> new RuntimeException("Appraisal not found: " + appraisalId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Appraisal not found: " + appraisalId));
 
                 if (!appraisal.getEmployee().getId().equals(employee.getId())) {
-                        throw new RuntimeException("Cannot submit self-appraisal for another employee");
+                        throw new org.springframework.security.access.AccessDeniedException(
+                                "Cannot submit self-appraisal for another employee");
                 }
 
                 if (appraisal.getStatus() != AppraisalStatus.PENDING) {
-                        throw new RuntimeException(
+                        throw new IllegalStateException(
                                 "Pre-requisite: Appraisal must be in PENDING status to submit self-review");
                 }
 
@@ -178,19 +180,19 @@ public class AppraisalService {
                                                         String username) {
                 Employee manager = resolveEmployee(username);
                 PerformanceAppraisal appraisal = appraisalRepository.findById(appraisalId)
-                        .orElseThrow(() -> new RuntimeException("Appraisal not found: " + appraisalId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Appraisal not found: " + appraisalId));
 
                 boolean isHrOrAdmin = manager.getRoles().stream()
                         .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
 
                 if (!isHrOrAdmin && (appraisal.getManager() == null
                         || !appraisal.getManager().getId().equals(manager.getId()))) {
-                        throw new RuntimeException(
+                        throw new org.springframework.security.access.AccessDeniedException(
                                 "Only the assigned manager, HR, or Admin can submit the manager appraisal");
                 }
 
                 if (appraisal.getStatus() != AppraisalStatus.IN_REVIEW) {
-                        throw new RuntimeException("Pre-requisite: Employee must submit self-appraisal first");
+                        throw new IllegalStateException("Pre-requisite: Employee must submit self-appraisal first");
                 }
 
                 appraisal.setManagerRating(BigDecimal.valueOf(request.getRating()));
@@ -297,15 +299,15 @@ public class AppraisalService {
         public AppraisalResponse acknowledgeAppraisal(UUID appraisalId, String username) {
                 Employee employee = resolveEmployee(username);
                 PerformanceAppraisal appraisal = appraisalRepository.findById(appraisalId)
-                        .orElseThrow(() -> new RuntimeException("Appraisal not found: " + appraisalId));
+                        .orElseThrow(() -> new ResourceNotFoundException("Appraisal not found: " + appraisalId));
 
                 if (!appraisal.getEmployee().getId().equals(employee.getId())) {
-                        throw new RuntimeException(
+                        throw new org.springframework.security.access.AccessDeniedException(
                                 "Context mismatch: Only the employee can acknowledge their own appraisal");
                 }
 
                 if (appraisal.getStatus() != AppraisalStatus.REVIEWED) {
-                        throw new RuntimeException("Pre-requisite: Appraisal must be reviewed by manager first");
+                        throw new IllegalStateException("Pre-requisite: Appraisal must be reviewed by manager first");
                 }
 
                 appraisal.setStatus(AppraisalStatus.ACKNOWLEDGED);
@@ -344,7 +346,7 @@ public class AppraisalService {
 
         private Employee resolveEmployee(String username) {
                 return employeeRepository.findByUserName(username)
-                        .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                        .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
         }
 
         private AppraisalResponse toResponse(PerformanceAppraisal appraisal) {

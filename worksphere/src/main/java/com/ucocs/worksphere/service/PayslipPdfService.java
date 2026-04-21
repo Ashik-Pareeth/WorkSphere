@@ -2,6 +2,7 @@ package com.ucocs.worksphere.service;
 
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.PayrollRecord;
+import com.ucocs.worksphere.exception.ServiceOperationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
@@ -45,7 +46,7 @@ public class PayslipPdfService {
             return filePath.toString().replace("\\", "/");
         } catch (Exception e) {
             log.error("Failed to generate payslip for employee {}: {}", employee.getId(), e.getMessage(), e);
-            throw new RuntimeException("Payslip generation failed", e);
+            throw new ServiceOperationException("Payslip generation failed", e);
         }
     }
 

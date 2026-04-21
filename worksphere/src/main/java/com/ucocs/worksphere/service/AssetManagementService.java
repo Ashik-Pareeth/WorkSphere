@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.hr.*;
 import com.ucocs.worksphere.entity.CompanyAsset;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.enums.*;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.CompanyAssetRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import lombok.RequiredArgsConstructor;
@@ -79,7 +80,7 @@ public class AssetManagementService {
     @Transactional(readOnly = true)
     public List<AssetResponse> getAssetsForEmployee(UUID employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
 
         return assetRepository.findByEmployee(employee).stream()
                 .map(this::toResponse)
@@ -105,7 +106,7 @@ public class AssetManagementService {
         Employee performer = resolveEmployee(performedByUsername);
 
         CompanyAsset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new RuntimeException("Asset not found: " + assetId));
+                .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + assetId));
 
         if (asset.getEmployee() != null) {
             throw new IllegalStateException(
@@ -113,7 +114,7 @@ public class AssetManagementService {
         }
 
         Employee employee = employeeRepository.findById(request.getEmployeeId())
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + request.getEmployeeId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
 
         asset.setEmployee(employee);
         asset.setAssignedAt(LocalDateTime.now());
@@ -148,7 +149,7 @@ public class AssetManagementService {
         Employee performer = resolveEmployee(performedByUsername);
 
         CompanyAsset asset = assetRepository.findById(assetId)
-                .orElseThrow(() -> new RuntimeException("Asset not found: " + assetId));
+                .orElseThrow(() -> new ResourceNotFoundException("Asset not found: " + assetId));
 
         if (asset.getEmployee() == null) {
             throw new IllegalStateException("Asset " + asset.getAssetTag() + " is not currently assigned.");
@@ -180,13 +181,13 @@ public class AssetManagementService {
      */
     public boolean areAllAssetsReturned(UUID employeeId) {
         Employee employee = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
         return assetRepository.findByEmployee(employee).isEmpty();
     }
 
     private Employee resolveEmployee(String username) {
         return employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
     }
 
     private String generateAssetTag(AssetType type) {

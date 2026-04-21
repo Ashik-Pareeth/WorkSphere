@@ -6,6 +6,8 @@ import com.ucocs.worksphere.dto.ForgotPasswordRequest;
 import com.ucocs.worksphere.dto.ResetPasswordRequest;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.PasswordResetToken;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import com.ucocs.worksphere.exception.ServiceOperationException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.PasswordResetTokenRepository;
 import com.ucocs.worksphere.service.EmailService;
@@ -69,7 +71,7 @@ public class AuthController {
                         }
                         return hexString.toString();
                 } catch (NoSuchAlgorithmException e) {
-                        throw new RuntimeException("Could not hash token", e);
+                        throw new ServiceOperationException("Could not hash token", e);
                 }
         }
 
@@ -91,7 +93,7 @@ public class AuthController {
                 String token = jwtUtil.generateToken(userDetails.getUsername(), roles);
 
                 Employee employee = employeeRepository.findByUserName(userDetails.getUsername())
-                                .orElseThrow(() -> new RuntimeException("Employee not found"));
+                                .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
 
                 return new LoginResponse(token, employee.getId(), employee.getEmployeeStatus());
         }
@@ -134,13 +136,13 @@ public class AuthController {
                 Optional<PasswordResetToken> tokenOpt = tokenRepository.findByTokenHash(hashedToken);
 
                 if (tokenOpt.isEmpty()) {
-                        return ResponseEntity.badRequest().body("Invalid or expired password reset token.");
+                        throw new IllegalArgumentException("Invalid or expired password reset token.");
                 }
 
                 PasswordResetToken resetToken = tokenOpt.get();
                 if (resetToken.isExpired()) {
                         tokenRepository.delete(resetToken);
-                        return ResponseEntity.badRequest().body("Invalid or expired password reset token.");
+                        throw new IllegalArgumentException("Invalid or expired password reset token.");
                 }
 
                 Employee employee = resetToken.getEmployee();

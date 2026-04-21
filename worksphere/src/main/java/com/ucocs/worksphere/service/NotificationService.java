@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.hr.NotificationResponse;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.Notification;
 import com.ucocs.worksphere.enums.NotificationType;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.NotificationRepository;
 import lombok.RequiredArgsConstructor;
@@ -32,7 +33,7 @@ public class NotificationService {
     public Notification send(UUID recipientId, NotificationType type, String title,
             String message, UUID referenceId, String referenceType) {
         Employee recipient = employeeRepository.findById(recipientId)
-                .orElseThrow(() -> new RuntimeException("Notification recipient not found: " + recipientId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification recipient not found: " + recipientId));
 
         Notification notification = new Notification();
         notification.setRecipient(recipient);
@@ -94,7 +95,7 @@ public class NotificationService {
     @Transactional
     public NotificationResponse markAsRead(UUID notificationId) {
         Notification notification = notificationRepository.findById(notificationId)
-                .orElseThrow(() -> new RuntimeException("Notification not found: " + notificationId));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found: " + notificationId));
 
         if (!notification.getIsRead()) {
             notification.setIsRead(true);
@@ -116,7 +117,7 @@ public class NotificationService {
 
     private Employee resolveEmployee(String username) {
         return employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
     }
 
     private NotificationResponse toResponse(Notification n) {

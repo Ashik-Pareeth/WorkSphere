@@ -2,6 +2,7 @@ package com.ucocs.worksphere.controller;
 
 import com.ucocs.worksphere.dto.hr.*;
 import com.ucocs.worksphere.entity.Employee;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.service.PayrollCalculationService;
 import jakarta.validation.Valid;
@@ -85,7 +86,7 @@ public class PayrollController {
         String path = payrollCalculationService.getPayslipPath(id);
         File file = new File(path);
         if (!file.exists()) {
-            return ResponseEntity.notFound().build();
+            throw new ResourceNotFoundException("Payslip file not found for payroll record: " + id);
         }
 
         Resource resource = new FileSystemResource(file);
@@ -124,7 +125,7 @@ public class PayrollController {
     private UUID resolveEmployeeId(Authentication authentication) {
         String username = authentication.getName();
         Employee emp = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
         return emp.getId();
     }
 }

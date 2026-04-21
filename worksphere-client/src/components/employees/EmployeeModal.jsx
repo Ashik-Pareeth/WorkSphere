@@ -662,6 +662,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
   const [showActionModal, setShowActionModal] = useState(false);
   const [colors] = useState(() => getGradient(initialEmp.id));
   const canEdit = canManage(viewerRank, emp.roles);
+  const canTakeFormalAction = viewerRank >= 3 && canEdit;
 
   const handleSaved = useCallback(async () => {
     setRefreshing(true);
@@ -683,11 +684,23 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
     [onClose]
   );
 
+  const handleFormalActionApplied = useCallback(async () => {
+    setShowActionModal(false);
+    await handleSaved();
+  }, [handleSaved]);
+
   useEffect(() => {
-    const h = (e) => e.key === 'Escape' && onClose();
+    const h = (e) => {
+      if (e.key !== 'Escape') return;
+      if (showActionModal) {
+        setShowActionModal(false);
+        return;
+      }
+      onClose();
+    };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [onClose]);
+  }, [onClose, showActionModal]);
 
   return (
     <div className="el-overlay el-root" onClick={handleBackdrop}>
@@ -768,7 +781,7 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
               {emp.roles?.map((r) => (
                 <RolePill key={r.id} roleName={r.roleName} />
               ))}
-              {canEdit && (
+              {canTakeFormalAction && (
                 <button
                   type="button"
                   onClick={() => setShowActionModal(true)}
@@ -836,6 +849,13 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
           )}
         </div>
       </div>
+      {showActionModal && (
+        <HRActionModal
+          employee={emp}
+          onClose={() => setShowActionModal(false)}
+          onActionApplied={handleFormalActionApplied}
+        />
+      )}
     </div>
   );
 }

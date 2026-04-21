@@ -5,6 +5,7 @@ import com.ucocs.worksphere.entity.Task;
 import com.ucocs.worksphere.entity.TaskEvidence;
 import com.ucocs.worksphere.enums.EvidenceStatus;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import com.ucocs.worksphere.exception.ServiceOperationException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.TaskEvidenceRepository;
 import com.ucocs.worksphere.repository.TaskRepository;
@@ -66,7 +67,7 @@ public class TaskEvidenceService {
                 Files.createDirectories(uploadPath);
             }
         } catch (IOException e) {
-            throw new RuntimeException("Could not create upload directory");
+            throw new ServiceOperationException("Could not create upload directory", e);
         }
 
         String timeStamp = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMdd_HHmmss"));
@@ -80,7 +81,7 @@ public class TaskEvidenceService {
             // Using REPLACE_EXISTING to prevent FileAlreadyExistsException
             Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
         } catch (IOException e) {
-            throw new RuntimeException("Failed to store evidence file");
+            throw new ServiceOperationException("Failed to store evidence file", e);
         }
 
         TaskEvidence evidence = new TaskEvidence();

@@ -3,6 +3,7 @@ package com.ucocs.worksphere.service;
 import com.ucocs.worksphere.dto.hr.*;
 import com.ucocs.worksphere.entity.*;
 import com.ucocs.worksphere.enums.*;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.*;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -63,7 +64,7 @@ public class PayrollCalculationService {
         if (request.getEmployeeIds() != null && !request.getEmployeeIds().isEmpty()) {
             employees = request.getEmployeeIds().stream()
                     .map(id -> employeeRepository.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Employee not found: " + id)))
+                            .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + id)))
                     .filter(e -> e.getEmployeeStatus() == EmployeeStatus.ACTIVE)
                     .collect(Collectors.toList());
         } else {
@@ -97,7 +98,7 @@ public class PayrollCalculationService {
         if (existingOpt.isPresent()) {
             PayrollRecord existing = existingOpt.get();
             if (existing.getStatus() != PayrollStatus.DRAFT) {
-                throw new RuntimeException("Payroll already " + existing.getStatus() + " for " + emp.getUserName());
+                throw new IllegalStateException("Payroll already " + existing.getStatus() + " for " + emp.getUserName());
             }
             // Recalculate existing DRAFT
             payrollRecordRepository.delete(existing);
@@ -339,10 +340,10 @@ public class PayrollCalculationService {
     @Transactional
     public PayrollRecordResponse processRecord(UUID recordId, UUID performedBy) {
         PayrollRecord record = payrollRecordRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Payroll record not found: " + recordId));
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found: " + recordId));
 
         if (record.getStatus() != PayrollStatus.DRAFT) {
-            throw new RuntimeException("Only DRAFT records can be processed. Current status: " + record.getStatus());
+            throw new IllegalStateException("Only DRAFT records can be processed. Current status: " + record.getStatus());
         }
 
         // Generate PDF payslip
@@ -375,10 +376,10 @@ public class PayrollCalculationService {
     @Transactional
     public PayrollRecordResponse markPaid(UUID recordId, UUID performedBy) {
         PayrollRecord record = payrollRecordRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Payroll record not found: " + recordId));
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found: " + recordId));
 
         if (record.getStatus() != PayrollStatus.PROCESSED) {
-            throw new RuntimeException(
+            throw new IllegalStateException(
                     "Only PROCESSED records can be marked PAID. Current status: " + record.getStatus());
         }
 
@@ -396,14 +397,14 @@ public class PayrollCalculationService {
 
     public List<PayrollRecordResponse> getEmployeePayrollHistory(UUID employeeId) {
         Employee emp = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
         return payrollRecordRepository.findByEmployeeOrderByYearDescMonthDesc(emp)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
 
     public List<PayrollRecordResponse> getMyPayrollHistory(String username) {
         Employee emp = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + username));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + username));
         return payrollRecordRepository.findByEmployeeOrderByYearDescMonthDesc(emp)
                 .stream().map(this::toResponse).collect(Collectors.toList());
     }
@@ -430,7 +431,7 @@ public class PayrollCalculationService {
 
         if (request.getEmployeeId() != null) {
             Employee emp = employeeRepository.findById(request.getEmployeeId())
-                    .orElseThrow(() -> new RuntimeException("Employee not found: " + request.getEmployeeId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + request.getEmployeeId()));
 
             // Delete existing employee-level structure if present
             salaryStructureRepository.findByEmployee(emp).ifPresent(salaryStructureRepository::delete);
@@ -438,10 +439,10 @@ public class PayrollCalculationService {
             structure.setEmployee(emp);
         } else if (request.getJobPositionId() != null) {
             JobPosition pos = jobPositionRepository.findById(request.getJobPositionId())
-                    .orElseThrow(() -> new RuntimeException("Job position not found: " + request.getJobPositionId()));
+                    .orElseThrow(() -> new ResourceNotFoundException("Job position not found: " + request.getJobPositionId()));
             structure.setJobPosition(pos);
         } else {
-            throw new RuntimeException("Either employeeId or jobPositionId must be provided");
+            throw new IllegalArgumentException("Either employeeId or jobPositionId must be provided");
         }
 
         structure = salaryStructureRepository.save(structure);
@@ -454,7 +455,7 @@ public class PayrollCalculationService {
 
     public SalaryStructureResponse getSalaryStructure(UUID employeeId) {
         Employee emp = employeeRepository.findById(employeeId)
-                .orElseThrow(() -> new RuntimeException("Employee not found: " + employeeId));
+                .orElseThrow(() -> new ResourceNotFoundException("Employee not found: " + employeeId));
 
         SalaryStructure structure = resolveSalaryStructure(emp);
         if (structure == null) {
@@ -478,7 +479,7 @@ public class PayrollCalculationService {
 
     public SalaryStructureResponse getSalaryStructureTemplate(UUID jobPositionId) {
         JobPosition jobPosition = jobPositionRepository.findById(jobPositionId)
-                .orElseThrow(() -> new RuntimeException("Job position not found: " + jobPositionId));
+                .orElseThrow(() -> new ResourceNotFoundException("Job position not found: " + jobPositionId));
 
         SalaryStructure structure = salaryStructureRepository
                 .findFirstByJobPositionAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
@@ -511,9 +512,9 @@ public class PayrollCalculationService {
 
     public String getPayslipPath(UUID recordId) {
         PayrollRecord record = payrollRecordRepository.findById(recordId)
-                .orElseThrow(() -> new RuntimeException("Payroll record not found: " + recordId));
+                .orElseThrow(() -> new ResourceNotFoundException("Payroll record not found: " + recordId));
         if (record.getPayslipUrl() == null || record.getPayslipUrl().isEmpty()) {
-            throw new RuntimeException("Payslip not yet generated for this record");
+            throw new ResourceNotFoundException("Payslip not yet generated for this record");
         }
         return record.getPayslipUrl();
     }

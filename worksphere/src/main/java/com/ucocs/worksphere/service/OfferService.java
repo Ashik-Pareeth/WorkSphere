@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.hiring.PublicOfferDTO;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.OfferLetter;
 import com.ucocs.worksphere.enums.OfferStatus;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.OfferLetterRepository;
 import io.jsonwebtoken.Claims;
@@ -41,7 +42,7 @@ public class OfferService {
 
     public OfferLetter getOfferById(UUID offerId) {
         return offerRepository.findById(offerId)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
     }
 
     @Transactional
@@ -49,13 +50,13 @@ public class OfferService {
 
         Candidate candidate = candidateRepository.findById(
                 offer.getCandidate().getId()
-        ).orElseThrow(() -> new RuntimeException("Candidate not found"));
+        ).orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         offer.setCandidate(candidate);
 
         String username = SecurityContextHolder.getContext().getAuthentication().getName();
         Employee generatedBy = employeeRepository.findByUserName(username)
-                .orElseThrow(() -> new RuntimeException("Authenticated employee not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Authenticated employee not found"));
         offer.setGeneratedBy(generatedBy);
 
         offer.setStatus(OfferStatus.SENT);
@@ -74,7 +75,7 @@ public class OfferService {
         OfferLetter offer = getOfferById(offerId);
 
         if (!jwtUtil.validateOfferToken(token, offer.getCandidate().getEmail(), offerId.toString())) {
-            throw new RuntimeException("Invalid or expired offer token.");
+            throw new IllegalArgumentException("Invalid or expired offer token.");
         }
 
         offer.setStatus(accepted ? OfferStatus.ACCEPTED : OfferStatus.DECLINED);
@@ -102,7 +103,7 @@ public class OfferService {
         System.out.println("Looking for offer ID: " + id);
         // 1. Fetch offer from DB
         OfferLetter offer = offerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Offer not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Offer not found"));
 
         try {
             // 2. Extract claims from token
@@ -114,24 +115,24 @@ public class OfferService {
 
             // 3. Validate token type
             if (!"OFFER_RESPONSE".equals(tokenType)) {
-                throw new RuntimeException("Invalid token type");
+                throw new IllegalArgumentException("Invalid token type");
             }
 
             // 4. Validate offerId match
             if (!id.toString().equals(tokenOfferId)) {
-                throw new RuntimeException("Token does not match offer");
+                throw new IllegalArgumentException("Token does not match offer");
             }
 
             // 5. Validate email match (VERY IMPORTANT)
             String actualEmail = offer.getCandidate().getEmail();
 
             if (!actualEmail.equals(tokenEmail)) {
-                throw new RuntimeException("Token does not belong to this candidate");
+                throw new IllegalArgumentException("Token does not belong to this candidate");
             }
 
             // 6. Validate expiry
             if (jwtUtil.extractExpiration(token).before(new Date())) {
-                throw new RuntimeException("Token expired");
+                throw new IllegalArgumentException("Token expired");
             }
 
             // ✅ All checks passed
@@ -144,7 +145,7 @@ public class OfferService {
                             : offer.getJobOpening().getSalaryMin(),                    offer.getJoiningDate()
             );
         } catch (Exception e) {
-            throw new RuntimeException("Invalid or expired offer link");
+            throw new IllegalArgumentException("Invalid or expired offer link", e);
         }
     }
 }

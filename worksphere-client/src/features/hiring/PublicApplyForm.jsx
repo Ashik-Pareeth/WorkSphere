@@ -54,7 +54,8 @@ const PublicApplyForm = () => {
       try {
         // Basic URL validation
         new URL(formData.resumeUrl);
-      } catch (_) { // eslint-disable-line no-unused-vars
+      } catch (_) {
+        // eslint-disable-line no-unused-vars
         setError('Please enter a valid Resume Link URL (e.g., https://...).');
         return;
       }
@@ -69,6 +70,7 @@ const PublicApplyForm = () => {
         err.response?.data?.message ||
           'Failed to submit application. Please try again later.'
       );
+      console.error('Application submission error:', err);
     } finally {
       setLoading(false);
     }

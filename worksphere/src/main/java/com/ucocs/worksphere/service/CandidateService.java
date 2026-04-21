@@ -7,6 +7,8 @@ import com.ucocs.worksphere.enums.CandidateSource;
 import com.ucocs.worksphere.enums.CandidateStatus;
 import com.ucocs.worksphere.enums.JobOpeningStatus;
 import com.ucocs.worksphere.enums.NotificationType;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
+import com.ucocs.worksphere.exception.ServiceOperationException;
 import com.ucocs.worksphere.repository.CandidateRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobOpeningRepository;
@@ -44,13 +46,13 @@ public class CandidateService {
 
     public Candidate getCandidateById(UUID id) {
         return candidateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
     }
 
     @Transactional
     public Candidate applyForJob(CandidateApplyRequest request, MultipartFile file) {
         JobOpening jobOpening = jobOpeningRepository.findById(request.getJobOpeningId())
-                .orElseThrow(() -> new RuntimeException("Job opening not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Job opening not found"));
         Candidate candidate = new Candidate();
         candidate.setJobOpening(jobOpening);
         candidate.setFullName(request.getFullName());
@@ -73,7 +75,7 @@ public class CandidateService {
                 Files.copy(file.getInputStream(), filePath, StandardCopyOption.REPLACE_EXISTING);
                 candidate.setResumeFileUrl(uploadDir + uniqueFileName);
             } catch (IOException e) {
-                throw new RuntimeException("Failed to store resume file", e);
+                throw new ServiceOperationException("Failed to store resume file", e);
             }
         }
 
@@ -99,21 +101,21 @@ public class CandidateService {
 
     public Resource getCandidateResume(UUID id) {
         Candidate candidate = candidateRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Candidate not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Candidate not found"));
 
         if (candidate.getResumeFileUrl() == null) {
-            throw new RuntimeException("No resume file found for this candidate");
+            throw new ResourceNotFoundException("No resume file found for this candidate");
         }
 
         try {
             Path filePath = Paths.get(candidate.getResumeFileUrl());
             Resource resource = new UrlResource(filePath.toUri());
             if (!resource.exists() || !resource.isReadable()) {
-                throw new RuntimeException("Resume file not found or unreadable");
+                throw new ResourceNotFoundException("Resume file not found or unreadable");
             }
             return resource;
         } catch (MalformedURLException e) {
-            throw new RuntimeException("Could not read resume file", e);
+            throw new ServiceOperationException("Could not read resume file", e);
         }
     }
 

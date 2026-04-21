@@ -6,6 +6,7 @@ import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.InterviewSchedule;
 import com.ucocs.worksphere.enums.InterviewStatus;
 import com.ucocs.worksphere.enums.NotificationType;
+import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.CandidateRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.InterviewScheduleRepository;
@@ -96,7 +97,7 @@ public class InterviewService {
     @Transactional
     public InterviewSchedule submitFeedback(UUID interviewId, Integer score, String feedback) {
         InterviewSchedule interview = interviewRepository.findById(interviewId)
-                .orElseThrow(() -> new RuntimeException("Interview not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Interview not found"));
 
         interview.setScore(score);
         interview.setFeedback(feedback);
