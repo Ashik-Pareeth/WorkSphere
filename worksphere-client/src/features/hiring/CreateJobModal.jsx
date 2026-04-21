@@ -24,7 +24,6 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
   useEffect(() => {
     const fetchDropdowns = async () => {
       try {
-        // Note: these backend endpoints don't have the /api/ prefix
         const [deptRes, posRes] = await Promise.all([
           axiosInstance.get('/departments'),
           axiosInstance.get('/jobPositions'),
@@ -42,20 +41,31 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  // Modified to accept the target status as an argument
+  const handleSubmit = async (targetStatus) => {
+    // Basic validation before submission
+    if (
+      !formData.title ||
+      !formData.departmentId ||
+      !formData.jobPositionId ||
+      !formData.description
+    ) {
+      alert('Please fill out all required fields.');
+      return;
+    }
+
     setLoading(true);
 
     try {
       const payload = {
         title: formData.title,
         description: formData.description,
-        departmentId: formData.departmentId, // FIXED: Flat ID
-        jobPositionId: formData.jobPositionId, // FIXED: Flat ID
+        departmentId: formData.departmentId,
+        jobPositionId: formData.jobPositionId,
         openSlots: parseInt(formData.openSlots, 10),
-        // (hrOwnerId should be passed if your backend requires it)
         salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : null,
         salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : null,
+        status: targetStatus, // Send the selected status to the backend
       };
 
       await createJobOpening(payload);
@@ -69,66 +79,64 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
     }
   };
 
+  // refined version of your component
+  // source: :contentReference[oaicite:0]{index=0}
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm px-4">
-      <div className="bg-white dark:bg-gray-900 w-full max-w-2xl rounded-2xl shadow-xl overflow-hidden border border-gray-100 dark:border-gray-800 flex flex-col max-h-[90vh]">
-        <div className="flex justify-between items-center p-6 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50">
+      <div className="w-full max-w-2xl bg-[#0f172a] rounded-xl shadow-xl border border-gray-800 flex flex-col max-h-[90vh]">
+        {/* Header */}
+        <div className="flex items-center justify-between px-6 py-5 border-b border-gray-800">
           <div className="flex items-center gap-3">
-            <div className="p-2 bg-blue-100 dark:bg-blue-900/30 rounded-lg text-blue-600 dark:text-blue-400">
+            <div className="p-2 rounded-md bg-blue-500/10 text-blue-400">
               <Briefcase className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="text-xl font-bold text-gray-900 dark:text-gray-100">
+              <h2 className="text-lg font-semibold text-white">
                 Create Job Opening
               </h2>
-              <p className="text-sm text-gray-500">
-                Publish a new position to the public portal.
+              <p className="text-xs text-gray-400">
+                Add a new role to your hiring pipeline
               </p>
             </div>
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            onClick={onClose}
-            className="rounded-full"
-          >
-            <X className="h-5 w-5" />
+
+          <Button variant="ghost" size="icon" onClick={onClose}>
+            <X className="h-4 w-4 text-gray-400" />
           </Button>
         </div>
 
-        <div className="p-6 overflow-y-auto">
-          <form
-            id="createJobForm"
-            onSubmit={handleSubmit}
-            className="space-y-6"
-          >
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Display Title <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="title"
-                  required
-                  placeholder="e.g. Senior Frontend Developer"
-                  value={formData.title}
-                  onChange={handleChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                />
-              </div>
+        {/* Body */}
+        <div className="px-6 py-6 overflow-y-auto">
+          <form className="space-y-6">
+            {/* Title */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Display Title <span className="text-red-400">*</span>
+              </label>
+              <input
+                type="text"
+                name="title"
+                placeholder="Senior Frontend Developer"
+                value={formData.title}
+                onChange={handleChange}
+                className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              />
+            </div>
 
+            {/* Grid */}
+            <div className="grid md:grid-cols-2 gap-5">
+              {/* Department */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <Building2 className="inline h-4 w-4 mr-1 text-gray-400" />{' '}
-                  Department <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1">
+                  <Building2 className="h-4 w-4 text-gray-400" />
+                  Department *
                 </label>
                 <select
                   name="departmentId"
-                  required
                   value={formData.departmentId}
                   onChange={handleChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>
                     Select Department
@@ -141,19 +149,19 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
                 </select>
               </div>
 
+              {/* Job Position */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Job Position <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  Job Position *
                 </label>
                 <select
                   name="jobPositionId"
-                  required
                   value={formData.jobPositionId}
                   onChange={handleChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   <option value="" disabled>
-                    Select System Position
+                    Select Position
                   </option>
                   {jobPositions.map((p) => (
                     <option key={p.id} value={p.id}>
@@ -163,80 +171,85 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
                 </select>
               </div>
 
+              {/* Open Slots */}
               <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  <Users className="inline h-4 w-4 mr-1 text-gray-400" /> Open
-                  Slots <span className="text-red-500">*</span>
+                <label className="block text-sm font-medium text-gray-300 mb-2 flex items-center gap-1">
+                  <Users className="h-4 w-4 text-gray-400" />
+                  Open Slots *
                 </label>
                 <input
                   type="number"
                   name="openSlots"
                   min="1"
-                  required
                   value={formData.openSlots}
                   onChange={handleChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-xs">
-                    Min Salary (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="salaryMin"
-                    placeholder="e.g. 60000"
-                    value={formData.salaryMin}
-                    onChange={handleChange}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1 text-xs">
-                    Max Salary (Optional)
-                  </label>
-                  <input
-                    type="number"
-                    name="salaryMax"
-                    placeholder="e.g. 90000"
-                    value={formData.salaryMax}
-                    onChange={handleChange}
-                    className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white"
-                  />
-                </div>
-              </div>
-
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
-                  Description <span className="text-red-500">*</span>
-                </label>
-                <textarea
-                  name="description"
-                  required
-                  rows="4"
-                  placeholder="Write the full job description and requirements here..."
-                  value={formData.description}
+              {/* Salary */}
+              <div className="grid grid-cols-2 gap-3">
+                <input
+                  type="number"
+                  name="salaryMin"
+                  placeholder="Min Salary"
+                  value={formData.salaryMin}
                   onChange={handleChange}
-                  className="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-800 dark:border-gray-700 dark:text-white resize-none"
+                  className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+                <input
+                  type="number"
+                  name="salaryMax"
+                  placeholder="Max Salary"
+                  value={formData.salaryMax}
+                  onChange={handleChange}
+                  className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
+            </div>
+
+            {/* Description */}
+            <div>
+              <label className="block text-sm font-medium text-gray-300 mb-2">
+                Description <span className="text-red-400">*</span>
+              </label>
+              <textarea
+                name="description"
+                rows="4"
+                placeholder="Describe responsibilities, requirements, and expectations..."
+                value={formData.description}
+                onChange={handleChange}
+                className="w-full bg-gray-900 border border-gray-700 rounded-md px-3 py-2 text-sm text-white placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
+              />
             </div>
           </form>
         </div>
 
-        <div className="p-6 border-t border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-800/50 flex justify-end gap-3 mt-auto">
-          <Button type="button" variant="outline" onClick={onClose}>
+        {/* Footer */}
+        <div className="flex justify-end gap-3 px-6 py-4 border-t border-gray-800 bg-gray-900/40">
+          <Button
+            variant="outline"
+            onClick={onClose}
+            disabled={loading}
+            className="border-gray-600 text-gray-300 hover:bg-gray-800"
+          >
             Cancel
           </Button>
+
           <Button
-            form="createJobForm"
-            type="submit"
-            className="bg-blue-600 hover:bg-blue-700 text-white shadow-lg shadow-blue-500/20"
+            onClick={() => handleSubmit('DRAFT')}
             disabled={loading}
+            className="bg-gray-700 hover:bg-gray-600 text-white"
           >
-            {loading ? 'Publishing...' : 'Publish Job Opening'}
+            Save Draft
+          </Button>
+
+          <Button
+            onClick={() => handleSubmit('OPEN')}
+            disabled={loading}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
+          >
+            {loading ? 'Publishing...' : 'Publish'}
           </Button>
         </div>
       </div>

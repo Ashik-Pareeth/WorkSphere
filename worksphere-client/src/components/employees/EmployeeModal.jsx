@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2, AlertTriangle } from 'lucide-react';
+import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2, AlertTriangle, Flag } from 'lucide-react';
 import HRActionModal from '../../features/hr/HRActionModal';
+import ManagerReportModal from '../../features/hr/ManagerReportModal';
 import { AuditTrail } from '../common/AuditTrail';
 import { AuthContext } from '../../context/AuthContext';
 
@@ -264,8 +265,6 @@ function EditTab({ emp, onSaved, viewerRank }) {
               const cleanName = r.roleName
                 ? r.roleName.replace(/^ROLE_/, '')
                 : '';
-              // We could import ROLE_STYLE, but wait, we need it. Let's import it from constants.
-              // Wait, ROLE_STYLE is imported but not used directly. Ah, we used it in RolePill.
               const s = ROLE_STYLE?.[cleanName] ?? {
                 bg: '#e5e7eb',
                 color: '#374151',
@@ -427,13 +426,18 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
   const isDanger = status === 'SUSPENDED' || status === 'TERMINATED';
   const isSuspended = emp.employeeStatus === 'SUSPENDED';
 
+  // High-rank HR/Admin users should use the formal action pipeline for suspensions
+  const formalActionsOnly = viewerRank >= 3;
+  const filteredStatuses = formalActionsOnly 
+    ? STATUSES.filter(s => s !== 'SUSPENDED' && s !== 'TERMINATED') 
+    : STATUSES;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setToast(null);
     try {
       const response = await axiosInstance.patch(`/employees/${emp.id}/status`, { status });
-      // Endpoint now returns the updated employee — update state directly without a second GET
       onUpdated(response.data);
       setToast({ msg: `Status updated to ${status}`, type: 'success' });
     } catch (err) {
@@ -469,7 +473,7 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
       <div>
         <FieldLabel>Set Status</FieldLabel>
         <div className="el-status-grid">
-          {STATUSES.map((s) => {
+          {filteredStatuses.map((s) => {
             const st = STATUS_STYLE[s] ?? {
               bg: '#f3f4f6',
               color: '#374151',
@@ -497,6 +501,11 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
             );
           })}
         </div>
+        {formalActionsOnly && (
+           <p className="el-hint mt-3 text-red-600 bg-red-50 p-2 rounded-lg text-xs" style={{fontStyle: 'normal'}}>
+             <strong>Note:</strong> Due to compliance, <code>SUSPENDED</code> and <code>TERMINATED</code> statuses cannot be set directly. Please use the Formal Action pipeline to apply these changes securely.
+           </p>
+        )}
       </div>
       <SaveBtn
         loading={loading}
@@ -519,7 +528,6 @@ function AttendanceTab({ emp, viewerRank }) {
 
   useEffect(() => {
     if (!isAllowed) return;
-    // eslint-disable-next-line
     setLoading(true);
     setError(null);
     axiosInstance
@@ -660,9 +668,11 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
   const [tab, setTab] = useState('view');
   const [refreshing, setRefreshing] = useState(false);
   const [showActionModal, setShowActionModal] = useState(false);
+  const [showReportModal, setShowReportModal] = useState(false);
   const [colors] = useState(() => getGradient(initialEmp.id));
   const canEdit = canManage(viewerRank, emp.roles);
   const canTakeFormalAction = viewerRank >= 3 && canEdit;
+  const canReportToHR = viewerRank === 2 && canEdit;
 
   const handleSaved = useCallback(async () => {
     setRefreshing(true);
@@ -696,11 +706,15 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
         setShowActionModal(false);
         return;
       }
+      if (showReportModal) {
+        setShowReportModal(false);
+        return;
+      }
       onClose();
     };
     window.addEventListener('keydown', h);
     return () => window.removeEventListener('keydown', h);
-  }, [onClose, showActionModal]);
+  }, [onClose, showActionModal, showReportModal]);
 
   return (
     <div className="el-overlay el-root" onClick={handleBackdrop}>
@@ -785,19 +799,6 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
                 <button
                   type="button"
                   onClick={() => setShowActionModal(true)}
-                  className="flex items-center gap-1.5 px-3 py-1 bg-rose-50 text-rose-600 hover:bg-rose-100 border border-rose-200 rounded-full text-[11px] font-semibold transition"
-                >
-                  <AlertTriangle size={12} />
-                  Formal Action
-                </button>
-              )}
-            </div>
-          </div>
-
-        {/* Tabs */}
-        <div className="el-tabs">
-          {TABS.map(({ key, label, Icon }) => {
-            const isAction = key !== 'view';
             const dim = isAction && !canEdit;
             return (
               <button
@@ -854,6 +855,13 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
           employee={emp}
           onClose={() => setShowActionModal(false)}
           onActionApplied={handleFormalActionApplied}
+        />
+      )}
+
+      {showReportModal && (
+        <ManagerReportModal
+          employee={emp}
+          onClose={() => setShowReportModal(false)}
         />
       )}
     </div>

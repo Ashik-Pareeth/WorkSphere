@@ -159,10 +159,8 @@ export default function HRActionModal({
     if (!form.reason.trim()) return setError('Reason is strictly required.');
     if (!form.effectiveDate) return setError('Effective Date is required.');
 
-    if (selected?.needsEndDate && !form.endDate) {
-      return setError(
-        'An End Date must be provided for suspensions or forced leave.'
-      );
+    if (selected?.needsEndDate && (!form.endDate || new Date(form.endDate) <= new Date(form.effectiveDate))) {
+      return setError('An End Date must be provided and must be after the Effective Date.');
     }
     if (selected?.needsPosition && !form.newJobPosition) {
       return setError('New Job Position is required.');
@@ -170,8 +168,8 @@ export default function HRActionModal({
     if (selected?.needsDept && !form.newDepartment) {
       return setError('New Department is required.');
     }
-    if (selected?.needsSalary && !form.newSalary) {
-      return setError('New Salary is required.');
+    if (selected?.needsSalary && (!form.newSalary || isNaN(form.newSalary) || Number(form.newSalary) <= 0)) {
+      return setError('A valid positive salary is required.');
     }
 
     setLoading(true);
@@ -466,7 +464,29 @@ export default function HRActionModal({
                           <p className="text-xs text-gray-500 mt-1 line-clamp-2">
                             {h.reason}
                           </p>
-                          <p className="text-[11px] text-gray-400 mt-1">
+                          
+                          {(h.previousJobPosition || h.newJobPosition || h.previousSalary != null || h.newSalary != null) && (
+                            <div className="mt-3 pt-3 border-t border-gray-100 grid grid-cols-2 gap-4">
+                              {(h.previousJobPosition || h.newJobPosition) && (
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Position</p>
+                                  <p className="text-xs text-gray-700">
+                                    {h.previousJobPosition || 'None'} <span className="text-gray-400 mx-1">&rarr;</span> <span className="font-semibold">{h.newJobPosition || 'None'}</span>
+                                  </p>
+                                </div>
+                              )}
+                              {(h.previousSalary != null || h.newSalary != null) && (
+                                <div>
+                                  <p className="text-[10px] uppercase font-bold text-gray-400 mb-1">Salary</p>
+                                  <p className="text-xs text-gray-700">
+                                    {h.previousSalary ? `₹${h.previousSalary.toLocaleString()}` : 'None'} <span className="text-gray-400 mx-1">&rarr;</span> <span className="font-semibold">{h.newSalary ? `₹${h.newSalary.toLocaleString()}` : 'None'}</span>
+                                  </p>
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          <p className="text-[11px] text-gray-400 mt-3 pt-3 border-t border-gray-100">
                             By {h.initiatedByName} ({h.initiatedByRole})
                           </p>
                         </div>

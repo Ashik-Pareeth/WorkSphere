@@ -1,5 +1,6 @@
 package com.ucocs.worksphere.dto.hiring;
 
+import com.ucocs.worksphere.enums.JobOpeningStatus;
 import jakarta.validation.constraints.AssertTrue;
 import lombok.Data;
 
@@ -17,6 +18,7 @@ public class JobOpeningRequest {
     private LocalDate closingDate;
     private BigDecimal salaryMin;
     private BigDecimal salaryMax;
+    private JobOpeningStatus status;
 
     @AssertTrue(message = "salaryMin must be <= salaryMax")
     public boolean isSalaryValid() {

@@ -206,6 +206,30 @@ export default function ActionCompliance() {
                             </div>
                           </div>
 
+                          {/* Before & After Details */}
+                          {(act.previousJobPosition || act.newJobPosition || act.previousSalary != null || act.newSalary != null) && (
+                            <div className="grid grid-cols-2 gap-4 text-sm bg-white p-4 rounded-lg border border-slate-100 mt-2">
+                              {(act.previousJobPosition || act.newJobPosition) && (
+                                <div>
+                                  <span className="text-slate-500">Position Change:</span>
+                                  <div className="text-slate-700 mt-1">
+                                    <span className="line-through text-slate-400 mr-2">{act.previousJobPosition || 'None'}</span>
+                                    <span className="font-medium">{act.newJobPosition || 'None'}</span>
+                                  </div>
+                                </div>
+                              )}
+                              {(act.previousSalary != null || act.newSalary != null) && (
+                                <div>
+                                  <span className="text-slate-500">Salary Change:</span>
+                                  <div className="text-slate-700 mt-1">
+                                    <span className="line-through text-slate-400 mr-2">{act.previousSalary ? `₹${act.previousSalary.toLocaleString()}` : 'None'}</span>
+                                    <span className="font-medium">{act.newSalary ? `₹${act.newSalary.toLocaleString()}` : 'None'}</span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          )}
+
                           {/* Review Notes */}
                           {act.reviewNotes && (
                             <div>

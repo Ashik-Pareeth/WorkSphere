@@ -13,6 +13,7 @@ import HiringSnapshotCard from '../components/dashboard/HiringSnapshotCard';
 import StatCard from '../components/common/StatCard';
 import { Skeleton } from '../components/ui/skeleton';
 import HRActionModal from '../features/hr/HRActionModal';
+import PendingReportsPanel from '../features/hr/PendingReportsPanel';
 
 // --- API ---
 import { getMyTasks, getTeamTasks } from '../api/taskApi';
