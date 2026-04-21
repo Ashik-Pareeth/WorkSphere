@@ -5,6 +5,7 @@ import axiosInstance from '../api/axiosInstance';
 import { useQuery } from '@tanstack/react-query';
 import { fetchMyAssets } from '@/api/hrApi';
 import { getMyBalances } from '@/api/leaveApi';
+import { getEmployeeActionHistory } from '../api/employeeActionApi';
 import { resolveProfilePicSrc } from '../utils/profilePhoto';
 import {
   User,
@@ -21,6 +22,7 @@ import {
   Calendar,
   AlertCircle,
   Tag,
+  Activity,
 } from 'lucide-react';
 
 // ─── Fetchers ─────────────────────────────────────────────────────────────────
@@ -59,6 +61,7 @@ const TABS = [
   { id: 'schedule', label: 'Schedule & Leave', icon: Clock },
   { id: 'assets', label: 'IT Assets', icon: Laptop },
   { id: 'financials', label: 'Financials', icon: CreditCard },
+  { id: 'actions', label: 'Action History', icon: Activity },
 ];
 
 // ─── Sub-components ───────────────────────────────────────────────────────────
@@ -120,8 +123,16 @@ const CardTitle = ({ icon: Icon, children }) => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 const Profile = () => {
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState('overview');
+  const initialTab = new URLSearchParams(window.location.search).get('tab') || 'overview';
+  const [activeTab, setActiveTab] = useState(initialTab);
   const [imageFailed, setImageFailed] = useState(false);
+
+  useEffect(() => {
+    const tabParam = new URLSearchParams(window.location.search).get('tab');
+    if (tabParam && TABS.some(t => t.id === tabParam)) {
+      setActiveTab(tabParam);
+    }
+  }, [window.location.search]);
 
   const {
     data: profileData,
@@ -143,6 +154,14 @@ const Profile = () => {
     queryKey: ['myLeaves'],
     queryFn: getMyBalances,
   });
+
+  const { data: actionsResponse = {} } = useQuery({
+    queryKey: ['myActions', user?.id],
+    queryFn: () => getEmployeeActionHistory(user.id),
+    enabled: !!user?.id,
+  });
+  const actionHistory = actionsResponse?.data ?? [];
+
   const profileSrc = resolveProfilePicSrc(profileData?.profilePic);
 
   useEffect(() => {
@@ -700,6 +719,49 @@ const Profile = () => {
                       section.
                     </p>
                   </div>
+                </Card>
+              </div>
+            )}
+
+            {/* ACTION HISTORY */}
+            {activeTab === 'actions' && (
+              <div className="max-w-2xl">
+                <Card>
+                  <CardTitle icon={Activity}>Formal HR Actions</CardTitle>
+                  
+                  {actionHistory.length > 0 ? (
+                    <div className="space-y-4 mt-2">
+                      {actionHistory.map(h => (
+                        <div key={h.id} className="p-4 rounded-xl" style={{ border: '1px solid #e2e8f0', background: '#f8fafc' }}>
+                          <div className="flex justify-between items-start mb-2">
+                             <div>
+                                <p className="font-semibold text-sm" style={{ color: '#1e293b' }}>
+                                   {h.actionType.replace(/_/g, ' ')}
+                                </p>
+                                <p className="text-xs mt-0.5" style={{ color: '#64748b' }}>
+                                   Effective: {fmt(h.effectiveDate)}
+                                </p>
+                             </div>
+                             <span className="px-2 py-0.5 text-xs font-bold rounded-md uppercase" style={{ 
+                               background: h.status === 'COMPLETED' ? '#dcfce7' : h.status === 'PENDING' ? '#fef3c7' : '#f1f5f9', 
+                               color: h.status === 'COMPLETED' ? '#166534' : h.status === 'PENDING' ? '#92400e' : '#475569' 
+                             }}>
+                                {h.status}
+                             </span>
+                          </div>
+                          <p className="text-sm mt-3" style={{ color: '#475569', lineHeight: '1.5' }}>
+                            {h.reason}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col items-center justify-center py-12 text-center">
+                       <Activity size={32} style={{ color: '#cbd5e1', marginBottom: 12 }} />
+                       <p className="text-sm font-semibold" style={{ color: '#64748b' }}>No actions found.</p>
+                       <p className="text-xs" style={{ color: '#94a3b8', marginTop: 4 }}>You have no formal HR actions recorded.</p>
+                    </div>
+                  )}
                 </Card>
               </div>
             )}

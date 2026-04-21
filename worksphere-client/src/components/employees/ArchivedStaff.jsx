@@ -3,11 +3,7 @@ import axiosInstance from '../../api/axiosInstance';
 import { useAuth } from '../../hooks/useAuth';
 import {
   Users,
-  X,
-  Building2,
-  User,
   Lock,
-  Search,
   CheckCircle2,
   XCircle,
   ChevronDown,
@@ -16,6 +12,52 @@ import {
 import { ROLE_HIERARCHY, getHighestRole, canManage } from '../../utils/rbac';
 import { GLOBAL_STYLES } from './shared/constants';
 import { Avatar, RolePill, StatusPill } from './shared/atoms';
+
+/* ================= STYLES ================= */
+
+const PAGE_STYLES = `
+  .el-root {
+    padding: 24px;
+    background: #ffffff;
+    min-height: 100%;
+  }
+  .el-page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #e2e8f0;
+  }
+  .el-page-header h1 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 600;
+    color: #0f172a;
+  }
+  .el-table {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+    font-size: 0.9rem;
+  }
+  .el-table th {
+    padding: 12px 16px;
+    background-color: #f8fafc;
+    color: #475569;
+    font-weight: 600;
+    border-bottom: 2px solid #e2e8f0;
+  }
+  .el-table td {
+    padding: 16px;
+    border-bottom: 1px solid #e2e8f0;
+    color: #1e293b;
+    vertical-align: middle;
+  }
+  .el-table tbody tr:hover {
+    background-color: #f1f5f9;
+  }
+`;
 
 /* ================= HELPERS ================= */
 
@@ -75,10 +117,11 @@ const ReasonPill = ({ reason }) => {
     <span
       style={{
         fontSize: 11,
-        padding: '3px 8px',
+        padding: '4px 10px',
         borderRadius: 20,
         background: map[reason] || '#64748b',
         color: '#fff',
+        fontWeight: 500,
       }}
     >
       {reason}
@@ -92,8 +135,11 @@ function OffboardingPanel({ emp, ob, colSpan }) {
   if (!ob) {
     return (
       <tr>
-        <td colSpan={colSpan} style={{ padding: 16 }}>
-          No offboarding data.
+        <td
+          colSpan={colSpan}
+          style={{ padding: 16, textAlign: 'center', color: '#64748b' }}
+        >
+          No offboarding data available.
         </td>
       </tr>
     );
@@ -104,35 +150,61 @@ function OffboardingPanel({ emp, ob, colSpan }) {
 
   return (
     <tr>
-      <td colSpan={colSpan} style={{ padding: 20, background: '#f8fafc' }}>
-        <div style={{ display: 'flex', gap: 40, flexWrap: 'wrap' }}>
+      <td
+        colSpan={colSpan}
+        style={{
+          padding: 24,
+          background: '#f8fafc',
+          borderBottom: '1px solid #e2e8f0',
+        }}
+      >
+        <div
+          style={{
+            display: 'flex',
+            gap: 40,
+            flexWrap: 'wrap',
+            lineHeight: '1.6',
+          }}
+        >
           <div>
-            <b>Reason:</b> {ob.reason}
+            <b style={{ color: '#475569' }}>Reason:</b> {ob.reason}
           </div>
           <div>
-            <b>Status:</b> {ob.status}
+            <b style={{ color: '#475569' }}>Status:</b> {ob.status}
           </div>
           <div>
-            <b>Initiated:</b> {formatDate(ob.initiatedAt)}
+            <b style={{ color: '#475569' }}>Initiated:</b>{' '}
+            {formatDate(ob.initiatedAt)}
           </div>
           <div>
-            <b>Last Day:</b> {formatDate(ob.lastWorkingDay)}
+            <b style={{ color: '#475569' }}>Last Day:</b>{' '}
+            {formatDate(ob.lastWorkingDay)}
           </div>
           <div>
-            <b>Duration:</b> {duration ?? '—'} days
+            <b style={{ color: '#475569' }}>Duration:</b> {duration ?? '—'} days
           </div>
           <div>
-            <b>Tenure:</b> {tenure ?? '—'} yrs
+            <b style={{ color: '#475569' }}>Tenure:</b> {tenure ?? '—'} yrs
           </div>
           <div>
-            <b>Manager:</b> {emp.managerName || '—'}
+            <b style={{ color: '#475569' }}>Manager:</b>{' '}
+            {emp.managerName || '—'}
           </div>
           <div>
-            <b>Salary Band:</b> {getSalaryBand(emp.salary)}
+            <b style={{ color: '#475569' }}>Salary Band:</b>{' '}
+            {getSalaryBand(emp.salary)}
           </div>
           <div>
-            <b>Clearances:</b>
-            <div style={{ display: 'flex', gap: 10 }}>
+            <b
+              style={{
+                color: '#475569',
+                display: 'block',
+                marginBottom: '4px',
+              }}
+            >
+              Clearances:
+            </b>
+            <div style={{ display: 'flex', gap: 12 }}>
               <ClearanceDot ok={ob.itClearance} label="IT" />
               <ClearanceDot ok={ob.hrClearance} label="HR" />
               <ClearanceDot ok={ob.financeClearance} label="Finance" />
@@ -140,10 +212,16 @@ function OffboardingPanel({ emp, ob, colSpan }) {
           </div>
 
           {ob.remarks && (
-            <div style={{ maxWidth: 400 }}>
-              <b>Remarks:</b>
-              <p style={{ fontStyle: 'italic', color: '#64748b' }}>
-                {ob.remarks}
+            <div style={{ width: '100%', marginTop: '8px' }}>
+              <b style={{ color: '#475569' }}>Remarks:</b>
+              <p
+                style={{
+                  fontStyle: 'italic',
+                  color: '#64748b',
+                  margin: '4px 0 0 0',
+                }}
+              >
+                "{ob.remarks}"
               </p>
             </div>
           )}
@@ -193,22 +271,46 @@ export default function ArchivedStaff() {
   return (
     <div className="el-root">
       <style>{GLOBAL_STYLES}</style>
+      <style>{PAGE_STYLES}</style>
 
       {/* HEADER */}
       <div className="el-page-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Users />
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <Users size={28} color="#2563eb" />
           <h1>Archived Staff</h1>
         </div>
         <RolePill roleName={rawRole} />
       </div>
 
       {/* SUMMARY STRIP */}
-      <div style={{ display: 'flex', gap: 20, marginBottom: 20 }}>
-        <div>Total: {stats.total}</div>
-        <div>Terminated: {stats.terminated}</div>
-        <div>Resigned: {stats.resigned}</div>
-        <div>Pending Clearance: {stats.pending}</div>
+      <div
+        style={{
+          display: 'flex',
+          gap: 32,
+          marginBottom: 24,
+          padding: '16px 24px',
+          background: '#f8fafc',
+          border: '1px solid #e2e8f0',
+          borderRadius: 8,
+          color: '#334155',
+          fontSize: '0.95rem',
+        }}
+      >
+        <div>
+          <strong style={{ color: '#0f172a' }}>Total:</strong> {stats.total}
+        </div>
+        <div>
+          <strong style={{ color: '#0f172a' }}>Terminated:</strong>{' '}
+          {stats.terminated}
+        </div>
+        <div>
+          <strong style={{ color: '#0f172a' }}>Resigned:</strong>{' '}
+          {stats.resigned}
+        </div>
+        <div>
+          <strong style={{ color: '#0f172a' }}>Pending Clearance:</strong>{' '}
+          {stats.pending}
+        </div>
       </div>
 
       {/* TABLE */}
@@ -221,64 +323,95 @@ export default function ArchivedStaff() {
             <th>Reason</th>
             <th>Duration</th>
             <th>Clearance</th>
-            <th></th>
+            <th style={{ width: '40px' }}></th>
           </tr>
         </thead>
 
         <tbody>
-          {records.map(({ employee: emp, offboardingRecord: ob }) => {
-            const isExpanded = expandedId === emp.id;
+          {records.length === 0 ? (
+            <tr>
+              <td
+                colSpan={7}
+                style={{
+                  textAlign: 'center',
+                  padding: '32px',
+                  color: '#64748b',
+                }}
+              >
+                No archived staff records found.
+              </td>
+            </tr>
+          ) : (
+            records.map(({ employee: emp, offboardingRecord: ob }) => {
+              const isExpanded = expandedId === emp.id;
 
-            const duration = getDurationDays(
-              ob?.initiatedAt,
-              ob?.lastWorkingDay
-            );
+              const duration = getDurationDays(
+                ob?.initiatedAt,
+                ob?.lastWorkingDay
+              );
 
-            const cleared =
-              ob?.itClearance && ob?.hrClearance && ob?.financeClearance;
+              const cleared =
+                ob?.itClearance && ob?.hrClearance && ob?.financeClearance;
 
-            const manageable = canManage(viewerRank, emp.roles);
+              const manageable = canManage(viewerRank, emp.roles);
 
-            return (
-              <React.Fragment key={emp.id}>
-                <tr
-                  onClick={() => setExpandedId(isExpanded ? null : emp.id)}
-                  style={{
-                    cursor: 'pointer',
-                    borderLeft: `4px solid ${cleared ? '#16a34a' : '#f59e0b'}`,
-                  }}
-                >
-                  <td>
-                    <Avatar emp={emp} size={32} /> {emp.firstName}{' '}
-                    {emp.lastName}
-                    {!manageable && <Lock size={10} />}
-                  </td>
+              return (
+                <React.Fragment key={emp.id}>
+                  <tr
+                    onClick={() => setExpandedId(isExpanded ? null : emp.id)}
+                    style={{
+                      cursor: 'pointer',
+                      borderLeft: `4px solid ${cleared ? '#16a34a' : '#f59e0b'}`,
+                    }}
+                  >
+                    <td
+                      style={{ display: 'flex', alignItems: 'center', gap: 12 }}
+                    >
+                      <Avatar emp={emp} size={32} />
+                      <span style={{ fontWeight: 500 }}>
+                        {emp.firstName} {emp.lastName}
+                      </span>
+                      {!manageable && (
+                        <Lock
+                          size={12}
+                          color="#94a3b8"
+                          style={{ marginLeft: 4 }}
+                        />
+                      )}
+                    </td>
 
-                  <td title={`Manager: ${emp.managerName}`}>
-                    {emp.departmentName}
-                  </td>
+                    <td title={`Manager: ${emp.managerName}`}>
+                      {emp.departmentName}
+                    </td>
 
-                  <td>{emp.jobTitle}</td>
+                    <td>{emp.jobTitle}</td>
 
-                  <td>
-                    <ReasonPill reason={ob?.reason} />
-                  </td>
+                    <td>
+                      <ReasonPill reason={ob?.reason} />
+                    </td>
 
-                  <td>{duration ? `${duration}d` : '—'}</td>
+                    <td>{duration ? `${duration}d` : '—'}</td>
 
-                  <td>
-                    <StatusPill status={cleared ? 'Cleared' : 'Pending'} />
-                  </td>
+                    <td>
+                      <StatusPill status={cleared ? 'Cleared' : 'Pending'} />
+                    </td>
 
-                  <td>{isExpanded ? <ChevronUp /> : <ChevronDown />}</td>
-                </tr>
+                    <td style={{ color: '#64748b' }}>
+                      {isExpanded ? (
+                        <ChevronUp size={20} />
+                      ) : (
+                        <ChevronDown size={20} />
+                      )}
+                    </td>
+                  </tr>
 
-                {isExpanded && (
-                  <OffboardingPanel emp={emp} ob={ob} colSpan={7} />
-                )}
-              </React.Fragment>
-            );
-          })}
+                  {isExpanded && (
+                    <OffboardingPanel emp={emp} ob={ob} colSpan={7} />
+                  )}
+                </React.Fragment>
+              );
+            })
+          )}
         </tbody>
       </table>
     </div>

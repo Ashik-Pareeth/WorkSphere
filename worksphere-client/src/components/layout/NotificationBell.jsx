@@ -88,9 +88,11 @@ export default function NotificationBell() {
       // ── Appraisals ───────────────────────────────────────────
       case 'APPRAISAL_DUE':
       case 'APPRAISAL_RECEIVED':
+        return '/my-appraisals';
+
       case 'MANAGER_REPORT_SUBMITTED':
       case 'MANAGER_REPORT_REVIEWED':
-        return '/my-appraisals';
+        return '/dashboard';
 
       // ── Assets ───────────────────────────────────────────────
       case 'ASSET_ASSIGNED':
@@ -108,8 +110,9 @@ export default function NotificationBell() {
 
       // ── Profile / HR Actions ─────────────────────────────────
       case 'OFFBOARDING_INITIATED':
-      case 'EMPLOYEE_ACTION_APPLIED':
         return '/profile';
+      case 'EMPLOYEE_ACTION_APPLIED':
+        return '/profile?tab=actions';
 
       // ── Hiring / Recruiting (HR-facing) ──────────────────────
       case 'INTERVIEW_SCHEDULED':

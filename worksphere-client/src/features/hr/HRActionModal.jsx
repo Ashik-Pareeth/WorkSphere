@@ -3,6 +3,7 @@ import {
   applyEmployeeAction,
   getEmployeeActionHistory,
 } from '../../api/employeeActionApi';
+import axiosInstance from '../../api/axiosInstance';
 import {
   TrendingUp,
   TrendingDown,
@@ -127,9 +128,17 @@ export default function HRActionModal({
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
 
+  const [depts, setDepts] = useState([]);
+  const [positions, setPositions] = useState([]);
+
   useEffect(() => {
     if (tab === 'history') loadHistory();
   }, [tab]);
+
+  useEffect(() => {
+    axiosInstance.get('/departments').then(res => setDepts(res.data)).catch(() => {});
+    axiosInstance.get('/jobPositions').then(res => setPositions(res.data)).catch(() => {});
+  }, []);
 
   const loadHistory = async () => {
     setHistLoading(true);
@@ -154,6 +163,15 @@ export default function HRActionModal({
       return setError(
         'An End Date must be provided for suspensions or forced leave.'
       );
+    }
+    if (selected?.needsPosition && !form.newJobPosition) {
+      return setError('New Job Position is required.');
+    }
+    if (selected?.needsDept && !form.newDepartment) {
+      return setError('New Department is required.');
+    }
+    if (selected?.needsSalary && !form.newSalary) {
+      return setError('New Salary is required.');
     }
 
     setLoading(true);
@@ -210,7 +228,7 @@ export default function HRActionModal({
             </h2>
             <p className="text-xs text-gray-400 mt-0.5">
               {employee.firstName} {employee.lastName} &mdash;{' '}
-              {employee.jobPosition?.positionName ?? 'No position'}
+              {employee.jobTitle ?? 'No position'}
             </p>
           </div>
           <button
@@ -325,8 +343,7 @@ export default function HRActionModal({
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                           New Job Position
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={form.newJobPosition}
                           onChange={(e) =>
                             setForm((f) => ({
@@ -334,9 +351,15 @@ export default function HRActionModal({
                               newJobPosition: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Senior Engineer"
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          className="w-full rounded-lg border text-black border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">— Select Position —</option>
+                          {positions.map((p) => (
+                            <option key={p.id} value={p.positionName}>
+                              {p.positionName}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                     {selected.needsDept && (
@@ -344,8 +367,7 @@ export default function HRActionModal({
                         <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
                           New Department
                         </label>
-                        <input
-                          type="text"
+                        <select
                           value={form.newDepartment}
                           onChange={(e) =>
                             setForm((f) => ({
@@ -353,9 +375,15 @@ export default function HRActionModal({
                               newDepartment: e.target.value,
                             }))
                           }
-                          placeholder="e.g. Engineering"
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        />
+                          className="w-full rounded-lg border text-black border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        >
+                          <option value="">— Select Department —</option>
+                          {depts.map((d) => (
+                            <option key={d.id} value={d.name}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
                       </div>
                     )}
                     {selected.needsSalary && (

@@ -62,7 +62,9 @@ const JobOpeningsList = () => {
       {jobs.length === 0 ? (
         <div className="flex flex-col items-center justify-center h-48 rounded-xl border border-gray-200 bg-white text-gray-400">
           <Users className="h-10 w-10 mb-3 text-gray-300" />
-          <p className="text-sm">No job openings found. Create one to get started.</p>
+          <p className="text-sm">
+            No job openings found. Create one to get started.
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
@@ -95,7 +97,7 @@ const JobOpeningsList = () => {
                     <div className="flex items-center gap-2 mt-1">
                       <Input
                         type="number"
-                        className="h-7 w-20 text-sm border-gray-300"
+                        className="h-7 w-20 text-sm text-black border-gray-300"
                         value={newSlotsVal}
                         onChange={(e) => setNewSlotsVal(e.target.value)}
                         min="0"
@@ -117,7 +119,9 @@ const JobOpeningsList = () => {
                     <div className="flex items-center gap-1.5 text-xs text-gray-500">
                       <span>{job.department?.name || 'No Department'}</span>
                       <span className="text-gray-300">•</span>
-                      <span>{job.openSlots} opening{job.openSlots !== 1 ? 's' : ''}</span>
+                      <span>
+                        {job.openSlots} opening{job.openSlots !== 1 ? 's' : ''}
+                      </span>
                       <button
                         onClick={() => {
                           setEditingJobId(job.id);
