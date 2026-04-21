@@ -799,6 +799,26 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
                 <button
                   type="button"
                   onClick={() => setShowActionModal(true)}
+                  className="px-2 py-1 bg-red-50 text-red-600 rounded-md text-xs font-semibold hover:bg-red-100 flex items-center gap-1 border border-red-200"
+                >
+                  Formal Action
+                </button>
+              )}
+              {canReportToHR && (
+                <button
+                  type="button"
+                  onClick={() => setShowReportModal(true)}
+                  className="px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-xs font-semibold hover:bg-amber-100 flex items-center gap-1 border border-amber-200"
+                >
+                  Report to HR
+                </button>
+              )}
+            </div>
+          </div>
+
+        {/* Tabs */}
+        <div className="el-tab-header">
+          {TABS.map(({ key, label, icon: Icon, isAction }) => {
             const dim = isAction && !canEdit;
             return (
               <button

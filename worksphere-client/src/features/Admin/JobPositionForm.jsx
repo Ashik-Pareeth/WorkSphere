@@ -17,6 +17,18 @@ import {
 function JobPositionForm() {
   const [title, setTitle] = useState('');
   const [editingId, setEditingId] = useState(null);
+  
+  const [enableStructure, setEnableStructure] = useState(false);
+  const [structure, setStructure] = useState({
+    baseSalary: '',
+    hra: '',
+    da: '',
+    travelAllowance: '',
+    otherAllowances: '',
+    pfEmployeePercent: '12.0',
+    pfEmployerPercent: '12.0',
+    professionalTax: ''
+  });
 
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -54,6 +66,17 @@ function JobPositionForm() {
   const resetForm = () => {
     setTitle('');
     setEditingId(null);
+    setEnableStructure(false);
+    setStructure({
+      baseSalary: '',
+      hra: '',
+      da: '',
+      travelAllowance: '',
+      otherAllowances: '',
+      pfEmployeePercent: '12.0',
+      pfEmployerPercent: '12.0',
+      professionalTax: ''
+    });
   };
 
   const savePosition = async (e) => {
@@ -65,25 +88,43 @@ function JobPositionForm() {
     }
 
     try {
+      let currentJobPositionId = editingId;
       if (editingId) {
         await axiosInstance.put(`/jobPositions/${editingId}`, {
           positionName: title,
         });
-
-        setAlert({
-          type: 'success',
-          message: 'Position updated successfully.',
-        });
       } else {
-        await axiosInstance.post('/jobPositions', {
+        const createRes = await axiosInstance.post('/jobPositions', {
           positionName: title,
         });
-
-        setAlert({
-          type: 'success',
-          message: 'Position added successfully.',
-        });
+        currentJobPositionId = createRes.data.id;
       }
+
+      if (enableStructure && currentJobPositionId) {
+        try {
+          await axiosInstance.post('/api/hr/payroll/salary-structure', {
+            jobPositionId: currentJobPositionId,
+            effectiveDate: new Date().toISOString().split('T')[0],
+            baseSalary: structure.baseSalary || 0,
+            hra: structure.hra || 0,
+            da: structure.da || 0,
+            travelAllowance: structure.travelAllowance || 0,
+            otherAllowances: structure.otherAllowances || 0,
+            pfEmployeePercent: structure.pfEmployeePercent || 12.0,
+            pfEmployerPercent: structure.pfEmployerPercent || 12.0,
+            professionalTax: structure.professionalTax || 0
+          });
+        } catch (err) {
+          console.error('Failed to save salary structure', err);
+          setAlert({ type: 'error', message: 'Saved position, but failed to save salary structure.' });
+          return;
+        }
+      }
+
+      setAlert({
+        type: 'success',
+        message: 'Position ' + (editingId ? 'updated' : 'added') + ' successfully.',
+      });
 
       resetForm();
       fetchPositions();
@@ -95,10 +136,31 @@ function JobPositionForm() {
     }
   };
 
-  const handleEdit = (row) => {
+  const handleEdit = async (row) => {
     setTitle(row.positionName);
     setEditingId(row.id);
     window.scrollTo({ top: 0, behavior: 'smooth' });
+
+    try {
+      const res = await axiosInstance.get(`/api/hr/payroll/salary-structure-template/${row.id}`);
+      if (res.data && res.data.baseSalary > 0) {
+        setEnableStructure(true);
+        setStructure({
+          baseSalary: res.data.baseSalary || '',
+          hra: res.data.hra || '',
+          da: res.data.da || '',
+          travelAllowance: res.data.travelAllowance || '',
+          otherAllowances: res.data.otherAllowances || '',
+          pfEmployeePercent: res.data.pfEmployeePercent || '12.0',
+          pfEmployerPercent: res.data.pfEmployerPercent || '12.0',
+          professionalTax: res.data.professionalTax || ''
+        });
+      } else {
+        setEnableStructure(false);
+      }
+    } catch {
+      setEnableStructure(false);
+    }
   };
 
   const confirmDelete = async () => {
@@ -198,6 +260,50 @@ function JobPositionForm() {
                   placeholder="e.g. Software Engineer"
                   onChange={(e) => setTitle(e.target.value)}
                 />
+              </div>
+
+              <div className="ws-field" style={{ marginTop: 24, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+                <label className="flex items-center gap-2 cursor-pointer mb-0">
+                  <input type="checkbox" checked={enableStructure} onChange={e => setEnableStructure(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
+                  <span className="ws-label" style={{ marginBottom: 0 }}>Configure Default Salary Template</span>
+                </label>
+
+                {enableStructure && (
+                  <div className="grid grid-cols-2 gap-4 mt-4">
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">Base Salary *</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.baseSalary} required onChange={e => setStructure({...structure, baseSalary: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">HRA</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.hra} onChange={e => setStructure({...structure, hra: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">DA</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.da} onChange={e => setStructure({...structure, da: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">Travel Allowance</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.travelAllowance} onChange={e => setStructure({...structure, travelAllowance: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">Other Allowances</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.otherAllowances} onChange={e => setStructure({...structure, otherAllowances: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">Professional Tax</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.professionalTax} onChange={e => setStructure({...structure, professionalTax: e.target.value})} placeholder="0.00" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">PF Employee (%)</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.pfEmployeePercent} onChange={e => setStructure({...structure, pfEmployeePercent: e.target.value})} placeholder="12.0" />
+                    </div>
+                    <div>
+                      <label className="ws-label text-xs text-slate-500 mb-1">PF Employer (%)</label>
+                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.pfEmployerPercent} onChange={e => setStructure({...structure, pfEmployerPercent: e.target.value})} placeholder="12.0" />
+                    </div>
+                  </div>
+                )}
               </div>
 
               <div className="ws-btn-row">

@@ -17,8 +17,8 @@ public class JobPositionService {
         this.jobPositionRepository = jobPositionRepository;
     }
 
-    public void createJobPosition(JobPosition jobPosition) {
-        jobPositionRepository.save(jobPosition);
+    public JobPosition createJobPosition(JobPosition jobPosition) {
+        return jobPositionRepository.save(jobPosition);
     }
 
     public List<JobPosition> findAllJobPosition() {

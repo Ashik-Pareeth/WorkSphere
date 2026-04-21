@@ -20,9 +20,9 @@ public class JobPositionController {
 
     @PostMapping
     @PreAuthorize("hasRole('SUPER_ADMIN')")
-    public ResponseEntity<?> createJobPosition(@RequestBody JobPosition jobPosition) {
-        jobPositionService.createJobPosition(jobPosition);
-        return ResponseEntity.noContent().build();
+    public ResponseEntity<JobPosition> createJobPosition(@RequestBody JobPosition jobPosition) {
+        JobPosition created = jobPositionService.createJobPosition(jobPosition);
+        return ResponseEntity.status(org.springframework.http.HttpStatus.CREATED).body(created);
     }
 
     @GetMapping
