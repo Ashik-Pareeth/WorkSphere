@@ -1,4 +1,4 @@
-import axiosInstance from './axiosInstance';
+﻿import axiosInstance from './axiosInstance';
 import axios from 'axios';
 
 // ==================== JOB OPENINGS ENDPOINTS ====================
@@ -31,6 +31,10 @@ export const updateJobStatus = (id, status) => {
 
 export const fetchJobById = (id) => {
   return axiosInstance.get(`/api/jobs/${id}`);
+};
+
+export const updateJobOpening = (id, data) => {
+  return axiosInstance.put(`/api/jobs/${id}`, data);
 };
 
 export const updateJobSlots = (id, slots) => {
@@ -125,3 +129,5 @@ export const respondToOffer = (id, accept, token) => {
     params: { accept, token },
   });
 };
+
+

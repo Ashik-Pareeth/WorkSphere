@@ -14,6 +14,7 @@ const JobOpeningsList = () => {
 
   const [editingJobId, setEditingJobId] = useState(null);
   const [newSlotsVal, setNewSlotsVal] = useState('');
+  const [editingJobDetails, setEditingJobDetails] = useState(null); // job object for details edit
 
   const navigate = useNavigate();
 
@@ -152,12 +153,20 @@ const JobOpeningsList = () => {
                       Interviews
                     </div>
                   </div>
-                  <button
-                    onClick={() => navigate(`/hiring/jobs/${job.id}/pipeline`)}
-                    className="text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
-                  >
-                    View Pipeline
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setEditingJobDetails(job)}
+                      className="text-xs font-medium text-gray-500 hover:text-gray-700 border border-gray-200 hover:border-gray-300 hover:bg-gray-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Edit Details
+                    </button>
+                    <button
+                      onClick={() => navigate(`/hiring/jobs/${job.id}/pipeline`)}
+                      className="text-xs font-medium text-blue-600 hover:text-blue-700 border border-blue-200 hover:border-blue-300 hover:bg-blue-50 px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      View Pipeline
+                    </button>
+                  </div>
                 </div>
               </div>
             );
@@ -169,6 +178,24 @@ const JobOpeningsList = () => {
         <CreateJobModal
           onClose={() => setIsCreatingJob(false)}
           onJobCreated={loadJobs}
+        />
+      )}
+
+      {editingJobDetails && (
+        <CreateJobModal
+          onClose={() => setEditingJobDetails(null)}
+          onJobCreated={() => { loadJobs(); setEditingJobDetails(null); }}
+          editMode={true}
+          initialData={{
+            id: editingJobDetails.id,
+            title: editingJobDetails.title,
+            description: editingJobDetails.description,
+            departmentId: editingJobDetails.department?.id || '',
+            jobPositionId: editingJobDetails.jobPosition?.id || '',
+            openSlots: editingJobDetails.openSlots,
+            salaryMin: editingJobDetails.salaryMin || '',
+            salaryMax: editingJobDetails.salaryMax || '',
+          }}
         />
       )}
     </div>

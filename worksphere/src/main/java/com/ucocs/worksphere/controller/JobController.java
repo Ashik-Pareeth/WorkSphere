@@ -49,6 +49,14 @@ public class JobController {
     public ResponseEntity<JobOpening> createJob(@RequestBody JobOpeningRequest openingRequest,java.security.Principal principal) {
         return ResponseEntity.ok(jobOpeningService.createOpening(openingRequest, principal.getName()));    }
 
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<JobOpening> updateJob(
+            @PathVariable UUID id,
+            @RequestBody JobOpeningRequest req) {
+        return ResponseEntity.ok(jobOpeningService.updateOpening(id, req));
+    }
+
     @PutMapping("/{id}/status")
     @PreAuthorize("hasRole('HR')")
     public ResponseEntity<JobOpening> updateStatus(

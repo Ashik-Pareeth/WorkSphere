@@ -15,6 +15,9 @@ export const setAnonymous = (enabled) =>
 export const togglePinRequest = (id, pinned) =>
   axiosInstance.patch(`/bulletin/${id}/pin?pinned=${pinned}`);
 
+export const editBulletinPost = (id, content) =>
+  axiosInstance.patch(`/bulletin/${id}`, { content });
+
 export const getTeamFeed = (page = 0) =>
   axiosInstance.get(`/team/messages?page=${page}&size=50`);
 

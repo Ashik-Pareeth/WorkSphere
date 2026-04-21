@@ -46,6 +46,20 @@ const TaskDetailsModal = ({ task, onClose }) => {
     feedback: '',
   });
 
+  const handleEditTask = async (updates) => {
+    await axiosInstance.patch(`/tasks/${task.id}`, {
+      title: updates.title,
+      description: updates.description,
+      assignedToId: task.assignedToId || null,
+      priority: task.priority,
+      dueDate: task.dueDate,
+      requiresEvidence: task.requiresEvidence,
+    });
+    // Reload after edit
+    setAlert({ type: 'success', message: 'Task updated successfully.' });
+    setTimeout(() => window.location.reload(), 1200);
+  };
+
   const [loading, setLoading] = useState(true);
   const [uploading, setUploading] = useState(false);
   const [sendingComment, setSendingComment] = useState(false);
@@ -393,7 +407,10 @@ const TaskDetailsModal = ({ task, onClose }) => {
           {/* TAB CONTENT */}
           {activeTab === 'info' && (
             <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-              <TaskInfoTab task={task} />
+              <TaskInfoTab
+                task={task}
+                onEditTask={isManagerOrAdmin ? handleEditTask : undefined}
+              />
             </div>
           )}
 

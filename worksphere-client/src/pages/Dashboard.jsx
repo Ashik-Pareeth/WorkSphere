@@ -8,12 +8,12 @@ import ActionItemsWidget from '../components/dashboard/ActionItemsWidget';
 import TaskStatsWidget from '../components/dashboard/TaskStatsWidget';
 import PayrollStatusBand from '../components/dashboard/PayrollStatusBand';
 import HiringSnapshotCard from '../components/dashboard/HiringSnapshotCard';
+import LeavePresenceBoard from '../components/dashboard/LeavePresenceBoard';
 
 // --- Common components ---
 import StatCard from '../components/common/StatCard';
 import { Skeleton } from '../components/ui/skeleton';
 import HRActionModal from '../features/hr/HRActionModal';
-import PendingReportsPanel from '../features/hr/PendingReportsPanel';
 
 // --- API ---
 import { getMyTasks, getTeamTasks } from '../api/taskApi';
@@ -484,6 +484,10 @@ const EmployeeDashboard = ({ user }) => {
           style={{ minHeight: 360 }}
         >
           {/* Active tasks — left column */}
+          <div className="lg:col-span-3">
+            <LeavePresenceBoard user={user} />
+          </div>
+
           <div className="lg:col-span-1" style={{ minHeight: 320 }}>
             <ActiveTasksWidget tasks={tasks} loading={loading} />
           </div>
@@ -629,6 +633,10 @@ const ManagerDashboard = ({ user }) => {
           style={{ minHeight: 360 }}
         >
           {/* Pending leave requests — left large */}
+          <div className="lg:col-span-3">
+            <LeavePresenceBoard user={user} />
+          </div>
+
           <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
             <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50/50">
               <div>
@@ -826,6 +834,8 @@ const HRDashboard = ({ user }) => {
 
       {/* ── Payroll status band ── */}
       <PayrollStatusBand onPayrollDataLoaded={setPayrollTotal} />
+
+      <LeavePresenceBoard user={user} />
 
       {/* ── Hiring + lower widgets ── */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
@@ -1083,6 +1093,7 @@ const SuperAdminDashboard = ({ user }) => {
           />
         </div>
       )}
+      <LeavePresenceBoard user={user} />
 
       {/* ── Quick config panel ── */}
       <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-6">

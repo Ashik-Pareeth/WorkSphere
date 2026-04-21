@@ -93,5 +93,17 @@ public class LeaveRequestController {
                 .toList();
         return ResponseEntity.ok(dtos);
     }
+
+    @GetMapping("/leave-board")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<List<LeaveRequestResponseDTO>> getLeaveBoard(
+            @RequestParam(required = false) String scope,
+            Principal principal) {
+        List<LeaveRequest> requests = leaveRequestService.getApprovedLeaveBoard(principal.getName(), scope);
+        List<LeaveRequestResponseDTO> dtos = requests.stream()
+                .map(LeaveRequestResponseDTO::fromEntity)
+                .toList();
+        return ResponseEntity.ok(dtos);
+    }
 }
 

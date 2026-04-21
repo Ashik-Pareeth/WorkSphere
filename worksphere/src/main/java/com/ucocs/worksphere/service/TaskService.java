@@ -94,6 +94,34 @@ public class TaskService {
         return savedTask;
     }
 
+    public Task updateTask(UUID taskId, TaskCreateRequest request, UUID callerId) {
+        Task task = taskRepository.findByIdWithRelations(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        Employee caller = employeeRepository.findById(callerId)
+                .orElseThrow(() -> new ResourceNotFoundException("Caller not found"));
+
+        boolean isAssigner = task.getAssigner().getId().equals(callerId);
+        boolean isAdmin = hasRole(caller, "ADMIN");
+        if (!isAssigner && !isAdmin) {
+            throw new AccessDeniedException("Only the task creator or an admin can edit this task.");
+        }
+
+        String oldTitle = task.getTitle();
+        task.setTitle(request.title());
+        task.setDescription(request.description());
+
+        if (request.assignedToId() != null && !request.assignedToId().equals(task.getAssignedTo().getId())) {
+            Employee newAssignee = employeeRepository.findById(request.assignedToId())
+                    .orElseThrow(() -> new ResourceNotFoundException("New assignee not found"));
+            task.setAssignedTo(newAssignee);
+        }
+
+        Task saved = taskRepository.save(task);
+        auditService.log("Task", saved.getId(), AuditAction.UPDATED, callerId, oldTitle, saved.getTitle());
+        return saved;
+    }
+
     public Task updateTaskStatus(UUID taskId, TaskStatusUpdate updateDTO) {
         Task task = taskRepository.findByIdWithRelations(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));

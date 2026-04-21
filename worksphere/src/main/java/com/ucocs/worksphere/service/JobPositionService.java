@@ -3,7 +3,6 @@ package com.ucocs.worksphere.service;
 import com.ucocs.worksphere.entity.JobPosition;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.JobPositionRepository;
-import jakarta.persistence.EntityNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -39,8 +38,4 @@ public class JobPositionService {
         jobPositionRepository.delete(jobPosition);
     }
 
-
-
 }
-
-

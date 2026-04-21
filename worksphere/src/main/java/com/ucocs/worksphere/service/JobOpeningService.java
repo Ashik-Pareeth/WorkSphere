@@ -124,4 +124,22 @@ public class JobOpeningService {
         
         return new com.ucocs.worksphere.dto.hiring.JobStatsResponse(openJobs, totalCandidates, byStage, 0);
     }
+    @Transactional
+    public JobOpening updateOpening(UUID id, JobOpeningRequest req) {
+        JobOpening opening = getOpeningById(id);
+        opening.setTitle(req.getTitle());
+        opening.setDescription(req.getDescription());
+        opening.setSalaryMin(req.getSalaryMin());
+        opening.setSalaryMax(req.getSalaryMax());
+        if (req.getOpenSlots() != null) opening.setOpenSlots(req.getOpenSlots());
+        if (req.getDepartmentId() != null) {
+            opening.setDepartment(departmentRepository.findById(req.getDepartmentId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Department not found")));
+        }
+        if (req.getJobPositionId() != null) {
+            opening.setJobPosition(jobPositionRepository.findById(req.getJobPositionId())
+                    .orElseThrow(() -> new ResourceNotFoundException("Job Position not found")));
+        }
+        return jobOpeningRepository.save(opening);
+    }
 }

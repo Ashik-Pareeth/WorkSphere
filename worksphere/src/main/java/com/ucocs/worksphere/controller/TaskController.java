@@ -44,11 +44,19 @@ public class TaskController {
     @PreAuthorize("hasRole('MANAGER')")
     public ResponseEntity<TaskResponseDTO> createTask(@RequestBody TaskCreateRequest request) {
         Employee manager = getAuthenticatedEmployee();
-
-        // FIX: Just pass the request DTO straight to the service!
         Task createdTask = taskService.createTask(request, manager.getId());
-
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(createdTask));
+    }
+
+    // --- 1b. EDIT TASK (manager/admin only, updates title, description, assignee) ---
+    @PatchMapping("/{taskId}")
+    @PreAuthorize("hasAnyRole('MANAGER', 'SUPER_ADMIN')")
+    public ResponseEntity<TaskResponseDTO> updateTask(
+            @PathVariable UUID taskId,
+            @RequestBody TaskCreateRequest request) {
+        Employee caller = getAuthenticatedEmployee();
+        Task updated = taskService.updateTask(taskId, request, caller.getId());
+        return ResponseEntity.ok(TaskResponseDTO.fromEntity(updated));
     }
 
     // --- 2. UPDATE STATUS ---
@@ -57,7 +65,6 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> updateTaskStatus(
             @PathVariable UUID taskId,
             @RequestBody TaskStatusUpdate updateDTO) {
-
         Task updatedTask = taskService.updateTaskStatus(taskId, updateDTO);
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(updatedTask));
     }
@@ -110,7 +117,6 @@ public class TaskController {
     public ResponseEntity<TaskCommentResponseDTO> addComment(
             @PathVariable UUID taskId,
             @RequestBody TaskCommentRequest request) {
-
         Employee employee = getAuthenticatedEmployee();
         TaskComment savedComment = taskService.addComment(taskId, employee.getId(), request.content());
         return ResponseEntity.ok(TaskCommentResponseDTO.fromEntity(savedComment));
@@ -122,7 +128,6 @@ public class TaskController {
     public ResponseEntity<TaskEvidence> uploadEvidence(
             @PathVariable UUID taskId,
             @RequestParam("file") MultipartFile file) {
-
         TaskEvidence evidence = taskEvidenceService.uploadEvidence(taskId, file);
         return ResponseEntity.ok(evidence);
     }
@@ -139,7 +144,6 @@ public class TaskController {
             @PathVariable UUID evidenceId,
             @RequestParam EvidenceStatus status,
             @RequestParam(required = false) String feedback) {
-
         TaskEvidence reviewedEvidence = taskEvidenceService.reviewEvidence(evidenceId, status, feedback);
         return ResponseEntity.ok(reviewedEvidence);
     }
@@ -150,7 +154,6 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> rateTask(
             @PathVariable UUID taskId,
             @RequestBody TaskRatingRequest request) {
-
         Task task = taskService.rateTask(taskId, request.rating());
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
     }
@@ -160,16 +163,10 @@ public class TaskController {
     public ResponseEntity<TaskResponseDTO> flagTask(
             @PathVariable UUID taskId,
             @RequestBody String reason) {
-
         Task task = taskService.flagTask(taskId, reason);
         return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
     }
 
-    /**
-     * Returns all system-wide flagged tasks (AUDITOR / SUPER_ADMIN only).
-     * Dedicated endpoint so the Auditor dashboard works correctly without
-     * relying on /tasks/all-tasks.
-     */
     @GetMapping("/flagged")
     @PreAuthorize("hasAnyRole('AUDITOR', 'SUPER_ADMIN')")
     public ResponseEntity<List<TaskResponseDTO>> getFlaggedTasks() {

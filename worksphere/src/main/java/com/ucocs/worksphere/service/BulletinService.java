@@ -156,9 +156,30 @@ public class BulletinService {
                 p.getType(),
                 p.getContent(),
                 p.getAuthorDisplayName(),
+                p.getAuthor() != null ? p.getAuthor().getId() : null,
                 p.isAnonymous(),
                 p.isPinned(),
+                p.isEdited(),
                 p.getCreatedAt()
         );
+    }
+
+    // ── Edit Post ─────────────────────────────────────────────────────────────
+
+    public BulletinPost editPost(UUID postId, String newContent, Employee user) {
+        BulletinPost post = repo.findById(postId)
+                .orElseThrow(() -> new ResourceNotFoundException("Post not found"));
+
+        if (!post.getAuthor().getId().equals(user.getId()) && !canAnnounce(user)) {
+             throw new AccessDeniedException("You are not authorized to edit this post");
+        }
+
+        if (java.time.Duration.between(post.getCreatedAt(), java.time.LocalDateTime.now()).toMinutes() > 15) {
+             throw new IllegalStateException("Post can only be edited within 15 minutes of creation");
+        }
+
+        post.setContent(newContent);
+        post.setEdited(true);
+        return repo.save(post);
     }
 }

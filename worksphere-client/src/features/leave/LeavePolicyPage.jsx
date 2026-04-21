@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { getAllLeavePolicies, createLeavePolicy } from '../../api/leaveApi';
+import { getAllLeavePolicies, createLeavePolicy, updateLeavePolicy } from '../../api/leaveApi';
 import '../../styles/admin-ui.css';
 
 import {
@@ -12,6 +12,7 @@ import {
   Save,
   BadgeCheck,
   Ban,
+  Pencil,
 } from 'lucide-react';
 
 function LeavePolicyPage() {
@@ -22,6 +23,7 @@ function LeavePolicyPage() {
 
   // Form state
   const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState(null); // null = create mode, UUID = edit mode
   const [name, setName] = useState('');
   const [defaultAnnualAllowance, setDefaultAnnualAllowance] = useState('');
   const [allowsCarryForward, setAllowsCarryForward] = useState(false);
@@ -57,6 +59,7 @@ function LeavePolicyPage() {
   }, [alert]);
 
   const resetForm = () => {
+    setEditingId(null);
     setName('');
     setDefaultAnnualAllowance('');
     setAllowsCarryForward(false);
@@ -65,23 +68,39 @@ function LeavePolicyPage() {
     setShowForm(false);
   };
 
+  const startEdit = (pol) => {
+    setEditingId(pol.id);
+    setName(pol.name);
+    setDefaultAnnualAllowance(String(pol.defaultAnnualAllowance));
+    setAllowsCarryForward(pol.allowsCarryForward);
+    setMaxCarryForwardDays(String(pol.maxCarryForwardDays));
+    setIsUnpaid(pol.isUnpaid);
+    setShowForm(true);
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name.trim() || !defaultAnnualAllowance) return;
     setSubmitting(true);
+    const payload = {
+      name: name.trim(),
+      defaultAnnualAllowance: parseFloat(defaultAnnualAllowance),
+      allowsCarryForward,
+      maxCarryForwardDays: parseFloat(maxCarryForwardDays) || 0,
+      isUnpaid,
+    };
     try {
-      await createLeavePolicy({
-        name: name.trim(),
-        defaultAnnualAllowance: parseFloat(defaultAnnualAllowance),
-        allowsCarryForward,
-        maxCarryForwardDays: parseFloat(maxCarryForwardDays) || 0,
-        isUnpaid,
-      });
-      setAlert({ type: 'success', message: `Policy "${name}" created.` });
+      if (editingId) {
+        await updateLeavePolicy(editingId, payload);
+        setAlert({ type: 'success', message: `Policy "${name}" updated.` });
+      } else {
+        await createLeavePolicy(payload);
+        setAlert({ type: 'success', message: `Policy "${name}" created.` });
+      }
       resetForm();
       fetchPolicies();
     } catch (err) /* eslint-disable-line no-unused-vars */ {
-      setAlert({ type: 'error', message: 'Failed to create policy.' });
+      setAlert({ type: 'error', message: editingId ? 'Failed to update policy.' : 'Failed to create policy.' });
     } finally {
       setSubmitting(false);
     }
@@ -290,7 +309,7 @@ function LeavePolicyPage() {
                 style={{ width: '100%' }}
               >
                 <Save size={14} />{' '}
-                {submitting ? 'Saving...' : 'Create Leave Policy'}
+                {submitting ? 'Saving...' : (editingId ? 'Update Leave Policy' : 'Create Leave Policy')}
               </button>
             </form>
           </div>
@@ -331,6 +350,12 @@ function LeavePolicyPage() {
                 style={{ color: '#475569', fontWeight: 700 }}
               >
                 TYPE
+              </th>
+              <th
+                className="ws-th text-right"
+                style={{ color: '#475569', fontWeight: 700 }}
+              >
+                ACTIONS
               </th>
             </tr>
           </thead>
@@ -443,6 +468,15 @@ function LeavePolicyPage() {
                     >
                       {pol.isUnpaid ? 'UNPAID' : 'PAID'}
                     </span>
+                  </td>
+                  <td className="ws-td text-right">
+                    <button
+                      className="ws-btn ws-btn-secondary"
+                      style={{ padding: '4px 10px', fontSize: 12 }}
+                      onClick={() => startEdit(pol)}
+                    >
+                      <Pencil size={12} /> Edit
+                    </button>
                   </td>
                 </tr>
               ))

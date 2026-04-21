@@ -186,6 +186,62 @@ public class LeaveRequestService {
                 return leaveRequestRepository.findAllByStatusWithDetails(LeaveRequestStatus.PENDING);
         }
 
+        @Transactional(readOnly = true)
+        public List<LeaveRequest> getApprovedLeaveBoard(String username, String requestedScope) {
+                Employee viewer = employeeRepository.findByUserName(username)
+                        .orElseThrow(() -> new ResourceNotFoundException("Employee not found"));
+
+                String scope = requestedScope == null || requestedScope.isBlank()
+                        ? defaultLeaveBoardScope(viewer)
+                        : requestedScope.trim().toUpperCase();
+
+                return switch (scope) {
+                        case "GLOBAL" -> {
+                                if (!isHrOrAdmin(viewer)) {
+                                        throw new AccessDeniedException("Only HR or admins can view global leave records.");
+                                }
+                                yield leaveRequestRepository.findByStatusOrderByStartDateAsc(LeaveRequestStatus.APPROVED);
+                        }
+                        case "TEAM" -> {
+                                if (!isManager(viewer)) {
+                                        throw new AccessDeniedException("Only managers can view team leave records.");
+                                }
+                                List<UUID> employeeIds = new java.util.ArrayList<>();
+                                employeeIds.add(viewer.getId());
+                                employeeRepository.findByManagerUserName(username).stream()
+                                        .map(Employee::getId)
+                                        .forEach(employeeIds::add);
+                                yield leaveRequestRepository.findByEmployee_IdInAndStatusOrderByStartDateAsc(
+                                        employeeIds,
+                                        LeaveRequestStatus.APPROVED);
+                        }
+                        case "MY" -> leaveRequestRepository.findByEmployee_IdInAndStatusOrderByStartDateAsc(
+                                List.of(viewer.getId()),
+                                LeaveRequestStatus.APPROVED);
+                        default -> throw new IllegalArgumentException("Unsupported leave board scope: " + requestedScope);
+                };
+        }
+
+        private String defaultLeaveBoardScope(Employee viewer) {
+                if (isHrOrAdmin(viewer)) {
+                        return "GLOBAL";
+                }
+                if (isManager(viewer)) {
+                        return "TEAM";
+                }
+                return "MY";
+        }
+
+        private boolean isHrOrAdmin(Employee employee) {
+                return employee.getRoles().stream()
+                        .anyMatch(r -> r.getRoleName().endsWith("HR") || r.getRoleName().endsWith("ADMIN"));
+        }
+
+        private boolean isManager(Employee employee) {
+                return employee.getRoles().stream()
+                        .anyMatch(r -> r.getRoleName().endsWith("MANAGER"));
+        }
+
         private void validateReviewerAuthorization(Employee manager, LeaveRequest request) {
                 if (manager.getId().equals(request.getEmployee().getId())) {
                         throw new AccessDeniedException("You cannot approve or reject your own leave requests.");

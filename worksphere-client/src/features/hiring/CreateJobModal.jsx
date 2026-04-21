@@ -1,24 +1,24 @@
 import React, { useState, useEffect } from 'react';
-import { createJobOpening } from '../../api/hiringApi';
+import { createJobOpening, updateJobOpening } from '../../api/hiringApi';
 import axiosInstance from '../../api/axiosInstance';
 import { useAuth } from '../../hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { X, Briefcase, Building2, Users } from 'lucide-react';
 
-const CreateJobModal = ({ onClose, onJobCreated }) => {
+const CreateJobModal = ({ onClose, onJobCreated, editMode = false, initialData = null }) => {
   const { user: _unusedUser } = useAuth();
   const [loading, setLoading] = useState(false);
   const [departments, setDepartments] = useState([]);
   const [jobPositions, setJobPositions] = useState([]);
 
   const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    departmentId: '',
-    jobPositionId: '',
-    openSlots: 1,
-    salaryMin: '',
-    salaryMax: '',
+    title: initialData?.title || '',
+    description: initialData?.description || '',
+    departmentId: initialData?.departmentId || '',
+    jobPositionId: initialData?.jobPositionId || '',
+    openSlots: initialData?.openSlots || 1,
+    salaryMin: initialData?.salaryMin || '',
+    salaryMax: initialData?.salaryMax || '',
   });
 
   useEffect(() => {
@@ -41,9 +41,7 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
-  // Modified to accept the target status as an argument
   const handleSubmit = async (targetStatus) => {
-    // Basic validation before submission
     if (
       !formData.title ||
       !formData.departmentId ||
@@ -53,9 +51,7 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
       alert('Please fill out all required fields.');
       return;
     }
-
     setLoading(true);
-
     try {
       const payload = {
         title: formData.title,
@@ -65,15 +61,18 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
         openSlots: parseInt(formData.openSlots, 10),
         salaryMin: formData.salaryMin ? parseFloat(formData.salaryMin) : null,
         salaryMax: formData.salaryMax ? parseFloat(formData.salaryMax) : null,
-        status: targetStatus, // Send the selected status to the backend
+        status: targetStatus,
       };
-
-      await createJobOpening(payload);
+      if (editMode && initialData?.id) {
+        await updateJobOpening(initialData.id, payload);
+      } else {
+        await createJobOpening(payload);
+      }
       onJobCreated();
       onClose();
     } catch (error) {
-      console.error('Failed to create job opening', error);
-      alert('Failed to create job opening. Check console for details.');
+      console.error('Failed to save job opening', error);
+      alert('Failed to save job opening. Check console for details.');
     } finally {
       setLoading(false);
     }
@@ -93,10 +92,10 @@ const CreateJobModal = ({ onClose, onJobCreated }) => {
             </div>
             <div>
               <h2 className="text-lg font-semibold text-white">
-                Create Job Opening
+                {editMode ? 'Edit Job Opening' : 'Create Job Opening'}
               </h2>
               <p className="text-xs text-gray-400">
-                Add a new role to your hiring pipeline
+                {editMode ? 'Update the details of this role' : 'Add a new role to your hiring pipeline'}
               </p>
             </div>
           </div>

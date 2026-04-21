@@ -27,4 +27,12 @@ public class LeavePolicyController {
     public ResponseEntity<LeavePolicy> createPolicy(@RequestBody LeavePolicy policy) {
         return ResponseEntity.ok(policyService.createPolicy(policy));
     }
+
+    @PutMapping("/{id}")
+    @PreAuthorize("hasRole('HR')")
+    public ResponseEntity<LeavePolicy> updatePolicy(
+            @PathVariable java.util.UUID id,
+            @RequestBody LeavePolicy policyDetails) {
+        return ResponseEntity.ok(policyService.updatePolicy(id, policyDetails));
+    }
 }

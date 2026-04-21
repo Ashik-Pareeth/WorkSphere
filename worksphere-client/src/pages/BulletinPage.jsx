@@ -6,6 +6,7 @@ import {
   togglePinRequest,
   getTeamFeed,
   postTeamMessage,
+  editBulletinPost,
 } from '../api/bulletinApi';
 import { AnnouncementCard } from '../features/bulletin/AnnouncementCard';
 import { ChatBubble } from '../features/bulletin/ChatBubble';
@@ -83,7 +84,17 @@ export default function BulletinPage() {
         currentPinned ? 'Announcement unpinned' : 'Announcement pinned'
       );
     } catch (err) {
-      toast.error(err.response.data.message || 'Failed to update pin status');
+      toast.error(err.response?.data?.message || 'Failed to update pin status');
+    }
+  };
+
+  const handleEditPost = async (id, newContent) => {
+    try {
+      await editBulletinPost(id, newContent);
+      load();
+      toast.success('Message updated');
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to edit message. Time limit may have expired.');
     }
   };
 
@@ -213,9 +224,10 @@ export default function BulletinPage() {
                     post={post}
                     user={user}
                     onTogglePin={handleTogglePin}
+                    onEditPost={handleEditPost}
                   />
                 ) : (
-                  <ChatBubble key={post.id} post={post} />
+                  <ChatBubble key={post.id} post={post} user={user} onEditPost={handleEditPost} />
                 )
               )
             )}

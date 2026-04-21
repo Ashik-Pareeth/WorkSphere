@@ -35,4 +35,7 @@ public class BulletinPost extends BaseEntity {
 
     @Column(name = "is_pinned", nullable = false)
     private boolean pinned = false;
+
+    @Column(name = "is_edited", nullable = false)
+    private boolean isEdited = false;
 }

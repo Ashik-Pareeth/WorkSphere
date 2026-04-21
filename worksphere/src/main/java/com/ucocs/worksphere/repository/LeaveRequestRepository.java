@@ -28,6 +28,12 @@ public interface LeaveRequestRepository extends JpaRepository<LeaveRequest, UUID
         List<LeaveRequest> findAllByStatusWithDetails(@Param("status") LeaveRequestStatus status);
 
         @EntityGraph(attributePaths = {"employee", "leavePolicy", "reviewer"})
+        List<LeaveRequest> findByStatusOrderByStartDateAsc(LeaveRequestStatus status);
+
+        @EntityGraph(attributePaths = {"employee", "leavePolicy", "reviewer"})
+        List<LeaveRequest> findByEmployee_IdInAndStatusOrderByStartDateAsc(List<UUID> employeeIds, LeaveRequestStatus status);
+
+        @EntityGraph(attributePaths = {"employee", "leavePolicy", "reviewer"})
         @Query("SELECT lr FROM LeaveRequest lr WHERE lr.employee.department.id = :deptId AND lr.status = :status ORDER BY lr.createdAt DESC")
         List<LeaveRequest> findByDepartmentAndStatusWithDetails(@Param("deptId") UUID departmentId, @Param("status") LeaveRequestStatus status);
 

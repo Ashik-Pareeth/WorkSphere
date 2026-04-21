@@ -12,6 +12,11 @@ export const createLeavePolicy = async (policyData) => {
   return response.data;
 };
 
+export const updateLeavePolicy = async (policyId, policyData) => {
+  const response = await axiosInstance.put(`/api/leave-policies/${policyId}`, policyData);
+  return response.data;
+};
+
 // 2. LEAVE LEDGER (Balances & History)
 
 export const getMyBalances = async () => {
@@ -26,6 +31,13 @@ export const getMyLedger = async () => {
 
 export const getMyLeaveRequests = async () => {
   const response = await axiosInstance.get('/api/leave-requests/my-requests');
+  return response.data;
+};
+
+export const getLeaveBoardRecords = async (scope) => {
+  const response = await axiosInstance.get('/api/leave-requests/leave-board', {
+    params: scope ? { scope } : {},
+  });
   return response.data;
 };
 

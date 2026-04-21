@@ -10,8 +10,10 @@ public record BulletinPostDTO(
         PostType type,
         String content,
         String authorDisplayName,
+        UUID authorId,
         boolean anonymous,
         boolean pinned,
+        boolean isEdited,
         LocalDateTime createdAt
 ) {
 }

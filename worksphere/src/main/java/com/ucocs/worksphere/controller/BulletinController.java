@@ -77,4 +77,14 @@ public class BulletinController {
         bulletinService.togglePin(id, pinned, user);
         return ResponseEntity.ok().build();
     }
+
+    @PatchMapping("/{id}")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<BulletinPostDTO> editPost(
+            @PathVariable java.util.UUID id,
+            @RequestBody ChatRequest req
+    ) {
+        Employee user = getAuthenticatedEmployee();
+        return ResponseEntity.ok(bulletinService.toDTO(bulletinService.editPost(id, req.content(), user)));
+    }
 }
