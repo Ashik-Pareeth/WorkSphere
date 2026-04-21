@@ -84,6 +84,22 @@ public class LeaveRequestController {
         return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
     }
 
+    @PutMapping("/{requestId}/update")
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<LeaveRequestResponseDTO> updateRequest(
+            @PathVariable UUID requestId,
+            @RequestBody LeaveSubmissionDTO dto,
+            Principal principal) {
+        LeaveRequest request = leaveRequestService.updatePendingRequest(
+                requestId,
+                principal.getName(),
+                dto.getStartDate(),
+                dto.getEndDate(),
+                dto.getRequestedDays(),
+                dto.getReason());
+        return ResponseEntity.ok(LeaveRequestResponseDTO.fromEntity(request));
+    }
+
     @GetMapping("/my-requests")
     @PreAuthorize("isAuthenticated()")
     public ResponseEntity<List<LeaveRequestResponseDTO>> getMyRequests(Principal principal) {
@@ -106,4 +122,3 @@ public class LeaveRequestController {
         return ResponseEntity.ok(dtos);
     }
 }
-

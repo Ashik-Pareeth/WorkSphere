@@ -95,7 +95,7 @@ const LeaveRequestPage = () => {
           </p>
         </div>
         <div className="p-6">
-          <MyLeaveRequestsTable requests={requests} />
+          <MyLeaveRequestsTable requests={requests} onRefresh={fetchData} balances={balances} />
         </div>
       </section>
 

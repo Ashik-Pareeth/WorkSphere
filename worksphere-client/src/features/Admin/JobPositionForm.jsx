@@ -17,7 +17,7 @@ import {
 function JobPositionForm() {
   const [title, setTitle] = useState('');
   const [editingId, setEditingId] = useState(null);
-  
+
   const [enableStructure, setEnableStructure] = useState(false);
   const [structure, setStructure] = useState({
     baseSalary: '',
@@ -27,7 +27,7 @@ function JobPositionForm() {
     otherAllowances: '',
     pfEmployeePercent: '12.0',
     pfEmployerPercent: '12.0',
-    professionalTax: ''
+    professionalTax: '',
   });
 
   const [rows, setRows] = useState([]);
@@ -75,7 +75,7 @@ function JobPositionForm() {
       otherAllowances: '',
       pfEmployeePercent: '12.0',
       pfEmployerPercent: '12.0',
-      professionalTax: ''
+      professionalTax: '',
     });
   };
 
@@ -112,18 +112,22 @@ function JobPositionForm() {
             otherAllowances: structure.otherAllowances || 0,
             pfEmployeePercent: structure.pfEmployeePercent || 12.0,
             pfEmployerPercent: structure.pfEmployerPercent || 12.0,
-            professionalTax: structure.professionalTax || 0
+            professionalTax: structure.professionalTax || 0,
           });
         } catch (err) {
           console.error('Failed to save salary structure', err);
-          setAlert({ type: 'error', message: 'Saved position, but failed to save salary structure.' });
+          setAlert({
+            type: 'error',
+            message: 'Saved position, but failed to save salary structure.',
+          });
           return;
         }
       }
 
       setAlert({
         type: 'success',
-        message: 'Position ' + (editingId ? 'updated' : 'added') + ' successfully.',
+        message:
+          'Position ' + (editingId ? 'updated' : 'added') + ' successfully.',
       });
 
       resetForm();
@@ -142,7 +146,10 @@ function JobPositionForm() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
 
     try {
-      const res = await axiosInstance.get(`/api/hr/payroll/salary-structure-template/${row.id}`);
+      const res = await axiosInstance.get(
+        `/api/hr/payroll/salary-structure-template/${row.id}`
+      );
+      console.log('Salary structure template response:', res);
       if (res.data && res.data.baseSalary > 0) {
         setEnableStructure(true);
         setStructure({
@@ -153,7 +160,7 @@ function JobPositionForm() {
           otherAllowances: res.data.otherAllowances || '',
           pfEmployeePercent: res.data.pfEmployeePercent || '12.0',
           pfEmployerPercent: res.data.pfEmployerPercent || '12.0',
-          professionalTax: res.data.professionalTax || ''
+          professionalTax: res.data.professionalTax || '',
         });
       } else {
         setEnableStructure(false);
@@ -262,45 +269,168 @@ function JobPositionForm() {
                 />
               </div>
 
-              <div className="ws-field" style={{ marginTop: 24, padding: 16, background: '#f8fafc', borderRadius: 8, border: '1px solid #e2e8f0' }}>
+              <div
+                className="ws-field"
+                style={{
+                  marginTop: 24,
+                  padding: 16,
+                  background: '#f8fafc',
+                  borderRadius: 8,
+                  border: '1px solid #e2e8f0',
+                }}
+              >
                 <label className="flex items-center gap-2 cursor-pointer mb-0">
-                  <input type="checkbox" checked={enableStructure} onChange={e => setEnableStructure(e.target.checked)} className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
-                  <span className="ws-label" style={{ marginBottom: 0 }}>Configure Default Salary Template</span>
+                  <input
+                    type="checkbox"
+                    checked={enableStructure}
+                    onChange={(e) => setEnableStructure(e.target.checked)}
+                    className="rounded border-slate-300 text-blue-600 focus:ring-blue-500"
+                  />
+                  <span className="ws-label" style={{ marginBottom: 0 }}>
+                    Configure Default Salary Template
+                  </span>
                 </label>
 
                 {enableStructure && (
                   <div className="grid grid-cols-2 gap-4 mt-4">
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">Base Salary *</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.baseSalary} required onChange={e => setStructure({...structure, baseSalary: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        Base Salary *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.baseSalary}
+                        required
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            baseSalary: e.target.value,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">HRA</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.hra} onChange={e => setStructure({...structure, hra: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        HRA
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.hra}
+                        onChange={(e) =>
+                          setStructure({ ...structure, hra: e.target.value })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">DA</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.da} onChange={e => setStructure({...structure, da: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        DA
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.da}
+                        onChange={(e) =>
+                          setStructure({ ...structure, da: e.target.value })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">Travel Allowance</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.travelAllowance} onChange={e => setStructure({...structure, travelAllowance: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        Travel Allowance
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.travelAllowance}
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            travelAllowance: e.target.value,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">Other Allowances</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.otherAllowances} onChange={e => setStructure({...structure, otherAllowances: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        Other Allowances
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.otherAllowances}
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            otherAllowances: e.target.value,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">Professional Tax</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.professionalTax} onChange={e => setStructure({...structure, professionalTax: e.target.value})} placeholder="0.00" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        Professional Tax
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.professionalTax}
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            professionalTax: e.target.value,
+                          })
+                        }
+                        placeholder="0.00"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">PF Employee (%)</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.pfEmployeePercent} onChange={e => setStructure({...structure, pfEmployeePercent: e.target.value})} placeholder="12.0" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        PF Employee (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.pfEmployeePercent}
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            pfEmployeePercent: e.target.value,
+                          })
+                        }
+                        placeholder="12.0"
+                      />
                     </div>
                     <div>
-                      <label className="ws-label text-xs text-slate-500 mb-1">PF Employer (%)</label>
-                      <input type="number" step="0.01" className="ws-input p-2 text-sm w-full" value={structure.pfEmployerPercent} onChange={e => setStructure({...structure, pfEmployerPercent: e.target.value})} placeholder="12.0" />
+                      <label className="ws-label text-xs text-slate-500 mb-1">
+                        PF Employer (%)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        className="ws-input p-2 text-sm w-full"
+                        value={structure.pfEmployerPercent}
+                        onChange={(e) =>
+                          setStructure({
+                            ...structure,
+                            pfEmployerPercent: e.target.value,
+                          })
+                        }
+                        placeholder="12.0"
+                      />
                     </div>
                   </div>
                 )}

@@ -47,20 +47,20 @@ public class LeavePolicyService {
         LeavePolicy policy = getPolicyById(id);
         
         String oldValues = String.format("Allowance: %s, Unpaid: %s, CarryForward: %s", 
-                policy.getDefaultAnnualAllowance(), policy.isUnpaid(), policy.isAllowsCarryForward());
+                policy.getDefaultAnnualAllowance(), policy.getIsUnpaid(), policy.getAllowsCarryForward());
 
         policy.setName(policyDetails.getName());
         policy.setDefaultAnnualAllowance(policyDetails.getDefaultAnnualAllowance());
-        policy.setAllowsCarryForward(policyDetails.isAllowsCarryForward());
+        policy.setAllowsCarryForward(policyDetails.getAllowsCarryForward());
         policy.setMaxCarryForwardDays(policyDetails.getMaxCarryForwardDays());
-        policy.setUnpaid(policyDetails.isUnpaid());
+        policy.setIsUnpaid(policyDetails.getIsUnpaid());
 
         LeavePolicy updated = leavePolicyRepository.save(policy);
         
         UUID performedBy = getCurrentUserId();
         if (performedBy != null) {
             String newValues = String.format("Allowance: %s, Unpaid: %s, CarryForward: %s", 
-                updated.getDefaultAnnualAllowance(), updated.isUnpaid(), updated.isAllowsCarryForward());
+                updated.getDefaultAnnualAllowance(), updated.getIsUnpaid(), updated.getAllowsCarryForward());
             auditService.log("LeavePolicy", updated.getId(), AuditAction.UPDATED, performedBy, oldValues, newValues);
         }
         return updated;

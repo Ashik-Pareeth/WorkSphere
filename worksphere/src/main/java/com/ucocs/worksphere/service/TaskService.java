@@ -34,11 +34,11 @@ public class TaskService {
     private final AuditService auditService;
 
     public TaskService(TaskRepository taskRepository, EmployeeRepository employeeRepository,
-                       TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
-                       TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
-                       TicketCommentRepository ticketCommentRepository,
-                       NotificationService notificationService,
-                       AuditService auditService) {           // ADDED
+            TaskEvidenceRepository taskEvidenceRepository, TaskHistoryRepository taskHistoryRepository,
+            TaskCommentRepository taskCommentRepository, GrievanceTicketRepository grievanceTicketRepository,
+            TicketCommentRepository ticketCommentRepository,
+            NotificationService notificationService,
+            AuditService auditService) { // ADDED
         this.taskRepository = taskRepository;
         this.employeeRepository = employeeRepository;
         this.taskEvidenceRepository = taskEvidenceRepository;
@@ -46,7 +46,7 @@ public class TaskService {
         this.taskCommentRepository = taskCommentRepository;
         this.grievanceTicketRepository = grievanceTicketRepository;
         this.ticketCommentRepository = ticketCommentRepository;
-        this.notificationService = notificationService;         // ADDED
+        this.notificationService = notificationService; // ADDED
         this.auditService = auditService;
     }
 
@@ -84,10 +84,10 @@ public class TaskService {
                 assignee.getId(),
                 NotificationType.TASK_ASSIGNED,
                 "New Task Assigned: " + savedTask.getTitle(),
-                manager.getFirstName() + " " + manager.getLastName() + " has assigned you a new task: \"" + savedTask.getTitle() + "\" (" + generatedCode + "). Due: " + request.dueDate() + ".",
+                manager.getFirstName() + " " + manager.getLastName() + " has assigned you a new task: \""
+                        + savedTask.getTitle() + "\" (" + generatedCode + "). Due: " + request.dueDate() + ".",
                 savedTask.getId(),
-                "Task"
-        );
+                "Task");
 
         auditService.log("Task", savedTask.getId(), AuditAction.CREATED, manager.getId(), null, savedTask.getTitle());
 
@@ -108,13 +108,20 @@ public class TaskService {
         }
 
         String oldTitle = task.getTitle();
-        task.setTitle(request.title());
-        task.setDescription(request.description());
+        
+        TaskPriority priorityEnum;
+        try {
+            priorityEnum = request.priority() != null ? TaskPriority.valueOf(request.priority()) : task.getPriority();
+        } catch (IllegalArgumentException e) {
+            priorityEnum = task.getPriority();
+        }
+        
+        task.updateDetails(request.title(), request.description(), priorityEnum, request.dueDate());
 
         if (request.assignedToId() != null && !request.assignedToId().equals(task.getAssignedTo().getId())) {
             Employee newAssignee = employeeRepository.findById(request.assignedToId())
                     .orElseThrow(() -> new ResourceNotFoundException("New assignee not found"));
-            task.setAssignedTo(newAssignee);
+            task.reassignTo(newAssignee);
         }
 
         Task saved = taskRepository.save(task);
@@ -224,10 +231,13 @@ public class TaskService {
                     task.getAssignedTo().getId(),
                     NotificationType.TASK_STATUS_UPDATED,
                     "Task \"" + task.getTitle() + "\" marked as " + friendlyStatus,
-                    currentUser.getFirstName() + " " + currentUser.getLastName() + " updated your task \"" + task.getTitle() + "\" to " + friendlyStatus + (updateDTO.comment() != null && !updateDTO.comment().isBlank() ? ". Comment: " + updateDTO.comment() : "."),
+                    currentUser.getFirstName() + " " + currentUser.getLastName() + " updated your task \""
+                            + task.getTitle() + "\" to " + friendlyStatus
+                            + (updateDTO.comment() != null && !updateDTO.comment().isBlank()
+                                    ? ". Comment: " + updateDTO.comment()
+                                    : "."),
                     savedTask.getId(),
-                    "Task"
-            );
+                    "Task");
         }
 
         // If the assignee moved the task to IN_REVIEW, notify the assigner
@@ -236,10 +246,11 @@ public class TaskService {
                     task.getAssigner().getId(),
                     NotificationType.TASK_STATUS_UPDATED,
                     "Task ready for review: \"" + task.getTitle() + "\"",
-                    task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName() + " has submitted task \"" + task.getTitle() + "\" (" + task.getTaskCode() + ") for your review.",
+                    task.getAssignedTo().getFirstName() + " " + task.getAssignedTo().getLastName()
+                            + " has submitted task \"" + task.getTitle() + "\" (" + task.getTaskCode()
+                            + ") for your review.",
                     savedTask.getId(),
-                    "Task"
-            );
+                    "Task");
         }
 
         // If task is completed, also send a TASK_COMPLETED notification to the assignee
@@ -250,11 +261,11 @@ public class TaskService {
                     "Task Completed: \"" + task.getTitle() + "\"",
                     "Task \"" + task.getTitle() + "\" (" + task.getTaskCode() + ") has been marked as completed.",
                     savedTask.getId(),
-                    "Task"
-            );
+                    "Task");
         }
 
-        auditService.log("Task", savedTask.getId(), AuditAction.UPDATED, currentUser.getId(), oldStatus.name(), newStatus.name());
+        auditService.log("Task", savedTask.getId(), AuditAction.UPDATED, currentUser.getId(), oldStatus.name(),
+                newStatus.name());
 
         return taskRepository.findByIdWithRelations(taskId)
                 .orElseThrow(() -> new IllegalStateException("Task vanished after saving!"));
@@ -290,10 +301,10 @@ public class TaskService {
                 task.getAssignedTo().getId(),
                 NotificationType.TASK_RATED,
                 "Your task has been rated",
-                currentUser.getFirstName() + " " + currentUser.getLastName() + " rated your task \"" + task.getTitle() + "\" " + rating + "/5 (score: " + (int) score + ").",
+                currentUser.getFirstName() + " " + currentUser.getLastName() + " rated your task \"" + task.getTitle()
+                        + "\" " + rating + "/5 (score: " + (int) score + ").",
                 savedTask.getId(),
-                "Task"
-        );
+                "Task");
 
         return savedTask;
     }
@@ -336,7 +347,8 @@ public class TaskService {
                     String role = a.getAuthority();
                     assert role != null;
                     String normalizedRole = role.startsWith("ROLE_") ? role.substring(5) : role;
-                    return normalizedRole.equals("ADMIN") || normalizedRole.equals("HR") || normalizedRole.equals("AUDITOR");
+                    return normalizedRole.equals("ADMIN") || normalizedRole.equals("HR")
+                            || normalizedRole.equals("AUDITOR");
                 });
 
         if (isGlobalViewer) {
@@ -376,7 +388,7 @@ public class TaskService {
     // --- HELPERS ---
 
     private void logHistory(Task task, Employee actor, String comment, String roleSnapshot,
-                            TaskStatus oldStatus, TaskStatus newStatus) {
+            TaskStatus oldStatus, TaskStatus newStatus) {
         TaskHistory history = new TaskHistory(
                 task,
                 actor,
@@ -413,7 +425,8 @@ public class TaskService {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found: " + taskId));
 
-        if (task.getSourceTicket() == null) return List.of();
+        if (task.getSourceTicket() == null)
+            return List.of();
 
         return ticketCommentRepository
                 .findByTicketAndIsInternalFalseOrderByCreatedAtAsc(task.getSourceTicket())

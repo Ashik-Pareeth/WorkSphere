@@ -13,7 +13,10 @@ export const createLeavePolicy = async (policyData) => {
 };
 
 export const updateLeavePolicy = async (policyId, policyData) => {
-  const response = await axiosInstance.put(`/api/leave-policies/${policyId}`, policyData);
+  const response = await axiosInstance.put(
+    `/api/leave-policies/${policyId}`,
+    policyData
+  );
   return response.data;
 };
 
@@ -51,14 +54,27 @@ export const adjustBalanceManually = async (adjustmentData) => {
   return response.data;
 };
 
-
-
 // 3. LEAVE REQUESTS (The Approval Flow)
 
 export const submitLeaveRequest = async (requestData) => {
   // requestData needs: { policyId, startDate, endDate, requestedDays, reason }
   const response = await axiosInstance.post(
     '/api/leave-requests/submit',
+    requestData
+  );
+  return response.data;
+};
+
+export const cancelLeaveRequest = async (requestId) => {
+  const response = await axiosInstance.put(
+    `/api/leave-requests/${requestId}/cancel`
+  );
+  return response.data;
+};
+
+export const updateLeaveRequest = async (requestId, requestData) => {
+  const response = await axiosInstance.put(
+    `/api/leave-requests/${requestId}/update`,
     requestData
   );
   return response.data;

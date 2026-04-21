@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { submitLeaveRequest } from '../../api/leaveApi';
+import React, { useState, useEffect } from 'react';
+import { submitLeaveRequest, updateLeaveRequest } from '../../api/leaveApi';
 import { toast } from 'sonner';
 
-const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
+const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
   const [isLoading, setIsLoading] = useState(false);
   const [formData, setFormData] = useState({
     policyId: balances.length > 0 ? balances[0].leavePolicy.id : '',
@@ -12,6 +12,18 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
     reason: '',
   });
 
+  useEffect(() => {
+    if (initialData) {
+      setFormData({
+        policyId: initialData.leavePolicy?.id || (balances.length > 0 ? balances[0].leavePolicy.id : ''),
+        startDate: initialData.startDate || '',
+        endDate: initialData.endDate || '',
+        requestedDays: initialData.requestedDays || 1,
+        reason: initialData.reason || '',
+      });
+    }
+  }, [initialData, balances]);
+
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
@@ -20,7 +32,13 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
     e.preventDefault();
     setIsLoading(true);
     try {
-      await submitLeaveRequest(formData);
+      if (initialData && initialData.id) {
+        await updateLeaveRequest(initialData.id, formData);
+        toast.success('Leave request updated successfully.');
+      } else {
+        await submitLeaveRequest(formData);
+        toast.success('Leave request submitted successfully.');
+      }
       onSuccess(); // Tell the parent to close the modal and refresh data
     } catch (error) {
       console.error('Failed to submit leave request:', error);
@@ -42,6 +60,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
           onChange={handleChange}
           className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           required
+          disabled={!!initialData} // Usually policy cannot be changed if editing, or it is allowed. Let's disable to be safe.
         >
           {balances.map((b) => (
             <option key={b.leavePolicy.id} value={b.leavePolicy.id}>
@@ -59,7 +78,6 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
           <input
             type="date"
             name="startDate"
-            min={new Date().toISOString().split('T')[0]}
             value={formData.startDate}
             onChange={handleChange}
             className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
@@ -126,7 +144,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel }) => {
           disabled={isLoading}
           className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:bg-blue-400"
         >
-          {isLoading ? 'Submitting...' : 'Submit Request'}
+          {isLoading ? (initialData ? 'Updating...' : 'Submitting...') : (initialData ? 'Update Request' : 'Submit Request')}
         </button>
       </div>
     </form>
