@@ -19,14 +19,32 @@ const checkTokenValidity = (token) => {
   }
 };
 
-const normalizeRoles = (roles = []) =>
-  roles
+/**
+ * Normalizes roles to include both 'ROLE_X' and 'X' formats safely.
+ */
+const normalizeRoles = (roles = []) => {
+  const extractedRoles = roles
     .map((role) => {
       if (typeof role === 'string') return role;
       if (role?.roleName) return role.roleName;
       return null;
     })
     .filter(Boolean);
+
+  const expandedRoles = new Set();
+
+  extractedRoles.forEach((role) => {
+    if (role.startsWith('ROLE_')) {
+      expandedRoles.add(role);
+      expandedRoles.add(role.replace(/^ROLE_/, ''));
+    } else {
+      expandedRoles.add(role);
+      expandedRoles.add(`ROLE_${role}`);
+    }
+  });
+
+  return Array.from(expandedRoles);
+};
 
 /**
  * Build UI-friendly role flags from role list
@@ -121,7 +139,8 @@ export const AuthProvider = ({ children }) => {
    * Handle login success
    */
   const handleLogin = async (authData) => {
-    const roles = authData.roles || [];
+    // UPDATED: Normalize the roles immediately upon login
+    const roles = normalizeRoles(authData.roles || []);
 
     localStorage.setItem('token', authData.token);
     localStorage.setItem('employeeId', authData.employeeId);

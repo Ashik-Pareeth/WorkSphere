@@ -42,6 +42,7 @@ export default function EvidenceTab({
   setActiveReview,
   reviewingEvidence,
   isManager,
+  isAssigner,
   isAuditor,
   rating,
   setRating,
@@ -241,7 +242,7 @@ export default function EvidenceTab({
       </div>
 
       {/* MANAGER ACTION: Task Completion Rating */}
-      {isManager &&
+      {(isAssigner || isManager) &&
         task.status === 'IN_REVIEW' &&
         evidenceList.some((e) => e.status === 'ACCEPTED') && (
           <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl shadow-sm mt-4">
@@ -269,7 +270,7 @@ export default function EvidenceTab({
         )}
 
       {/* Danger Zone */}
-      {isManager &&
+      {(isAssigner || isManager) &&
         task.status !== 'COMPLETED' &&
         task.status !== 'CANCELLED' && (
           <div className="bg-red-50 border border-red-200 p-4 rounded-xl mt-4">

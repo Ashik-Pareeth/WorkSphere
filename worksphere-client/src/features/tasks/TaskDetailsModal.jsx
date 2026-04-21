@@ -29,10 +29,16 @@ const TaskDetailsModal = ({ task, onClose }) => {
     storedRoles.includes('ROLE_SUPER_ADMIN') ||
     storedRoles.includes('SUPER_ADMIN');
 
-  // eslint-disable-next-line no-unused-vars
   const currentUser = JSON.parse(localStorage.getItem('user')) || {
     id: localStorage.getItem('employeeId'),
   };
+  const currentEmployeeId = localStorage.getItem('employeeId');
+
+  // True if the logged-in user is the one who created/assigned this task
+  const isAssigner =
+    task?.assignerId && currentEmployeeId
+      ? String(task.assignerId) === String(currentEmployeeId)
+      : false;
 
   const [comments, setComments] = useState([]);
   const [newComment, setNewComment] = useState('');
@@ -476,6 +482,7 @@ const TaskDetailsModal = ({ task, onClose }) => {
                 setActiveReview={setActiveReview}
                 reviewingEvidence={reviewingEvidence}
                 isManager={isManagerOrAdmin}
+                isAssigner={isAssigner}
                 isAuditor={storedRoles.includes('ROLE_AUDITOR')}
                 rating={rating}
                 setRating={setRating}
