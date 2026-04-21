@@ -100,8 +100,7 @@ public class PayrollCalculationService {
             if (existing.getStatus() != PayrollStatus.DRAFT) {
                 throw new IllegalStateException("Payroll already " + existing.getStatus() + " for " + emp.getUserName());
             }
-            // Recalculate existing DRAFT
-            payrollRecordRepository.delete(existing);
+            // DRAFT found - will be updated in-place below (no delete+insert to avoid unique key collision)
         }
 
         // Resolve salary structure
@@ -165,8 +164,9 @@ public class PayrollCalculationService {
                 .subtract(professionalTax)
                 .setScale(2, RoundingMode.HALF_UP);
 
-        // Build record
-        PayrollRecord record = new PayrollRecord();
+        // Reuse existing DRAFT or create new - avoids delete+insert collision on
+        // unique constraint (employee_id, month, year) within the same transaction.
+        PayrollRecord record = existingOpt.orElseGet(PayrollRecord::new);
         record.setEmployee(emp);
         record.setMonth(month);
         record.setYear(year);
