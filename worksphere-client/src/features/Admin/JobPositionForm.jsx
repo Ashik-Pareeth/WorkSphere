@@ -89,6 +89,7 @@ function JobPositionForm() {
 
     try {
       let currentJobPositionId = editingId;
+
       if (editingId) {
         await axiosInstance.put(`/jobPositions/${editingId}`, {
           positionName: title,
@@ -98,6 +99,7 @@ function JobPositionForm() {
           positionName: title,
         });
         currentJobPositionId = createRes.data.id;
+        console.log('CREATE RESPONSE:', createRes.data);
       }
 
       if (enableStructure && currentJobPositionId) {
@@ -132,11 +134,12 @@ function JobPositionForm() {
 
       resetForm();
       fetchPositions();
-    } catch {
+    } catch (err) {
       setAlert({
         type: 'error',
         message: 'Failed to save. Title may already exist.',
       });
+      console.error('Save error:', err.response || err);
     }
   };
 

@@ -22,12 +22,14 @@ public interface EmployeeRepository extends JpaRepository<Employee, UUID> {
             "WHERE e.id = :id")
     Optional<Employee> findByIdWithDetails(@Param("id") UUID id);
 
+
+
     List<Employee> findByEmployeeStatus(EmployeeStatus status);
     List<Employee> findByEmployeeStatusIn(List<EmployeeStatus> statuses);
     List<Employee> findByEmployeeStatusNotIn(List<EmployeeStatus> statuses);
 
 
-
+    boolean existsByJobPositionId(UUID jobPositionId);
     boolean existsByUserName(String userName);
     boolean existsByUserNameAndIdNot(String userName, UUID id);
 

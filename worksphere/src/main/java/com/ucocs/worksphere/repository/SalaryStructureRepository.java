@@ -23,4 +23,6 @@ public interface SalaryStructureRepository extends JpaRepository<SalaryStructure
 
     Optional<SalaryStructure> findFirstByJobPositionAndEffectiveDateLessThanEqualOrderByEffectiveDateDesc(
             JobPosition jobPosition, LocalDate date);
+
+    void deleteByJobPositionId(UUID id);
 }
