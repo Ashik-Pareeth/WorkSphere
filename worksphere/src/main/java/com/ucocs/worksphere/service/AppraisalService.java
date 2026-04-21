@@ -14,10 +14,14 @@ import com.ucocs.worksphere.repository.AttendanceRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.PerformanceAppraisalRepository;
 import com.ucocs.worksphere.repository.TaskRepository;
+import com.ucocs.worksphere.util.IpAddressUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.math.BigDecimal;
 import java.math.RoundingMode;
@@ -103,8 +107,10 @@ public class AppraisalService {
 
                 PerformanceAppraisal saved = appraisalRepository.save(appraisal);
 
+                HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                String clientIp = IpAddressUtil.getClientIp(httpRequest);
                 auditService.log("PerformanceAppraisal", saved.getId(), AuditAction.CREATED,
-                        initiator.getId(), null,
+                        initiator.getId(), clientIp,
                         "Created " + request.getCycleType() + " appraisal for " + employee.getUserName());
 
                 notificationService.send(
@@ -156,8 +162,10 @@ public class AppraisalService {
 
                 PerformanceAppraisal saved = appraisalRepository.save(appraisal);
 
+                HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                String clientIp = IpAddressUtil.getClientIp(httpRequest);
                 auditService.log("PerformanceAppraisal", saved.getId(), AuditAction.UPDATED,
-                        employee.getId(), "Status: PENDING", "Status: IN_REVIEW (Self-Appraisal Submitted)");
+                        employee.getId(), clientIp, "Status: IN_REVIEW (Self-Appraisal Submitted)");
 
                 if (appraisal.getManager() != null) {
                         notificationService.send(
@@ -278,8 +286,10 @@ public class AppraisalService {
 
                 PerformanceAppraisal saved = appraisalRepository.save(appraisal);
 
+                HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                String clientIp = IpAddressUtil.getClientIp(httpRequest);
                 auditService.log("PerformanceAppraisal", saved.getId(), AuditAction.UPDATED,
-                        manager.getId(), "Status: IN_REVIEW", "Status: REVIEWED (Manager Appraisal Submitted)");
+                        manager.getId(), clientIp, "Status: REVIEWED (Manager Appraisal Submitted)");
 
                 notificationService.send(
                         appraisal.getEmployee().getId(),
@@ -313,8 +323,10 @@ public class AppraisalService {
                 appraisal.setStatus(AppraisalStatus.ACKNOWLEDGED);
                 PerformanceAppraisal saved = appraisalRepository.save(appraisal);
 
+                HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes()).getRequest();
+                String clientIp = IpAddressUtil.getClientIp(httpRequest);
                 auditService.log("PerformanceAppraisal", saved.getId(), AuditAction.UPDATED,
-                        employee.getId(), "Status: REVIEWED", "Status: ACKNOWLEDGED");
+                        employee.getId(), clientIp, "Status: ACKNOWLEDGED");
 
                 return toResponse(saved);
         }

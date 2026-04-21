@@ -26,4 +26,5 @@ public class FinalizeHireRequest {
     private Double pfEmployerPercent;
     private BigDecimal professionalTax;
     private LocalDate effectiveDate;
+    private Set<UUID> leavePolicyIds;
 }

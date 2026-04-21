@@ -309,12 +309,42 @@ public class TaskService {
         return savedTask;
     }
 
+    public Task resolveTaskFlag(UUID taskId) {
+        Task task = taskRepository.findById(taskId)
+                .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
+
+        Employee currentUser = getCurrentUser();
+
+        // Ensure only Admin or Auditor can resolve it
+        if (!hasRole(currentUser, "ROLE_AUDITOR") && !hasRole(currentUser, "ROLE_ADMIN")) {
+            throw new AccessDeniedException("Only Auditors or Admins can resolve flagged tasks.");
+        }
+
+        // Call the method that already exists in your Task entity
+        task.resolveFlag();
+
+        // Log the history
+        logHistory(task, currentUser, "Audit Flag Resolved", "ROLE_AUDITOR", task.getStatus(), task.getStatus());
+
+        // (Optional) Notify the assignee that their task is clear
+        notificationService.send(
+                task.getAssignedTo().getId(),
+                NotificationType.TASK_STATUS_UPDATED,
+                "Audit Flag Resolved",
+                "The audit flag on your task \"" + task.getTitle() + "\" has been resolved by " + currentUser.getFirstName() + ".",
+                task.getId(),
+                "Task"
+        );
+
+        return taskRepository.save(task);
+    }
+
     public Task flagTask(UUID taskId, String reason) {
         Task task = taskRepository.findById(taskId)
                 .orElseThrow(() -> new ResourceNotFoundException("Task not found"));
 
         Employee currentUser = getCurrentUser();
-        if (!hasRole(currentUser, "ROLE_AUDITOR") && !hasRole(currentUser, "ROLE_ADMIN")) {
+        if (!hasRole(currentUser, "ROLE_AUDITOR") && !hasRole(currentUser, "ROLE_SUPER_ADMIN")) {
             throw new AccessDeniedException("Only Auditors can flag tasks.");
         }
 

@@ -17,6 +17,15 @@ import {
   X,
   ChevronDown,
 } from 'lucide-react';
+import SalaryStructureForm from './SalaryStructureForm';
+import {
+  buildSalaryPayload,
+  calculateSalaryGross,
+  DEFAULT_SALARY_FORM,
+  parseAmount,
+  toSalaryForm,
+} from './salaryStructureUtils';
+import { fetchSalaryStructureTemplate } from '../../api/hrApi';
 
 const ACTION_TYPES = [
   {
@@ -120,8 +129,8 @@ export default function HRActionModal({
     endDate: '',
     newJobPosition: '',
     newDepartment: '',
-    newSalary: '',
   });
+  const [salaryForm, setSalaryForm] = useState(DEFAULT_SALARY_FORM);
   const [history, setHistory] = useState([]);
   const [loading, setLoading] = useState(false);
   const [histLoading, setHistLoading] = useState(false);
@@ -139,6 +148,30 @@ export default function HRActionModal({
     axiosInstance.get('/departments').then(res => setDepts(res.data)).catch(() => {});
     axiosInstance.get('/jobPositions').then(res => setPositions(res.data)).catch(() => {});
   }, []);
+
+  const loadTemplateForPosition = async (positionId) => {
+    try {
+      const res = await fetchSalaryStructureTemplate(positionId);
+      if (res.data) {
+        setSalaryForm(toSalaryForm(res.data));
+      }
+    } catch (err) {
+      if (err.response && err.response.status === 404) {
+        // expected if template doesn't exist
+      } else {
+        console.error('Failed to load salary template for position', err);
+      }
+    }
+  };
+
+  useEffect(() => {
+    if (form.newJobPosition) {
+      const pos = positions.find(p => p.positionName === form.newJobPosition);
+      if (pos) {
+        loadTemplateForPosition(pos.id);
+      }
+    }
+  }, [form.newJobPosition, positions]);
 
   const loadHistory = async () => {
     setHistLoading(true);
@@ -168,8 +201,15 @@ export default function HRActionModal({
     if (selected?.needsDept && !form.newDepartment) {
       return setError('New Department is required.');
     }
-    if (selected?.needsSalary && (!form.newSalary || isNaN(form.newSalary) || Number(form.newSalary) <= 0)) {
-      return setError('A valid positive salary is required.');
+    if (selected?.needsSalary && parseAmount(salaryForm.baseSalary) <= 0) {
+      return setError('A valid positive base salary is required.');
+    }
+
+    let computedGross = null;
+    let salaryPayload = {};
+    if (selected?.needsSalary) {
+      computedGross = parseAmount(calculateSalaryGross(salaryForm));
+      salaryPayload = buildSalaryPayload(salaryForm);
     }
 
     setLoading(true);
@@ -183,7 +223,8 @@ export default function HRActionModal({
         endDate: form.endDate || null,
         newJobPosition: form.newJobPosition || null,
         newDepartment: form.newDepartment || null,
-        newSalary: form.newSalary ? parseFloat(form.newSalary) : null,
+        newSalary: computedGross,
+        ...salaryPayload,
       });
       if (pendingRecordId) {
         const api = await import('../../api/employeeActionApi');
@@ -201,8 +242,8 @@ export default function HRActionModal({
           endDate: '',
           newJobPosition: '',
           newDepartment: '',
-          newSalary: '',
         });
+        setSalaryForm(DEFAULT_SALARY_FORM);
       }, 2000);
     } catch (err) {
       setError(
@@ -385,21 +426,13 @@ export default function HRActionModal({
                       </div>
                     )}
                     {selected.needsSalary && (
-                      <div>
-                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-1">
-                          New Salary (₹)
+                      <div className="col-span-2 mt-4 pt-4 border-t border-gray-200">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">
+                          New Salary Structure
                         </label>
-                        <input
-                          type="number"
-                          value={form.newSalary}
-                          onChange={(e) =>
-                            setForm((f) => ({
-                              ...f,
-                              newSalary: e.target.value,
-                            }))
-                          }
-                          placeholder="e.g. 75000"
-                          className="w-full rounded-lg border border-gray-200 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        <SalaryStructureForm
+                          value={salaryForm}
+                          onChange={setSalaryForm}
                         />
                       </div>
                     )}

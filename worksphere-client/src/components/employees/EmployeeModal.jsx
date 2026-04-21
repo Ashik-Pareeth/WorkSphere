@@ -1,6 +1,21 @@
 import React, { useState, useEffect, useCallback, useContext } from 'react';
 import axiosInstance from '../../api/axiosInstance';
-import { Mail, Building2, User, DollarSign, Clock, Calendar, TrendingUp, ShieldOff, ShieldCheck, X, Lock, Loader2, AlertTriangle, Flag } from 'lucide-react';
+import {
+  Mail,
+  Building2,
+  User,
+  DollarSign,
+  Clock,
+  Calendar,
+  TrendingUp,
+  ShieldOff,
+  ShieldCheck,
+  X,
+  Lock,
+  Loader2,
+  AlertTriangle,
+  Flag,
+} from 'lucide-react';
 import HRActionModal from '../../features/hr/HRActionModal';
 import ManagerReportModal from '../../features/hr/ManagerReportModal';
 import { AuditTrail } from '../common/AuditTrail';
@@ -8,8 +23,25 @@ import { AuthContext } from '../../context/AuthContext';
 
 import { formatSalary, formatDate, getGradient } from './utils/helpers';
 import { canManage, assignableRoles } from '../../utils/rbac';
-import { STATUSES, STATUS_STYLE, ROLE_STYLE, TABS, ATT_STYLE, GLOBAL_STYLES } from './shared/constants';
-import { PermissionBanner, ElToast, FieldLabel, FormInput, FormSelect, SaveBtn, StatusPill, RolePill, ModalAvatar } from './shared/atoms';
+import {
+  STATUSES,
+  STATUS_STYLE,
+  ROLE_STYLE,
+  TABS,
+  ATT_STYLE,
+  GLOBAL_STYLES,
+} from './shared/constants';
+import {
+  PermissionBanner,
+  ElToast,
+  FieldLabel,
+  FormInput,
+  FormSelect,
+  SaveBtn,
+  StatusPill,
+  RolePill,
+  ModalAvatar,
+} from './shared/atoms';
 
 /* ═══════════════════════════════════════════════════════════════
    TAB: VIEW
@@ -130,7 +162,9 @@ function EditTab({ emp, onSaved, viewerRank }) {
   };
 
   if (!isAllowed)
-    return <PermissionBanner message="You cannot edit this employee's profile." />;
+    return (
+      <PermissionBanner message="You cannot edit this employee's profile." />
+    );
 
   return (
     <form onSubmit={handleSubmit} className="el-form-space">
@@ -428,8 +462,8 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
 
   // High-rank HR/Admin users should use the formal action pipeline for suspensions
   const formalActionsOnly = viewerRank >= 3;
-  const filteredStatuses = formalActionsOnly 
-    ? STATUSES.filter(s => s !== 'SUSPENDED' && s !== 'TERMINATED') 
+  const filteredStatuses = formalActionsOnly
+    ? STATUSES.filter((s) => s !== 'SUSPENDED' && s !== 'TERMINATED')
     : STATUSES;
 
   const handleSubmit = async (e) => {
@@ -437,7 +471,10 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
     setLoading(true);
     setToast(null);
     try {
-      const response = await axiosInstance.patch(`/employees/${emp.id}/status`, { status });
+      const response = await axiosInstance.patch(
+        `/employees/${emp.id}/status`,
+        { status }
+      );
       onUpdated(response.data);
       setToast({ msg: `Status updated to ${status}`, type: 'success' });
     } catch (err) {
@@ -502,9 +539,14 @@ function StatusTab({ emp, onUpdated, viewerRank }) {
           })}
         </div>
         {formalActionsOnly && (
-           <p className="el-hint mt-3 text-red-600 bg-red-50 p-2 rounded-lg text-xs" style={{fontStyle: 'normal'}}>
-             <strong>Note:</strong> Due to compliance, <code>SUSPENDED</code> and <code>TERMINATED</code> statuses cannot be set directly. Please use the Formal Action pipeline to apply these changes securely.
-           </p>
+          <p
+            className="el-hint mt-3 text-red-600 bg-red-50 p-2 rounded-lg text-xs"
+            style={{ fontStyle: 'normal' }}
+          >
+            <strong>Note:</strong> Due to compliance, <code>SUSPENDED</code> and{' '}
+            <code>TERMINATED</code> statuses cannot be set directly. Please use
+            the Formal Action pipeline to apply these changes securely.
+          </p>
         )}
       </div>
       <SaveBtn
@@ -784,40 +826,50 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
         </div>
 
         {/* Identity */}
-          <div className="el-modal-identity">
-            <h2 className="el-modal-name">
-              {emp.firstName} {emp.lastName}
-            </h2>
-            <p className="el-modal-jobtitle">
-              {emp.jobTitle ?? 'No title assigned'}
-            </p>
-            <div className="el-modal-roles flex items-center gap-2 mt-2 flex-wrap">
-              {emp.roles?.map((r) => (
-                <RolePill key={r.id} roleName={r.roleName} />
-              ))}
-              {canTakeFormalAction && (
-                <button
-                  type="button"
-                  onClick={() => setShowActionModal(true)}
-                  className="px-2 py-1 bg-red-50 text-red-600 rounded-md text-xs font-semibold hover:bg-red-100 flex items-center gap-1 border border-red-200"
-                >
-                  Formal Action
-                </button>
-              )}
-              {canReportToHR && (
-                <button
-                  type="button"
-                  onClick={() => setShowReportModal(true)}
-                  className="px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-xs font-semibold hover:bg-amber-100 flex items-center gap-1 border border-amber-200"
-                >
-                  Report to HR
-                </button>
-              )}
-            </div>
+        <div className="el-modal-identity">
+          <h2 className="el-modal-name">
+            {emp.firstName} {emp.lastName}
+          </h2>
+          <p className="el-modal-jobtitle">
+            {emp.jobTitle ?? 'No title assigned'}
+          </p>
+          <div className="el-modal-roles flex items-center gap-2 mt-2 flex-wrap">
+            {emp.roles?.map((r) => (
+              <RolePill key={r.id} roleName={r.roleName} />
+            ))}
+            {canTakeFormalAction && (
+              <button
+                type="button"
+                onClick={() => setShowActionModal(true)}
+                className="px-2 py-1 bg-red-50 text-red-600 rounded-md text-xs font-semibold hover:bg-red-100 flex items-center gap-1 border border-red-200"
+              >
+                Formal Action
+              </button>
+            )}
+            {canReportToHR && (
+              <button
+                type="button"
+                onClick={() => setShowReportModal(true)}
+                className="px-2 py-1 bg-amber-50 text-amber-600 rounded-md text-xs font-semibold hover:bg-amber-100 flex items-center gap-1 border border-amber-200"
+              >
+                Report to HR
+              </button>
+            )}
           </div>
+        </div>
 
         {/* Tabs */}
-        <div className="el-tab-header">
+        <div
+          className="el-tab-header"
+          style={{
+            display: 'flex',
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: 8,
+            overflowX: 'auto',
+          }}
+        >
+          {' '}
           {TABS.map(({ key, label, icon: Icon, isAction }) => {
             const dim = isAction && !canEdit;
             return (
@@ -826,7 +878,15 @@ function EmployeeModal({ emp: initialEmp, onClose, onUpdated, viewerRank }) {
                 onClick={() => !dim && setTab(key)}
                 className={`el-tab ${tab === key ? 'el-tab--active' : ''} ${dim ? 'el-tab--dim' : ''}`}
               >
-                {React.createElement(Icon, { size: 12 })}
+                <span
+                  style={{
+                    width: 14,
+                    display: 'inline-flex',
+                    justifyContent: 'center',
+                  }}
+                >
+                  {Icon ? React.createElement(Icon, { size: 12 }) : null}
+                </span>{' '}
                 {label}
                 {dim && (
                   <Lock size={9} style={{ marginLeft: 2, opacity: 0.6 }} />

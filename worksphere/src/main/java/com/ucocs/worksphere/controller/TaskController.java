@@ -174,6 +174,13 @@ public class TaskController {
         return ResponseEntity.ok(convertToDTOs(tasks));
     }
 
+    @PatchMapping("/{taskId}/resolve-flag")
+    @PreAuthorize("hasAnyRole('AUDITOR', 'SUPER_ADMIN')")
+    public ResponseEntity<TaskResponseDTO> resolveTaskFlag(@PathVariable UUID taskId) {
+        Task task = taskService.resolveTaskFlag(taskId);
+        return ResponseEntity.ok(TaskResponseDTO.fromEntity(task));
+    }
+
     // --- HELPERS ---
     private Employee getAuthenticatedEmployee() {
         String username = SecurityContextHolder.getContext().getAuthentication().getName();

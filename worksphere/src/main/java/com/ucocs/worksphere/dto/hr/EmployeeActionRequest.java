@@ -13,5 +13,13 @@ public record EmployeeActionRequest(
         LocalDate endDate,       // for suspension / forced leave
         String newJobPosition,   // for promotion / demotion / transfer
         String newDepartment,    // for transfer
-        BigDecimal newSalary     // for salary revision / promotion
+        BigDecimal newSalary,    // For gross logging fallback
+        BigDecimal baseSalary,
+        BigDecimal hra,
+        BigDecimal da,
+        BigDecimal travelAllowance,
+        BigDecimal otherAllowances,
+        Double pfEmployeePercent,
+        Double pfEmployerPercent,
+        BigDecimal professionalTax
 ) {}

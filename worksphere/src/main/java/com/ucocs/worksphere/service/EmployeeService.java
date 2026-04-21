@@ -39,6 +39,8 @@ import java.util.UUID;
 import com.ucocs.worksphere.entity.Candidate;
 import com.ucocs.worksphere.entity.OfferLetter;
 import com.ucocs.worksphere.entity.JobOpening;
+import com.ucocs.worksphere.entity.LeavePolicy;
+import com.ucocs.worksphere.enums.LeaveTransactionType;
 
 @Service
 public class EmployeeService {
@@ -75,6 +77,8 @@ public class EmployeeService {
     private final EmployeeActionRepository employeeActionRepository;
     private final SalaryStructureRepository salaryStructureRepository;
     private final OffboardingRecordRepository offboardingRecordRepository;
+    private final LeavePolicyRepository leavePolicyRepository;
+    private final LeaveLedgerService leaveLedgerService;
 
     public EmployeeService(
             PasswordEncoder passwordEncoder,
@@ -88,7 +92,9 @@ public class EmployeeService {
             NotificationService notificationService,
             EmployeeActionRepository employeeActionRepository,
             SalaryStructureRepository salaryStructureRepository,
-            OffboardingRecordRepository offboardingRecordRepository) {
+            OffboardingRecordRepository offboardingRecordRepository,
+            LeavePolicyRepository leavePolicyRepository,
+            LeaveLedgerService leaveLedgerService) {
         this.passwordEncoder = passwordEncoder;
         this.employeeRepository = employeeRepository;
         this.departmentRepository = departmentRepository;
@@ -101,6 +107,8 @@ public class EmployeeService {
         this.employeeActionRepository = employeeActionRepository;
         this.salaryStructureRepository = salaryStructureRepository;
         this.offboardingRecordRepository = offboardingRecordRepository;
+        this.leavePolicyRepository = leavePolicyRepository;
+        this.leaveLedgerService = leaveLedgerService;
     }
 
     // =========================================================================
@@ -578,6 +586,20 @@ public class EmployeeService {
         if (employeeSalaryStructure != null) {
             employeeSalaryStructure.setEmployee(savedEmployee);
             employeeSalaryStructure = salaryStructureRepository.save(employeeSalaryStructure);
+        }
+
+        if (request.getLeavePolicyIds() != null && !request.getLeavePolicyIds().isEmpty()) {
+            for (UUID policyId : request.getLeavePolicyIds()) {
+                leavePolicyRepository.findById(policyId).ifPresent(policy -> {
+                    leaveLedgerService.adjustBalance(
+                            savedEmployee.getId(),
+                            policy.getId(),
+                            LeaveTransactionType.ACCRUAL,
+                            policy.getDefaultAnnualAllowance(),
+                            "Initial HR Allocation upon Hire"
+                    );
+                });
+            }
         }
 
         emailService.sendOnboardingInviteEmail(savedEmployee, employeeSalaryStructure, "Welcome123!");

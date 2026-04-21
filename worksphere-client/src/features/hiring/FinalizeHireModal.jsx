@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { CheckCircle2, RefreshCw } from 'lucide-react';
 import axiosInstance from '../../api/axiosInstance';
@@ -55,6 +56,8 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
   const [departments, setDepartments] = useState([]);
   const [positions, setPositions] = useState([]);
   const [schedules, setSchedules] = useState([]);
+  const [policies, setPolicies] = useState([]);
+  const [selectedPolicies, setSelectedPolicies] = useState([]);
 
   const selectedJobPosition = useMemo(
     () => positions.find((position) => position.id === selectedPos) || null,
@@ -192,12 +195,13 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
 
   const fetchFormData = async () => {
     try {
-      const [rolesRes, empRes, deptRes, posRes, schedRes] = await Promise.all([
+      const [rolesRes, empRes, deptRes, posRes, schedRes, policiesRes] = await Promise.all([
         axiosInstance.get('/roles'),
         axiosInstance.get('/employees'),
         axiosInstance.get('/departments'),
         axiosInstance.get('/jobPositions'),
         axiosInstance.get('/api/work-schedules'),
+        axiosInstance.get('/api/leave-policies'),
       ]);
 
       setAvailableRoles(
@@ -207,6 +211,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
       setDepartments(deptRes.data);
       setPositions(posRes.data);
       setSchedules(schedRes.data);
+      setPolicies(policiesRes.data);
 
       const employeeRole = rolesRes.data.find(
         (r) => r.roleName === 'ROLE_EMPLOYEE' || r.roleName === 'EMPLOYEE'
@@ -252,6 +257,7 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
         managerId: selectedManager,
         username: username.trim() || undefined,
         workScheduleId: selectedSchedule || undefined,
+        leavePolicyIds: selectedPolicies.length > 0 ? selectedPolicies : undefined,
         ...buildSalaryPayload(salaryForm),
       };
 
@@ -408,6 +414,50 @@ const FinalizeHireModal = ({ isOpen, onClose, candidate, onHireFinalized }) => {
                 </SelectContent>
               </Select>
             </div>
+            {/* Leave Policies */}
+            {policies && policies.length > 0 && (
+              <div className="grid gap-2.5 col-span-2 pt-2 border-t border-slate-100 mt-2">
+                <Label className="text-sm font-semibold text-slate-800">
+                  Leave Entitlements (Optional)
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  {policies.map(policy => (
+                    <div 
+                      key={policy.id} 
+                      className={`flex items-start space-x-3 p-3 rounded-lg border transition-all cursor-pointer ${
+                        selectedPolicies.includes(policy.id) 
+                          ? 'border-blue-500 bg-blue-50 ring-1 ring-blue-200' 
+                          : 'border-slate-200 hover:border-slate-300'
+                      }`}
+                      onClick={() => {
+                        setSelectedPolicies(prev => 
+                          prev.includes(policy.id) 
+                            ? prev.filter(id => id !== policy.id)
+                            : [...prev, policy.id]
+                        );
+                      }}
+                    >
+                      <Checkbox 
+                        id={policy.id} 
+                        checked={selectedPolicies.includes(policy.id)} 
+                        className={selectedPolicies.includes(policy.id) ? "border-blue-600 bg-blue-600 text-white" : ""}
+                      />
+                      <div className="grid gap-1 leading-none -mt-0.5">
+                        <label 
+                          htmlFor={policy.id} 
+                          className="text-sm font-medium text-slate-800 cursor-pointer"
+                        >
+                          {policy.name}
+                        </label>
+                        <p className="text-xs text-slate-500">
+                          {policy.defaultAnnualAllowance} days/yr {policy.allowsCarryForward ? '(Rollover allowed)' : '(No rollover)'}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Salary Structure */}

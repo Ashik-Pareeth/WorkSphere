@@ -81,7 +81,7 @@ public class EmployeeActionController {
      * HR / SUPER_ADMIN / MANAGER (own reports): get action history for an employee.
      */
     @GetMapping("/employee/{employeeId}")
-    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'MANAGER')")
+    @PreAuthorize("hasAnyRole('HR', 'SUPER_ADMIN', 'MANAGER','EMPLOYEE','AUDITOR')")
     public ResponseEntity<List<EmployeeActionResponse>> getActionsForEmployee(
             @PathVariable UUID employeeId) {
         return ResponseEntity.ok(actionService.getActionsForEmployee(employeeId));

@@ -9,6 +9,7 @@ import TaskStatsWidget from '../components/dashboard/TaskStatsWidget';
 import PayrollStatusBand from '../components/dashboard/PayrollStatusBand';
 import HiringSnapshotCard from '../components/dashboard/HiringSnapshotCard';
 import LeavePresenceBoard from '../components/dashboard/LeavePresenceBoard';
+import TaskDetailsModal from '@/features/tasks/TaskDetailsModal';
 
 // --- Common components ---
 import StatCard from '../components/common/StatCard';
@@ -293,49 +294,81 @@ const SectionHeader = ({ title, subtitle }) => (
 // ─────────────────────────────────────────────────────────────────────────────
 const EmployeeSelectorModal = ({ employees, onSelect, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
-  
-  const filtered = employees.filter(e => 
-     `${e.firstName} ${e.lastName}`.toLowerCase().includes(searchTerm.toLowerCase())
+
+  const filtered = employees.filter((e) =>
+    `${e.firstName} ${e.lastName}`
+      .toLowerCase()
+      .includes(searchTerm.toLowerCase())
   );
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4 text-left">
       <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 flex flex-col max-h-[80vh]">
-         <div className="flex justify-between items-center mb-4">
-           <div>
-             <h3 className="font-bold text-gray-900">Take Formal Action</h3>
-             <p className="text-xs text-gray-500">Search and select an employee</p>
-           </div>
-           <button onClick={onClose} className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 transition">
-             <svg width="18" height="18" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/>
-             </svg>
-           </button>
-         </div>
-         <input 
-           autoFocus
-           type="text" 
-           placeholder="Search by name..." 
-           className="w-full border border-gray-300 p-2 rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" 
-           value={searchTerm} 
-           onChange={e => setSearchTerm(e.target.value)} 
-         />
-         <div className="overflow-y-auto flex-1 border border-gray-200 rounded-lg divide-y bg-gray-50">
-            {filtered.length === 0 ? (
-               <p className="p-4 text-sm text-center text-gray-500">No employees found.</p>
-            ) : filtered.map(emp => (
-               <div key={emp.id} onClick={() => onSelect(emp)} className="p-3 bg-white hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors group">
-                  <div>
-                    <p className="font-semibold text-sm text-gray-900">{emp.firstName} {emp.lastName}</p>
-                    <p className="text-xs text-gray-500 mt-0.5">{emp.jobTitle || 'No position'}</p>
-                  </div>
-                  <span className="text-blue-600 font-bold text-[10px] uppercase opacity-0 group-hover:opacity-100 transition-opacity">Select &rarr;</span>
-               </div>
-            ))}
-         </div>
+        <div className="flex justify-between items-center mb-4">
+          <div>
+            <h3 className="font-bold text-gray-900">Take Formal Action</h3>
+            <p className="text-xs text-gray-500">
+              Search and select an employee
+            </p>
+          </div>
+          <button
+            onClick={onClose}
+            className="p-1.5 rounded-lg text-gray-400 hover:text-gray-700 bg-gray-50 hover:bg-gray-100 transition"
+          >
+            <svg
+              width="18"
+              height="18"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth="2"
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        </div>
+        <input
+          autoFocus
+          type="text"
+          placeholder="Search by name..."
+          className="w-full border border-gray-300 p-2 rounded-lg mb-4 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <div className="overflow-y-auto flex-1 border border-gray-200 rounded-lg divide-y bg-gray-50">
+          {filtered.length === 0 ? (
+            <p className="p-4 text-sm text-center text-gray-500">
+              No employees found.
+            </p>
+          ) : (
+            filtered.map((emp) => (
+              <div
+                key={emp.id}
+                onClick={() => onSelect(emp)}
+                className="p-3 bg-white hover:bg-blue-50 cursor-pointer flex justify-between items-center transition-colors group"
+              >
+                <div>
+                  <p className="font-semibold text-sm text-gray-900">
+                    {emp.firstName} {emp.lastName}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-0.5">
+                    {emp.jobTitle || 'No position'}
+                  </p>
+                </div>
+                <span className="text-blue-600 font-bold text-[10px] uppercase opacity-0 group-hover:opacity-100 transition-opacity">
+                  Select &rarr;
+                </span>
+              </div>
+            ))
+          )}
+        </div>
       </div>
     </div>
-  )
+  );
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -727,9 +760,13 @@ const HRDashboard = ({ user }) => {
   useEffect(() => {
     const load = async () => {
       try {
-        const [emp, rep] = await Promise.allSettled([getAllEmployees(), getPendingReports()]);
+        const [emp, rep] = await Promise.allSettled([
+          getAllEmployees(),
+          getPendingReports(),
+        ]);
         if (emp.status === 'fulfilled') setEmployees(emp.value ?? []);
-        if (rep.status === 'fulfilled') setPendingReports(rep.value?.data ?? rep.value ?? []);
+        if (rep.status === 'fulfilled')
+          setPendingReports(rep.value?.data ?? rep.value ?? []);
       } finally {
         setLoading(false);
       }
@@ -739,7 +776,11 @@ const HRDashboard = ({ user }) => {
 
   const handleResolvePending = (rep) => {
     setPendingResolutionId(rep.id);
-    const emp = employees.find(e => e.id === rep.employeeId) || { id: rep.employeeId, firstName: rep.employeeName?.split(' ')[0], lastName: rep.employeeName?.split(' ')[1] || '' };
+    const emp = employees.find((e) => e.id === rep.employeeId) || {
+      id: rep.employeeId,
+      firstName: rep.employeeName?.split(' ')[0],
+      lastName: rep.employeeName?.split(' ')[1] || '',
+    };
     setSelectedEmpForAction(emp);
   };
 
@@ -902,44 +943,61 @@ const HRDashboard = ({ user }) => {
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">
           <div className="px-5 py-4 border-b border-gray-100 bg-red-50/50 flex justify-between items-center">
             <div>
-              <h2 className="text-base font-bold text-gray-900">Pending Actions</h2>
-              <p className="text-xs text-gray-500 mt-0.5">Emergency actions or Manager Reports</p>
+              <h2 className="text-base font-bold text-gray-900">
+                Pending Actions
+              </h2>
+              <p className="text-xs text-gray-500 mt-0.5">
+                Emergency actions or Manager Reports
+              </p>
             </div>
             <span className="bg-red-100 text-red-700 text-xs font-bold px-2.5 py-1 rounded-full">
               {pendingReports.length}
             </span>
           </div>
-          <div className="p-5 flex-1 overflow-y-auto" style={{ maxHeight: 300 }}>
+          <div
+            className="p-5 flex-1 overflow-y-auto"
+            style={{ maxHeight: 300 }}
+          >
             {loading ? (
               <div className="flex flex-col gap-3">
-                 <Skeleton className="h-10 w-full" />
-                 <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
+                <Skeleton className="h-10 w-full" />
               </div>
             ) : pendingReports.length === 0 ? (
-               <div className="flex flex-col items-center justify-center py-6 text-gray-400">
-                 <span className="text-3xl mb-1 mt-2">🎉</span>
-                 <p className="text-sm font-medium">All formal actions are up to date!</p>
-               </div>
+              <div className="flex flex-col items-center justify-center py-6 text-gray-400">
+                <span className="text-3xl mb-1 mt-2">🎉</span>
+                <p className="text-sm font-medium">
+                  All formal actions are up to date!
+                </p>
+              </div>
             ) : (
-               <ul className="flex flex-col gap-3">
-                 {pendingReports.map(rep => (
-                   <li key={rep.id} className="p-3 border border-red-100 bg-red-50/20 hover:bg-red-50/50 rounded-lg flex justify-between items-center transition">
-                      <div>
-                        <p className="text-sm font-semibold text-gray-900">{rep.employeeName}</p>
-                        <p className="text-[11px] text-gray-500 mt-0.5">
-                          <span className="font-bold text-red-700 mr-1 uppercase tracking-tight">{rep.actionType.replace(/_/g, ' ')}</span> 
-                          • {rep.reason?.substr(0, 40)}{rep.reason?.length > 40 ? '...' : ''}
-                        </p>
-                      </div>
-                      <button 
-                        onClick={() => handleResolvePending(rep)}
-                        className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition shadow-sm ml-2 shrink-0"
-                      >
-                        Resolve
-                      </button>
-                   </li>
-                 ))}
-               </ul>
+              <ul className="flex flex-col gap-3">
+                {pendingReports.map((rep) => (
+                  <li
+                    key={rep.id}
+                    className="p-3 border border-red-100 bg-red-50/20 hover:bg-red-50/50 rounded-lg flex justify-between items-center transition"
+                  >
+                    <div>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {rep.employeeName}
+                      </p>
+                      <p className="text-[11px] text-gray-500 mt-0.5">
+                        <span className="font-bold text-red-700 mr-1 uppercase tracking-tight">
+                          {rep.actionType.replace(/_/g, ' ')}
+                        </span>
+                        • {rep.reason?.substr(0, 40)}
+                        {rep.reason?.length > 40 ? '...' : ''}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleResolvePending(rep)}
+                      className="bg-red-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold hover:bg-red-700 transition shadow-sm ml-2 shrink-0"
+                    >
+                      Resolve
+                    </button>
+                  </li>
+                ))}
+              </ul>
             )}
           </div>
         </div>
@@ -947,9 +1005,9 @@ const HRDashboard = ({ user }) => {
 
       {/* --- Action Modals --- */}
       {showSelector && (
-        <EmployeeSelectorModal 
-          employees={employees} 
-          onClose={() => setShowSelector(false)} 
+        <EmployeeSelectorModal
+          employees={employees}
+          onClose={() => setShowSelector(false)}
           onSelect={(emp) => {
             setShowSelector(false);
             setSelectedEmpForAction(emp);
@@ -957,18 +1015,18 @@ const HRDashboard = ({ user }) => {
         />
       )}
       {selectedEmpForAction && (
-        <HRActionModal 
-          employee={selectedEmpForAction} 
+        <HRActionModal
+          employee={selectedEmpForAction}
           pendingRecordId={pendingResolutionId}
           onClose={() => {
             setSelectedEmpForAction(null);
             setPendingResolutionId(null);
-          }} 
+          }}
           onActionApplied={() => {
             setSelectedEmpForAction(null);
             setPendingResolutionId(null);
-            setRefreshTrigger(prev => prev + 1);
-          }} 
+            setRefreshTrigger((prev) => prev + 1);
+          }}
         />
       )}
     </div>
@@ -1181,7 +1239,9 @@ const SuperAdminDashboard = ({ user }) => {
 const AuditorDashboard = ({ user }) => {
   const navigate = useNavigate();
   const [tasks, setTasks] = useState([]);
+  console.log(tasks);
   const [loading, setLoading] = useState(true);
+  const [selectedTask, setSelectedTask] = useState(null);
 
   useEffect(() => {
     // Auditors can see all tasks via /tasks/all-tasks endpoint
@@ -1193,9 +1253,7 @@ const AuditorDashboard = ({ user }) => {
     });
   }, []);
 
-  const flaggedTasks = tasks.filter(
-    (t) => t.flagged === true || t.auditFlagged === true
-  );
+  const flaggedTasks = tasks.filter((t) => t.isFlagged === true);
   const evidenceTasks = tasks.filter(
     (t) => t.evidenceCount > 0 || t.hasEvidence
   );
@@ -1300,7 +1358,7 @@ const AuditorDashboard = ({ user }) => {
                 {flaggedTasks.map((t) => (
                   <li
                     key={t.id}
-                    onClick={() => navigate('/tasks')}
+                    onClick={() => setSelectedTask(t)}
                     className="flex items-center justify-between p-3 rounded-lg border border-red-100 bg-red-50/30 hover:bg-red-50 cursor-pointer transition-all group"
                   >
                     <div>
@@ -1331,6 +1389,12 @@ const AuditorDashboard = ({ user }) => {
             </button>
           </div>
         </div>
+        {selectedTask && (
+          <TaskDetailsModal
+            task={selectedTask}
+            onClose={() => setSelectedTask(null)}
+          />
+        )}
 
         {/* Evidence review queue */}
         <div className="bg-white rounded-xl border border-gray-200 shadow-sm flex flex-col overflow-hidden">

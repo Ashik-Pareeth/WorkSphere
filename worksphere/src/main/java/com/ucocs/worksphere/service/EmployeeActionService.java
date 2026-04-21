@@ -11,6 +11,8 @@ import com.ucocs.worksphere.repository.EmployeeActionRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.JobPositionRepository;
 import com.ucocs.worksphere.repository.DepartmentRepository;
+import com.ucocs.worksphere.repository.SalaryStructureRepository;
+import com.ucocs.worksphere.entity.SalaryStructure;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -30,6 +32,7 @@ public class EmployeeActionService {
     private final EmployeeRepository employeeRepo;
     private final JobPositionRepository jobPositionRepo;
     private final DepartmentRepository departmentRepo;
+    private final SalaryStructureRepository salaryStructureRepository;
     private final NotificationService notificationService; // ADDED
 
     // ── HR / SUPER_ADMIN: take a direct action ────────────────────────────────
@@ -96,6 +99,28 @@ public class EmployeeActionService {
                 // No status change — just logged
             }
             default -> throw new IllegalArgumentException("Unsupported direct action type: " + type);
+        }
+
+        if (req.baseSalary() != null) {
+            SalaryStructure structure = salaryStructureRepository.findByEmployee(target)
+                    .orElseGet(SalaryStructure::new);
+            structure.setEmployee(target);
+            structure.setJobPosition(target.getJobPosition());
+            structure.setBaseSalary(req.baseSalary());
+            structure.setHra(req.hra() != null ? req.hra() : BigDecimal.ZERO);
+            structure.setDa(req.da() != null ? req.da() : BigDecimal.ZERO);
+            structure.setTravelAllowance(req.travelAllowance() != null ? req.travelAllowance() : BigDecimal.ZERO);
+            structure.setOtherAllowances(req.otherAllowances() != null ? req.otherAllowances() : BigDecimal.ZERO);
+            structure.setPfEmployeePercent(req.pfEmployeePercent() != null ? req.pfEmployeePercent() : 12.0);
+            structure.setPfEmployerPercent(req.pfEmployerPercent() != null ? req.pfEmployerPercent() : 12.0);
+            structure.setProfessionalTax(req.professionalTax() != null ? req.professionalTax() : BigDecimal.ZERO);
+            structure.setEffectiveDate(req.effectiveDate() != null ? req.effectiveDate() : LocalDate.now());
+            
+            BigDecimal gross = structure.computeGross();
+            target.setSalary(gross.doubleValue());
+            record.setNewSalary(gross);
+            
+            salaryStructureRepository.save(structure);
         }
 
         employeeRepo.save(target);

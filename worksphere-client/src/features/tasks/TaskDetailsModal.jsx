@@ -5,6 +5,7 @@ import {
   uploadTaskEvidence,
   getTaskEvidence,
   reviewTaskEvidence,
+  resolveTaskFlag,
   flagTask,
 } from '../../api/taskApi';
 import AlertMessage from '../../components/common/AlertMessage';
@@ -24,7 +25,10 @@ const TaskDetailsModal = ({ task, onClose }) => {
   const storedRoles = JSON.parse(localStorage.getItem('roles') || '[]');
   const isManagerOrAdmin =
     storedRoles.includes('ROLE_MANAGER') ||
-    storedRoles.includes('ROLE_SUPER_ADMIN');
+    storedRoles.includes('MANAGER') ||
+    storedRoles.includes('ROLE_SUPER_ADMIN') ||
+    storedRoles.includes('SUPER_ADMIN');
+
   // eslint-disable-next-line no-unused-vars
   const currentUser = JSON.parse(localStorage.getItem('user')) || {
     id: localStorage.getItem('employeeId'),
@@ -155,6 +159,35 @@ const TaskDetailsModal = ({ task, onClose }) => {
       });
     } finally {
       setIsFlagging(false);
+    }
+  };
+
+  const [isResolving, setIsResolving] = useState(false);
+
+  const handleResolveFlag = async () => {
+    try {
+      setIsResolving(true);
+      await resolveTaskFlag(task.id);
+      setAlert({
+        type: 'success',
+        message: 'Task flag resolved successfully.',
+      });
+
+      // Reload the page/modal to reflect changes
+      setTimeout(() => {
+        onClose();
+        window.location.reload();
+      }, 1500);
+    } catch (err) {
+      setAlert({
+        type: 'error',
+        message:
+          err.response?.data?.message ||
+          err.message ||
+          'Failed to resolve flag.',
+      });
+    } finally {
+      setIsResolving(false);
     }
   };
 
@@ -353,7 +386,9 @@ const TaskDetailsModal = ({ task, onClose }) => {
 
           <div className="flex items-center gap-3">
             {(storedRoles.includes('ROLE_AUDITOR') ||
-              storedRoles.includes('ROLE_SUPER_ADMIN')) &&
+              storedRoles.includes('ROLE_SUPER_ADMIN') ||
+              storedRoles.includes('SUPER_ADMIN') ||
+              storedRoles.includes('AUDITOR')) &&
               !task.isFlagged && (
                 <button
                   onClick={handleFlagTask}
@@ -364,11 +399,21 @@ const TaskDetailsModal = ({ task, onClose }) => {
                 </button>
               )}
 
-            {task.isFlagged && (
-              <span className="px-3 py-1.5 text-sm font-medium text-white bg-rose-500 rounded-lg flex items-center gap-1.5">
-                🚩 Flagged
-              </span>
-            )}
+            {task.isFlagged &&
+              (storedRoles.includes('ROLE_AUDITOR') ||
+              storedRoles.includes('ROLE_SUPER_ADMIN') ? (
+                <button
+                  onClick={handleResolveFlag}
+                  disabled={isResolving}
+                  className="px-3 py-1.5 text-sm font-medium text-white bg-emerald-500 hover:bg-emerald-600 rounded-lg flex items-center gap-1.5 transition-colors disabled:opacity-50"
+                >
+                  ✓ {isResolving ? 'Resolving...' : 'Resolve Audit Flag'}
+                </button>
+              ) : (
+                <span className="px-3 py-1.5 text-sm font-medium text-white bg-rose-500 rounded-lg flex items-center gap-1.5">
+                  🚩 Flagged
+                </span>
+              ))}
 
             <button
               className="w-9 h-9 rounded-lg hover:bg-gray-100 text-gray-500 flex items-center justify-center"

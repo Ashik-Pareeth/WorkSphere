@@ -7,10 +7,14 @@ import com.ucocs.worksphere.enums.*;
 import com.ucocs.worksphere.exception.ResourceNotFoundException;
 import com.ucocs.worksphere.repository.CompanyAssetRepository;
 import com.ucocs.worksphere.repository.EmployeeRepository;
+import com.ucocs.worksphere.util.IpAddressUtil;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.context.request.RequestContextHolder;
+import org.springframework.web.context.request.ServletRequestAttributes;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -47,8 +51,11 @@ public class AssetManagementService {
 
         CompanyAsset saved = assetRepository.save(asset);
 
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
+        String clientIp = IpAddressUtil.getClientIp(httpRequest);
         auditService.log("CompanyAsset", saved.getId(), AuditAction.CREATED,
-                performer.getId(), null, assetTag);
+                performer.getId(), clientIp, assetTag);
 
         log.info("Asset created: {} ({})", assetTag, request.getMakeModel());
         return toResponse(saved);
@@ -126,8 +133,11 @@ public class AssetManagementService {
 
         CompanyAsset saved = assetRepository.save(asset);
 
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
+        String clientIp = IpAddressUtil.getClientIp(httpRequest);
         auditService.log("CompanyAsset", saved.getId(), AuditAction.ASSIGNED,
-                performer.getId(), null, "Assigned to " + employee.getFirstName() + " " + employee.getLastName());
+                performer.getId(), clientIp, "Assigned to " + employee.getFirstName() + " " + employee.getLastName());
 
         notificationService.send(
                 employee.getId(),
@@ -168,9 +178,12 @@ public class AssetManagementService {
 
         CompanyAsset saved = assetRepository.save(asset);
 
+        HttpServletRequest httpRequest = ((ServletRequestAttributes) RequestContextHolder.getRequestAttributes())
+                .getRequest();
+        String clientIp = IpAddressUtil.getClientIp(httpRequest);
         auditService.log("CompanyAsset", saved.getId(), AuditAction.RETURNED,
-                performer.getId(), "Assigned to: " + previousAssignee,
-                "Returned. Condition: " + request.getCondition());
+                performer.getId(), clientIp,
+                "Returned by " + previousAssignee + ". Condition: " + request.getCondition());
 
         log.info("Asset {} returned by {}", asset.getAssetTag(), previousAssignee);
         return toResponse(saved);

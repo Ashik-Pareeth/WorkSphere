@@ -31,6 +31,11 @@ export const getFlaggedTasks = async () => {
   return response.data;
 };
 
+export const resolveTaskFlag = async (taskId) => {
+  const response = await axiosInstance.patch(`/tasks/${taskId}/resolve-flag`);
+  return response.data;
+};
+
 // --- WRITE OPERATIONS ---
 
 // Create a new task
