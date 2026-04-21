@@ -46,7 +46,7 @@ export default function EvidenceTab({
   isAuditor,
   rating,
   setRating,
-  // handleLateRating removed
+  handleLateRating,
   isCompleting,
   handleApproveAndComplete,
   handleCancelTask,
@@ -241,30 +241,70 @@ export default function EvidenceTab({
         )}
       </div>
 
-      {/* MANAGER ACTION: Task Completion Rating */}
+      {/* PERFORMANCE EVALUATION SECTION */}
       {(isAssigner || isManager) &&
-        task.status === 'IN_REVIEW' &&
-        evidenceList.some((e) => e.status === 'ACCEPTED') && (
-          <div className="bg-orange-50 border border-orange-200 p-5 rounded-xl shadow-sm mt-4">
-            <h4 className="text-sm font-bold text-orange-900 mb-1">
-              Evaluate Performance
-            </h4>
-            <p className="text-xs text-orange-700 mb-4">
-              Rate the execution quality before marking this task as complete.
-            </p>
+        task.status !== 'TODO' &&
+        task.status !== 'CANCELLED' && (
+          <div className={`p-5 rounded-xl border shadow-sm mt-4 transition-all ${
+            task.status === 'COMPLETED' ? 'bg-gray-50 border-gray-200' : 'bg-orange-50 border-orange-200'
+          }`}>
+            <div className="flex justify-between items-start mb-4">
+              <div>
+                <h4 className="text-sm font-bold text-gray-900 mb-1">
+                  Performance Evaluation
+                </h4>
+                <p className="text-xs text-gray-500">
+                  {task.status === 'COMPLETED' 
+                    ? (task.managerRating ? 'Final performance record for this task.' : 'Task is complete. You can still provide a late rating.')
+                    : 'Rate the execution quality before marking this task as complete.'
+                  }
+                </p>
+              </div>
+              {task.status === 'COMPLETED' && task.managerRating && (
+                <div className="bg-emerald-100 text-emerald-700 text-[10px] font-bold uppercase px-2 py-1 rounded">
+                  Rated
+                </div>
+              )}
+            </div>
+
             <div className="flex flex-col items-center">
+              {/* Stars Logic */}
               <Stars
-                value={rating}
+                value={task.managerRating || rating}
                 onChange={setRating}
-                disabled={isCompleting}
+                disabled={isCompleting || (task.status === 'COMPLETED' && task.managerRating) || (task.status !== 'IN_REVIEW' && task.status !== 'COMPLETED') || (task.status === 'IN_REVIEW' && task.requiresEvidence && !evidenceList.some(e => e.status === 'ACCEPTED'))}
               />
-              <button
-                onClick={handleApproveAndComplete}
-                disabled={isCompleting || rating === 0}
-                className="mt-4 w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors disabled:opacity-50"
-              >
-                {isCompleting ? 'Finalizing...' : 'Complete & Disburse Rating'}
-              </button>
+
+              {/* Action Buttons & Status Messages */}
+              {task.status === 'COMPLETED' ? (
+                !task.managerRating && (
+                  <button
+                    onClick={handleLateRating}
+                    disabled={isCompleting || rating === 0}
+                    className="mt-4 w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    {isCompleting ? 'Submitting...' : 'Submit Late Rating'}
+                  </button>
+                )
+              ) : task.status === 'IN_REVIEW' ? (
+                (task.requiresEvidence && !evidenceList.some(e => e.status === 'ACCEPTED')) ? (
+                  <div className="mt-4 flex items-center gap-2 text-amber-600 bg-amber-50 px-3 py-2 rounded-lg border border-amber-100">
+                    <span className="text-xs font-semibold">Unlock rating by accepting evidence first.</span>
+                  </div>
+                ) : (
+                  <button
+                    onClick={handleApproveAndComplete}
+                    disabled={isCompleting || rating === 0}
+                    className="mt-4 w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-2.5 rounded-lg text-sm shadow-sm transition-colors disabled:opacity-50"
+                  >
+                    {isCompleting ? 'Finalizing...' : 'Complete & Disburse Rating'}
+                  </button>
+                )
+              ) : (
+                <div className="mt-4 text-gray-400 text-xs italic">
+                  Rating will unlock when task is submitted for review.
+                </div>
+              )}
             </div>
           </div>
         )}

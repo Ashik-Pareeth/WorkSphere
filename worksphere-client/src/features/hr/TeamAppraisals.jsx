@@ -44,7 +44,9 @@ const TeamAppraisals = () => {
       setSelectedAppraisal(null);
       loadAppraisals();
     } catch (err) {
-      toast.error(err.response?.data?.message || 'Failed to submit manager review');
+      toast.error(
+        err.response?.data?.message || 'Failed to submit manager review'
+      );
     }
   };
 
@@ -195,7 +197,7 @@ const TeamAppraisals = () => {
                       rating: parseFloat(e.target.value),
                     })
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                 />
               </div>
               <div>
@@ -209,7 +211,7 @@ const TeamAppraisals = () => {
                   onChange={(e) =>
                     setFormData({ ...formData, comments: e.target.value })
                   }
-                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
+                  className="w-full border text-black border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none"
                   placeholder="Provide feedback on the employee's performance..."
                 ></textarea>
               </div>
