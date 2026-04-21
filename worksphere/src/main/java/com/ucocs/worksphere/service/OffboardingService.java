@@ -4,6 +4,7 @@ import com.ucocs.worksphere.dto.hr.OffboardingInitiateRequest;
 import com.ucocs.worksphere.dto.hr.OffboardingRecordResponse;
 import com.ucocs.worksphere.entity.Employee;
 import com.ucocs.worksphere.entity.OffboardingRecord;
+import com.ucocs.worksphere.entity.Role;
 import com.ucocs.worksphere.enums.AuditAction;
 import com.ucocs.worksphere.enums.NotificationType;
 import com.ucocs.worksphere.enums.OffboardingStatus;
@@ -12,12 +13,16 @@ import com.ucocs.worksphere.repository.EmployeeRepository;
 import com.ucocs.worksphere.repository.OffboardingRecordRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -31,6 +36,36 @@ public class OffboardingService {
     private final AuditService auditService;
     private final NotificationService notificationService;
 
+    private boolean canOffboard(Collection<Role> actorRoles, Collection<Role> targetRoles) {
+
+        Map<String, Integer> hierarchy = Map.of(
+                "ROLE_EMPLOYEE", 1,
+                "ROLE_MANAGER", 2,
+                "ROLE_HR", 3,
+                "ROLE_SUPER_ADMIN", 4
+        );
+
+        // helper inside (no extra method)
+        Function<String, String> normalize = roleName -> {
+            if (roleName == null) return "";
+            roleName = roleName.trim().toUpperCase();
+            return roleName.startsWith("ROLE_") ? roleName : "ROLE_" + roleName;
+        };
+
+        int actorLevel = actorRoles.stream()
+                .map(r -> normalize.apply(r.getRoleName()))
+                .map(role -> hierarchy.getOrDefault(role, 0))
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        int targetLevel = targetRoles.stream()
+                .map(r -> normalize.apply(r.getRoleName()))
+                .map(role -> hierarchy.getOrDefault(role, 0))
+                .max(Integer::compareTo)
+                .orElse(0);
+
+        return actorLevel > targetLevel;
+    }
     /**
      * Initiate offboarding for an employee (HR Action)
      */
@@ -44,6 +79,12 @@ public class OffboardingService {
         if (offboardingRepository.findByEmployee(employee).isPresent()) {
             throw new IllegalStateException("Offboarding already initiated for this employee");
         }
+
+
+        if (!canOffboard(initiator.getRoles(), employee.getRoles())) {
+            throw new AccessDeniedException("You cannot offboard this employee");
+        }
+
 
         boolean hasAssets = !assetManagementService.getAssetsForEmployee(employee.getId()).isEmpty();
         OffboardingStatus initialStatus = hasAssets ? OffboardingStatus.PENDING_ASSET_RETURN

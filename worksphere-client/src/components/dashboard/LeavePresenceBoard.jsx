@@ -62,14 +62,17 @@ function employeeName(request) {
 }
 
 function statusStyles(kind) {
-  if (kind === 'current') return 'bg-emerald-50 text-emerald-700 border-emerald-100';
+  if (kind === 'current')
+    return 'bg-emerald-50 text-emerald-700 border-emerald-100';
   if (kind === 'upcoming') return 'bg-blue-50 text-blue-700 border-blue-100';
   return 'bg-slate-50 text-slate-600 border-slate-200';
 }
 
 export default function LeavePresenceBoard({ user }) {
   const roles = useMemo(() => cleanRoles(user?.roles), [user?.roles]);
-  const canGlobal = roles.some((role) => role === 'HR' || role === 'SUPER_ADMIN');
+  const canGlobal = roles.some(
+    (role) => role === 'HR' || role === 'SUPER_ADMIN'
+  );
   const canTeam = roles.includes('MANAGER');
   const canChooseScope = canGlobal && canTeam;
   const defaultScope = canGlobal ? 'GLOBAL' : canTeam ? 'TEAM' : 'MY';
@@ -93,6 +96,7 @@ export default function LeavePresenceBoard({ user }) {
       setError(null);
       try {
         const data = await getLeaveBoardRecords(scope);
+        console.log('Fetched leave records:', data);
         if (!cancelled) setRecords(Array.isArray(data) ? data : []);
       } catch (err) {
         if (!cancelled) {
@@ -162,7 +166,9 @@ export default function LeavePresenceBoard({ user }) {
             <CalendarDays size={18} />
           </div>
           <div>
-            <h2 className="text-base font-bold text-gray-900">Leave Calendar</h2>
+            <h2 className="text-base font-bold text-gray-900">
+              Leave Calendar
+            </h2>
             <p className="text-xs text-gray-500 mt-0.5">
               Current, scheduled, and completed approved leave.
             </p>
@@ -232,9 +238,7 @@ export default function LeavePresenceBoard({ user }) {
             <p className="mt-2 text-sm font-medium text-gray-700">
               No leave records found.
             </p>
-            <p className="mt-1 text-xs">
-              Try another status view or scope.
-            </p>
+            <p className="mt-1 text-xs">Try another status view or scope.</p>
           </div>
         ) : (
           <div className="overflow-x-auto">
@@ -261,7 +265,8 @@ export default function LeavePresenceBoard({ user }) {
                           </p>
                         </td>
                         <td className="py-3 pr-4 text-sm text-gray-700 whitespace-nowrap">
-                          {formatDate(record.startDate)} - {formatDate(record.endDate)}
+                          {formatDate(record.startDate)} -{' '}
+                          {formatDate(record.endDate)}
                         </td>
                         <td className="py-3 pr-4 text-sm font-semibold text-gray-900">
                           {record.requestedDays}
@@ -283,11 +288,21 @@ export default function LeavePresenceBoard({ user }) {
                         <td className="py-3 text-right">
                           <button
                             type="button"
-                            onClick={() => setExpandedId(isOpen ? null : record.id)}
+                            onClick={() =>
+                              setExpandedId(isOpen ? null : record.id)
+                            }
                             className="inline-flex items-center justify-center rounded-lg border border-gray-200 bg-white p-2 text-gray-500 hover:bg-gray-50 hover:text-gray-900 transition"
-                            aria-label={isOpen ? 'Hide leave details' : 'Show leave details'}
+                            aria-label={
+                              isOpen
+                                ? 'Hide leave details'
+                                : 'Show leave details'
+                            }
                           >
-                            {isOpen ? <ChevronUp size={15} /> : <ChevronDown size={15} />}
+                            {isOpen ? (
+                              <ChevronUp size={15} />
+                            ) : (
+                              <ChevronDown size={15} />
+                            )}
                           </button>
                         </td>
                       </tr>
@@ -323,7 +338,10 @@ export default function LeavePresenceBoard({ user }) {
                               </div>
                               <div className="mt-4 flex flex-wrap gap-2 text-[11px] text-gray-500">
                                 <span className="rounded-md bg-white border border-gray-200 px-2 py-1">
-                                  Requested: {record.createdAt ? formatDate(record.createdAt.slice(0, 10)) : '-'}
+                                  Requested:{' '}
+                                  {record.createdAt
+                                    ? formatDate(record.createdAt.slice(0, 10))
+                                    : '-'}
                                 </span>
                                 <span className="rounded-md bg-white border border-gray-200 px-2 py-1">
                                   Request ID: {record.id}

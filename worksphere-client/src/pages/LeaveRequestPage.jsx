@@ -25,6 +25,9 @@ const LeaveRequestPage = () => {
         getMyLedger(),
         getMyLeaveRequests(),
       ]);
+      console.log('Fetched Balances:', balData);
+      console.log('Fetched Ledger:', ledgerData);
+      console.log('Fetched Requests:', requestsData);
 
       setBalances(balData);
       setLedger(ledgerData);
@@ -95,11 +98,15 @@ const LeaveRequestPage = () => {
           </p>
         </div>
         <div className="p-6">
-          <MyLeaveRequestsTable requests={requests} onRefresh={fetchData} balances={balances} />
+          <MyLeaveRequestsTable
+            requests={requests}
+            onRefresh={fetchData}
+            balances={balances}
+          />
         </div>
       </section>
 
-      {/* LEDGER SECTION */}
+      {/* LEDGER SECTION
       <section className="bg-white border rounded-xl shadow-sm opacity-90">
         <div className="px-6 py-4 border-b">
           <h2 className="text-lg font-semibold text-slate-800">
@@ -113,7 +120,7 @@ const LeaveRequestPage = () => {
         <div className="p-6">
           <MyLeaveLedgerTable ledger={ledger} />
         </div>
-      </section>
+      </section> */}
 
       {/* REQUEST MODAL */}
       {isModalOpen && (

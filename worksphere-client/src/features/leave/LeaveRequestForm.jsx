@@ -15,7 +15,9 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
   useEffect(() => {
     if (initialData) {
       setFormData({
-        policyId: initialData.leavePolicy?.id || (balances.length > 0 ? balances[0].leavePolicy.id : ''),
+        policyId:
+          initialData.leavePolicy?.id ||
+          (balances.length > 0 ? balances[0].leavePolicy.id : ''),
         startDate: initialData.startDate || '',
         endDate: initialData.endDate || '',
         requestedDays: initialData.requestedDays || 1,
@@ -42,7 +44,10 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
       onSuccess(); // Tell the parent to close the modal and refresh data
     } catch (error) {
       console.error('Failed to submit leave request:', error);
-      toast.error(error?.response?.data?.message || 'Error submitting request. Please try again.');
+      toast.error(
+        error?.response?.data?.message ||
+          'Error submitting request. Please try again.'
+      );
     } finally {
       setIsLoading(false);
     }
@@ -58,7 +63,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
           name="policyId"
           value={formData.policyId}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
+          className="w-full border text-black border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none transition-all"
           required
           disabled={!!initialData} // Usually policy cannot be changed if editing, or it is allowed. Let's disable to be safe.
         >
@@ -80,7 +85,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
             name="startDate"
             value={formData.startDate}
             onChange={handleChange}
-            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border text-black border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
@@ -94,7 +99,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
             value={formData.endDate}
             onChange={handleChange}
             min={formData.startDate} // Basic validation
-            className="w-full border border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
+            className="w-full border text-black border-gray-300 rounded-lg p-2.5 focus:ring-2 focus:ring-blue-500 outline-none"
             required
           />
         </div>
@@ -111,8 +116,9 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
           name="requestedDays"
           value={formData.requestedDays}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full border text-black border-gray-300 rounded-lg p-2.5 bg-gray-50 focus:ring-2 focus:ring-blue-500 outline-none"
           required
+          placeholder="1,2,3...."
         />
       </div>
 
@@ -124,7 +130,7 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
           name="reason"
           value={formData.reason}
           onChange={handleChange}
-          className="w-full border border-gray-300 rounded-lg p-2.5 h-24 resize-none focus:ring-2 focus:ring-blue-500 outline-none"
+          className="w-full border text-black border-gray-300 rounded-lg p-2.5 h-24 resize-none focus:ring-2 focus:ring-blue-500 outline-none"
           placeholder="Briefly describe your request..."
           required
         />
@@ -144,7 +150,13 @@ const LeaveRequestForm = ({ balances, onSuccess, onCancel, initialData }) => {
           disabled={isLoading}
           className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-colors disabled:bg-blue-400"
         >
-          {isLoading ? (initialData ? 'Updating...' : 'Submitting...') : (initialData ? 'Update Request' : 'Submit Request')}
+          {isLoading
+            ? initialData
+              ? 'Updating...'
+              : 'Submitting...'
+            : initialData
+              ? 'Update Request'
+              : 'Submit Request'}
         </button>
       </div>
     </form>
