@@ -2,6 +2,9 @@
 # Global
 # ===============================
 .env
+.env.*
+!.env.example
+!.env.*.example
 *.log
 *.zip
 
