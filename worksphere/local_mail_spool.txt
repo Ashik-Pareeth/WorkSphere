@@ -595,3 +595,213 @@ Subject: Welcome to WorkSphere - Your Account Details
 Login: http://localhost:5173/login Username: arjun.mehta TempPassword: Welcome123! Department: Engineering Job Position: Software Engineer Manager: Mike Johnson Work Schedule: Remote Flex 10-to-6 Compensation: Base ₹50,000.00, HRA ₹20,000.00, DA ₹5,000.00, Travel ₹3,000.00, Other ₹2,000.00, PT ₹200.00, PF Employee % 12.0, PF Employer % 12.0, Gross ₹80,000.00
 ====================================================
 
+====================================================
+Date:    2026-04-22T12:10:18.012257500
+To:      ashikpareeth007@gmail.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>SHORTLISTED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Your application status is now: SHORTLISTED
+====================================================
+
+====================================================
+Date:    2026-04-22T12:13:38.619970500
+To:      ashikpareeth007@gmail.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>APPLIED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Your application status is now: APPLIED
+====================================================
+
+====================================================
+Date:    2026-04-22T12:14:59.492149200
+To:      ashikpareeth007@gmail.com
+Subject: Interview Scheduled: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Interview Scheduled</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are pleased to inform you that an interview has been scheduled for your application for the <b>Full-Stack Software Engineer</b> position.</p>
+        <ul>
+            <li><b>Round:</b> 1</li>
+            <li><b>Date:</b> Apr 17, 2026</li>
+            <li><b>Time:</b> 06:44 am</li>
+            <li><b>Mode:</b> VIDEO</li>
+            <li><b>Interviewer:</b> Sarah Smith</li>
+        </ul>
+        <p>Please ensure you are available at the scheduled time. If you have any questions, feel free to reply to this email.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Interview scheduled on Apr 17, 2026 at 06:44 am
+====================================================
+
+====================================================
+Date:    2026-04-22T12:15:44.959231
+To:      ashikpareeth007@gmail.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Your application status is now: OFFERED
+====================================================
+
+====================================================
+Date:    2026-04-22T12:15:51.326007400
+To:      ashikpareeth007@gmail.com
+Subject: Application Update: Full-Stack Software Engineer - WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Application Update</h2>
+        <p>Dear Ashik pareeth,</p>
+        <p>We are writing to inform you that the status of your application for the <b>Full-Stack Software Engineer</b> position has been updated to: <b>OFFERED</b>.</p>
+        <p>We will keep you posted regarding any further steps.</p>
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Your application status is now: OFFERED
+====================================================
+
+====================================================
+Date:    2026-04-22T12:16:25.578991100
+To:      ashikpareeth007@gmail.com
+Subject: Your Offer Letter from WorkSphere
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Congratulations!</h2>
+
+        <p>We are pleased to inform you that you have been selected for a position at <b>WorkSphere</b>.</p>
+
+        <p>Please review your offer details and respond using the button below:</p>
+
+        <p>
+            <a href="http://localhost:5173/offers/9ac2b2a6-ad01-41a4-9dd2-c8d95adf3510/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiOWFjMmIyYTYtYWQwMS00MWE0LTlkZDItYzhkOTVhZGYzNTEwIiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoiYXNoaWtwYXJlZXRoMDA3QGdtYWlsLmNvbSIsImlhdCI6MTc3Njg0MDM3NSwiZXhwIjoxNzc3NDQ1MTc1fQ.hOXjziSsuT8O7t_0aMgTVCw7gSfi2h0tbZIZv1nc5eQ"
+               style="background-color:#28a745;color:white;padding:12px 18px;
+                      text-decoration:none;border-radius:6px;display:inline-block;">
+                View Offer
+            </a>
+        </p>
+
+        <p>If you have any questions, feel free to reply to this email.</p>
+
+        <br/>
+        <p>Warm regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+
+        <hr/>
+        <small>This is an automated message. Please do not share this link.</small>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Offer Link: http://localhost:5173/offers/9ac2b2a6-ad01-41a4-9dd2-c8d95adf3510/respond?token=eyJhbGciOiJIUzI1NiJ9.eyJvZmZlcklkIjoiOWFjMmIyYTYtYWQwMS00MWE0LTlkZDItYzhkOTVhZGYzNTEwIiwidHlwZSI6Ik9GRkVSX1JFU1BPTlNFIiwic3ViIjoiYXNoaWtwYXJlZXRoMDA3QGdtYWlsLmNvbSIsImlhdCI6MTc3Njg0MDM3NSwiZXhwIjoxNzc3NDQ1MTc1fQ.hOXjziSsuT8O7t_0aMgTVCw7gSfi2h0tbZIZv1nc5eQ
+====================================================
+
+====================================================
+Date:    2026-04-22T12:18:48.735182900
+To:      ashikpareeth007@gmail.com
+Subject: Welcome to WorkSphere - Your Account Details
+------------------- EMAIL BODY ---------------------
+    <html>
+    <body style="font-family: Arial, sans-serif; line-height:1.6;">
+        <h2 style="color:#2c3e50;">Welcome to WorkSphere!</h2>
+
+        <p>We're excited to have you on board, <b>Ashik pareeth</b>.</p>
+
+        <p>Your account has been created. Use the credentials below to log in:</p>
+
+        <ul>
+            <li><b>Login URL:</b> http://localhost:5173/login</li>
+            <li><b>Username:</b> ashik.pareeth</li>
+            <li><b>Temporary Password:</b> Welcome123!</li>
+        </ul>
+
+        <p>Your onboarding details:</p>
+        <ul>
+            <li><b>Department:</b> Engineering</li>
+            <li><b>Job Position:</b> HR Specialist</li>
+            <li><b>Reporting Manager:</b> Sarah Smith</li>
+            <li><b>Work Schedule:</b> Standard 9-to-5</li>
+        </ul>
+
+            <p>Your compensation breakdown:</p>
+    <ul>
+        <li><b>Base Salary:</b> ₹55,000.00</li>
+        <li><b>HRA:</b> ₹21,999.00</li>
+        <li><b>DA:</b> ₹5,500.00</li>
+        <li><b>Travel Allowance:</b> ₹3,000.00</li>
+        <li><b>Other Allowances:</b> ₹2,500.00</li>
+        <li><b>Professional Tax:</b> ₹200.00</li>
+        <li><b>PF Employee %:</b> 12.0</li>
+        <li><b>PF Employer %:</b> 12.0</li>
+        <li><b>Gross Salary:</b> ₹87,999.00</li>
+    </ul>
+
+
+        <p>You will be required to change your password upon your first login.</p>
+
+        <p>If you face any issues, feel free to contact support.</p>
+
+        <br/>
+        <p>Best regards,<br/>
+        <b>HR Team</b><br/>
+        WorkSphere</p>
+    </body>
+    </html>
+
+----------------- FALLBACK SUMMARY -----------------
+Login: http://localhost:5173/login Username: ashik.pareeth TempPassword: Welcome123! Department: Engineering Job Position: HR Specialist Manager: Sarah Smith Work Schedule: Standard 9-to-5 Compensation: Base ₹55,000.00, HRA ₹21,999.00, DA ₹5,500.00, Travel ₹3,000.00, Other ₹2,500.00, PT ₹200.00, PF Employee % 12.0, PF Employer % 12.0, Gross ₹87,999.00
+====================================================
+

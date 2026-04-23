@@ -1,6 +1,8 @@
 import axios from 'axios';
 
-const axiosInstance = axios.create({ baseURL: 'http://localhost:8080' });
+const axiosInstance = axios.create({
+  baseURL: import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080',
+});
 
 // 1. Request Interceptor: Attach the token to outgoing requests
 axiosInstance.interceptors.request.use((config) => {
