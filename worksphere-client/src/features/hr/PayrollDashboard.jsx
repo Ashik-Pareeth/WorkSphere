@@ -12,6 +12,7 @@ import axiosInstance from '../../api/axiosInstance';
 import PayslipViewerModal from './PayslipViewerModal';
 import SalaryStructureModal from './SalaryStructureModal';
 import { Skeleton } from '../../components/ui/skeleton';
+import SalaryConfigPanel from './SalaryConfigPanel';
 
 const PayrollDashboard = () => {
   const { user } = useContext(AuthContext);
@@ -184,6 +185,7 @@ const PayrollDashboard = () => {
           {error}
         </div>
       )}
+
       {success && (
         <div className="mb-4 text-emerald-800 bg-emerald-50 p-3 rounded-lg border border-emerald-200 font-medium">
           {success}
@@ -191,7 +193,7 @@ const PayrollDashboard = () => {
       )}
 
       {/* Controls */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
+      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6 flex flex-col md:flex-row justify-between md:items-end gap-4">
         <div className="flex flex-wrap items-end gap-4">
           <div>
             <label className="block text-sm font-bold text-slate-800 mb-1">
@@ -236,47 +238,13 @@ const PayrollDashboard = () => {
             {loading ? 'Generating...' : 'Generate Payroll'}
           </button>
         </div>
-      </div>
-
-      {/* Salary Structure Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-2">
-          Salary Structures
-        </h2>
-        <p className="text-sm text-slate-600 font-medium mb-4">
-          Click an employee to set or update their salary structure.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {employees.map((emp) => (
-            <button
-              key={emp.id}
-              onClick={() => openSalaryModal(emp)}
-              className="px-4 py-2 text-sm font-semibold text-slate-800 bg-slate-50 hover:bg-indigo-50 hover:text-indigo-700 border border-slate-200 hover:border-indigo-300 rounded-lg transition-colors shadow-sm"
-            >
-              {emp.firstName} {emp.lastName}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5 mb-6">
-        <h2 className="text-lg font-bold text-slate-900 mb-2">
-          Job Position Templates
-        </h2>
-        <p className="text-sm text-slate-600 font-medium mb-4">
-          Maintain reusable salary templates by position. Finalize hire will load from these defaults and then create an employee-specific copy.
-        </p>
-        <div className="flex flex-wrap gap-2">
-          {jobPositions.map((position) => (
-            <button
-              key={position.id}
-              onClick={() => openJobPositionSalaryModal(position)}
-              className="rounded-lg border border-slate-200 bg-slate-50 px-4 py-2 text-sm font-semibold text-slate-800 shadow-sm transition-colors hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
-            >
-              {position.positionName}
-            </button>
-          ))}
-        </div>
+        
+        <SalaryConfigPanel 
+          employees={employees} 
+          jobPositions={jobPositions} 
+          openSalaryModal={openSalaryModal} 
+          openJobPositionSalaryModal={openJobPositionSalaryModal} 
+        />
       </div>
 
       {/* Payroll Records Table */}
