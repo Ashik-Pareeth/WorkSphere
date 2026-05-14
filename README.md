@@ -1,4 +1,4 @@
-# WorkSphere 🏢
+# WorkSphere
 
 > **A modern, full-stack Human Resources and Operations Management Platform.**
 
@@ -12,7 +12,7 @@ WorkSphere is a comprehensive internal platform built to manage the complete emp
 | **Task Management** | **Payroll Overview** |
 | ![Tasks Preview](screenshots/tasks.png) | ![Payroll Preview](screenshots/payroll.png) |
 
-## ✨ Features
+## Features
 
 - **Applicant Tracking System (ATS):** Drag-and-drop Kanban board for interview pipelines, feedback logging, and automated offer generation.
 - **Core HR Hub:** Centralized employee directory, hierarchical team management, and self-service portals for personnel data.
@@ -43,7 +43,7 @@ WorkSphere is a comprehensive internal platform built to manage the complete emp
 
 Multi-role request pipeline: JWT filter validates and extracts roles → @PreAuthorize method-level guards enforce hierarchy boundaries → service layer applies organizational scoping before any data is returned.
 
-## 🚀 Installation & Setup
+## Installation & Setup
 
 ### Prerequisites
 - Node.js (v18+)
@@ -89,7 +89,7 @@ npm install
 npm run dev
 ```
 
-## 🔐 Default Local Credentials
+## Default Local Credentials
 
 If you are running the app with the seeder enabled, you can log in with:
 
@@ -98,7 +98,7 @@ If you are running the app with the seeder enabled, you can log in with:
 - **Manager:** `manager` / `password`
 - **Employee:** `ashik` / `password`
 
-## 📖 API Documentation
+## API Documentation
 
 The backend exposes REST APIs generally categorized by feature. 
 
@@ -129,7 +129,7 @@ Content-Type: application/json
 }
 ```
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 UCOC_Project/
@@ -155,18 +155,18 @@ UCOC_Project/
     └── tailwind.config.js
 ```
 
-## 🧠 Challenges Faced
+## Challenges Faced
 
 - **Complex RBAC & Data Masking:** Ensuring that managers only see tasks and leave requests for their direct reports required careful query construction and method-level security implementation.
 - **Payroll State Management:** Handling payroll generation idempotency (updating existing drafts vs creating new ones) while preventing overlapping pay periods for the same employee.
 - **Progressive Data Editing:** Implementing soft-deletes and non-destructive progressive editing workflows for entities like Job Openings and Tasks to maintain strict audit compliance.
 
-## 🚀 Future Improvements
+## Future Improvements
 
 - **Real-time Notifications:** Replace polling with WebSockets (STOMP over SockJS) for real-time task updates and chat messages.
 - **Resume Parsing:** Integrate an AI/LLM service to automatically extract data from uploaded candidate PDFs.
 - **Export Capabilities:** Add generic PDF/CSV export functionality for HR reports and audit logs.
 
-## 📄 License
+## License
 
 This project is licensed under the MIT License. This platform was originally developed as an academic project and is open for contributions.
